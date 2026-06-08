@@ -15,13 +15,13 @@ jobs:
       - name: Generate JSON
         run: |
           echo '{"business_cards": [' > all-business-cards.json
-          # প্রতিটি HTML ফাইলের নাম থেকে JSON এন্ট্রি তৈরি হচ্ছে
-          find . -maxdepth 1 -name "*.html" -printf '{"id": "%f", "title": "%f", "url": "https://foodyshagor-prog.github.io/litimiti/%f"},' | sed 's/\.html//g' | sed 's/,$//' >> all-business-cards.json
+          # প্রতিটি HTML ফাইলের জন্য নাম, URL এবং ইমেজ URL তৈরি হচ্ছে
+          find . -maxdepth 1 -name "*.html" -printf '{"id": "%f", "title": "%f", "url": "https://foodyshagor-prog.github.io/litimiti/%f", "image_url": "https://foodyshagor-prog.github.io/litimiti/images/%f.jpg"},' | sed 's/\.html//g' | sed 's/,$//' >> all-business-cards.json
           echo ']}' >> all-business-cards.json
       - name: Commit and Push
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
           git add all-business-cards.json
-          git commit -m "Auto-update Business Card JSON" || echo "No changes to commit"
+          git commit -m "Auto-update JSON with business card images" || echo "No changes to commit"
           git push
