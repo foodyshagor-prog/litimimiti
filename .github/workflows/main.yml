@@ -1,0 +1,27 @@
+name: Generate Business Card JSON
+on:
+  push:
+    paths:
+      - '**.html'
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Generate JSON
+        run: |
+          echo '{"business_cards": [' > all-business-cards.json
+          # প্রতিটি HTML ফাইলের নাম থেকে JSON এন্ট্রি তৈরি হচ্ছে
+          find . -maxdepth 1 -name "*.html" -printf '{"id": "%f", "title": "%f", "url": "https://foodyshagor-prog.github.io/litimiti/%f"},' | sed 's/\.html//g' | sed 's/,$//' >> all-business-cards.json
+          echo ']}' >> all-business-cards.json
+      - name: Commit and Push
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          git add all-business-cards.json
+          git commit -m "Auto-update Business Card JSON" || echo "No changes to commit"
+          git push
