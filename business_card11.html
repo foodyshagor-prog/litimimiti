@@ -17,28 +17,38 @@
             --input-border: rgba(255, 255, 255, 0.1);
         }
 
+        /* --- MOBILE ONLY RESET & WRAPPER --- */
         body {
             margin: 0;
             padding: 0;
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, var(--ui-bg-top), var(--ui-bg-bottom));
             color: #ffffff;
-            min-height: 100vh;
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow-x: hidden;
+            overflow: hidden; /* Lock the viewport */
         }
 
-        /* --- STICKY PREVIEW SECTION --- */
+        /* Force mobile layout size on desktop viewports for previewing */
+        @media (min-width: 480px) {
+            body {
+                max-width: 430px;
+                margin: 0 auto;
+                border-left: 1px solid rgba(255, 255, 255, 0.1);
+                border-right: 1px solid rgba(255, 255, 255, 0.1);
+                box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            }
+        }
+
+        /* --- STICKY PREVIEW SECTION (FIXED AT TOP) --- */
         .preview-section {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            background: rgba(15, 23, 42, 0.85);
+            flex-shrink: 0; /* Prevent collapsing */
+            background: rgba(15, 23, 42, 0.95);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             padding: 15px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             display: flex;
             flex-direction: column;
@@ -80,14 +90,13 @@
         /* --- BUSINESS CARD DESIGN --- */
         .card-wrapper {
             width: 100%;
-            max-width: 400px;
+            max-width: 360px;
             aspect-ratio: 1.75;
             position: relative;
-            border-radius: 16px;
+            border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 15px 35px rgba(0,0,0,0.6);
             background: #0a0a0a;
-            display: block; /* Default block, toggled via JS */
         }
 
         .card-bg {
@@ -169,6 +178,8 @@
             margin-bottom: 12px;
             padding-bottom: 6px;
             position: relative;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         .job-title::after {
             content: '';
@@ -186,15 +197,15 @@
 
         /* Back Specific Layout */
         .back-logo {
-            top: 50%;
+            top: 45%; /* Shifted up slightly to accommodate the lowered tagline */
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 35%; /* Slightly larger on the back */
+            width: 35%;
         }
 
         .back-tagline {
             position: absolute;
-            bottom: 15%;
+            bottom: 10%; /* Lowered from 15% to 10% */
             left: 0;
             width: 100%;
             text-align: center;
@@ -206,40 +217,42 @@
             opacity: 0.8;
         }
 
-        /* --- EDITOR SECTION --- */
+        /* --- SMOOTH SCROLLING EDITOR SECTION --- */
         .editor-section {
-            padding: 20px 15px 40px 15px;
             flex: 1;
-            overflow-y: auto;
+            overflow-y: auto; /* Independent smooth scrolling */
+            -webkit-overflow-scrolling: touch;
+            padding: 20px 15px 40px 15px;
+            box-sizing: border-box;
         }
 
         .editor-title {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 600;
             margin-bottom: 15px;
             color: #fff;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            letter-spacing: 0.5px;
+            border-left: 3px solid var(--primary-red);
+            padding-left: 8px;
         }
 
-        .input-group { margin-bottom: 12px; }
-        .input-group label { display: block; font-size: 0.8rem; color: #aaaaaa; margin-bottom: 5px; padding-left: 2px; }
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 0.75rem; color: #aaaaaa; margin-bottom: 6px; padding-left: 2px; }
         .input-group input {
             width: 100%;
             background: var(--input-bg);
             border: 1px solid var(--input-border);
-            padding: 12px 15px;
+            padding: 12px 14px;
             border-radius: 10px;
             color: #ffffff;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             font-family: 'Poppins', sans-serif;
             box-sizing: border-box;
             transition: all 0.3s ease;
         }
         .input-group input:focus { outline: none; border-color: var(--primary-red); background: rgba(255, 255, 255, 0.08); }
 
-        .row { display: flex; gap: 10px; }
+        .row { display: flex; gap: 12px; }
         .row .input-group { flex: 1; }
 
         /* Save Button */
@@ -250,10 +263,10 @@
             border: none;
             padding: 16px;
             border-radius: 12px;
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 600;
             font-family: 'Poppins', sans-serif;
-            margin-top: 20px;
+            margin-top: 10px;
             cursor: pointer;
             box-shadow: 0 6px 15px rgba(255, 0, 51, 0.3);
             transition: transform 0.2s;
@@ -263,10 +276,18 @@
             gap: 10px;
         }
         .save-btn:active { transform: scale(0.98); }
-        .save-icon { width: 20px; height: 20px; fill: white; }
+        .save-icon { width: 18px; height: 18px; fill: white; }
 
         /* Display utilities */
         .hidden { display: none !important; }
+        
+        /* Behind-the-scenes layout trick for processing hidden sides during canvas combination */
+        .force-visible {
+            display: block !important;
+            position: absolute !important;
+            top: -9999px !important;
+            left: -9999px !important;
+        }
     </style>
 </head>
 <body>
@@ -417,42 +438,34 @@
             </div>
         </div>
 
-        <button class="save-btn" onclick="saveImage()">
+        <button class="save-btn" onclick="saveCombinedPresentation()">
             <svg class="save-icon" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-            <span id="save-btn-text">Save Front Side</span>
+            <span id="save-btn-text">Export Presentation Layout</span>
         </button>
     </div>
 
     <script>
         let currentSide = 'front';
 
-        // Toggle between Front and Back
+        // Switch side preview updates inside the locked top header block
         function switchSide(side) {
             currentSide = side;
             
-            // Update Buttons
             document.getElementById('btn-front').classList.toggle('active', side === 'front');
             document.getElementById('btn-back').classList.toggle('active', side === 'back');
 
-            // Update Cards
             document.getElementById('capture-card-front').classList.toggle('hidden', side === 'back');
             document.getElementById('capture-card-back').classList.toggle('hidden', side === 'front');
 
-            // Update Input Forms
             document.getElementById('inputs-front').classList.toggle('hidden', side === 'back');
             document.getElementById('inputs-back').classList.toggle('hidden', side === 'front');
-
-            // Update Save Button Text
-            document.getElementById('save-btn-text').innerText = side === 'front' ? 'Save Front Side' : 'Save Back Side';
         }
 
-        // Real-time update function
         function updateField(inputId, outputId) {
             const inputVal = document.getElementById('in-' + inputId).value;
             document.getElementById(outputId).innerText = inputVal;
         }
 
-        // Helper to sync the front website to the back tagline by default to save user time
         function syncWebsites() {
             const frontWeb = document.getElementById('in-web').value;
             const backTaglineInput = document.getElementById('in-back-tagline');
@@ -462,36 +475,83 @@
             }
         }
 
-        // Save Image logic via html2canvas
-        function saveImage() {
-            // Determine which card is currently active to save
-            const targetId = currentSide === 'front' ? 'capture-card-front' : 'capture-card-back';
-            const cardElement = document.getElementById(targetId);
+        // Processes both sides synchronously and stitches them into an elegant presentation presentation
+        function saveCombinedPresentation() {
+            const frontCard = document.getElementById('capture-card-front');
+            const backCard = document.getElementById('capture-card-back');
             const saveBtn = document.querySelector('.save-btn');
             const saveBtnText = document.getElementById('save-btn-text');
             
-            // Visual feedback
             const originalText = saveBtnText.innerText;
-            saveBtnText.innerText = "Processing...";
+            saveBtnText.innerText = "Generating Mockup...";
             saveBtn.style.opacity = "0.7";
 
-            html2canvas(cardElement, {
-                scale: 3, // High res
+            // Save active states to safely return to later
+            const isFrontHidden = frontCard.classList.contains('hidden');
+            const isBackHidden = backCard.classList.contains('hidden');
+
+            // Force visibility out-of-bounds so html2canvas can capture structural attributes correctly
+            frontCard.classList.remove('hidden');
+            backCard.classList.remove('hidden');
+            frontCard.classList.add('force-visible');
+            backCard.classList.add('force-visible');
+
+            const options = {
+                scale: 3, // Premium ultra-crisp display resolution output
                 useCORS: true,
                 backgroundColor: null,
                 logging: false
-            }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `business_card_${currentSide}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                
-                // Reset
-                saveBtnText.innerText = originalText;
-                saveBtn.style.opacity = "1";
+            };
+
+            // Render Front Side First
+            html2canvas(frontCard, options).then(frontCanvas => {
+                // Render Back Side Second
+                html2canvas(backCard, options).then(backCanvas => {
+                    
+                    // Put visibility structures back to how they were configured before processing layout
+                    frontCard.classList.remove('force-visible');
+                    backCard.classList.remove('force-visible');
+                    if (isFrontHidden) frontCard.classList.add('hidden');
+                    if (isBackHidden) backCard.classList.add('hidden');
+
+                    // Setup composite master canvas calculations
+                    const presentationCanvas = document.createElement('canvas');
+                    const ctx = presentationCanvas.getContext('2d');
+
+                    const cardWidth = frontCanvas.width;
+                    const cardHeight = frontCanvas.height;
+
+                    // Design configuration for high-end rendering display grid
+                    const paddingX = cardWidth * 0.15;   // Side padding margins
+                    const paddingY = cardHeight * 0.18;  // Top/bottom padding margins
+                    const verticalGap = cardHeight * 0.15; // Vertical separation gap between stacked cards
+
+                    presentationCanvas.width = cardWidth + (paddingX * 2);
+                    presentationCanvas.height = (cardHeight * 2) + (paddingY * 2) + verticalGap;
+
+                    // 1. Draw elegant subtle light gray presentation background frame
+                    ctx.fillStyle = '#f0f2f5';
+                    ctx.fillRect(0, 0, presentationCanvas.width, presentationCanvas.height);
+
+                    // 2. Render Front Side Card Centered
+                    ctx.drawImage(frontCanvas, paddingX, paddingY);
+
+                    // 3. Render Back Side Card stacked smoothly under it
+                    ctx.drawImage(backCanvas, paddingX, paddingY + cardHeight + verticalGap);
+
+                    // 4. Download finalized presentation composition output file link trigger
+                    const link = document.createElement('a');
+                    link.download = `business_card_presentation.png`;
+                    link.href = presentationCanvas.toDataURL('image/png');
+                    link.click();
+                    
+                    // UI Clean resets
+                    saveBtnText.innerText = originalText;
+                    saveBtn.style.opacity = "1";
+                });
             }).catch(err => {
-                console.error("Error saving image: ", err);
-                alert("Failed to save image. Please ensure your WebView supports Canvas rendering.");
+                console.error("Layout generation crash error context: ", err);
+                alert("Processing canvas structural layout rendering failed.");
                 saveBtnText.innerText = originalText;
                 saveBtn.style.opacity = "1";
             });
