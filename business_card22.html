@@ -81,7 +81,7 @@
             justify-content: center;
         }
 
-        /* --- Actual Business Card Styling (Exactly like image) --- */
+        /* --- Actual Business Card Styling --- */
         .card-wrapper {
             width: var(--card-width);
             height: var(--card-height);
@@ -92,8 +92,8 @@
             transform-origin: top left;
             overflow: hidden;
             box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-            color: #8da1b5; /* Base text color for the card */
-            display: none; /* Hidden by default, toggled via JS */
+            color: #8da1b5;
+            display: none;
         }
 
         .card-wrapper.active {
@@ -259,6 +259,7 @@
             justify-content: center;
             align-items: center;
             gap: 10px;
+            cursor: pointer;
         }
 
         .btn-save:active {
@@ -273,15 +274,15 @@
             <button class="tab-btn active" onclick="switchTab('front')">Front</button>
             <button class="tab-btn" onclick="switchTab('back')">Back</button>
         </div>
-        
+         
         <div class="preview-container" id="preview-box">
-            
+             
             <div class="card-wrapper front active" id="card-front">
                 <div class="shape shape-1"></div>
                 <div class="shape shape-2"></div>
                 <div class="shape shape-3"></div>
                 <div class="shape shape-4"></div>
-                
+                 
                 <div class="front-content">
                     <svg class="logo-svg" viewBox="0 0 100 100" width="80" height="80">
                         <defs>
@@ -308,7 +309,7 @@
                         <rect x="20" y="20" width="40" height="40" rx="10" transform="rotate(45 40 40)" fill="none" stroke="url(#grad)" stroke-width="8" />
                         <rect x="40" y="20" width="40" height="40" rx="10" transform="rotate(45 60 40)" fill="none" stroke="url(#grad)" stroke-width="8" />
                     </svg>
-                    
+                     
                     <div class="person-name" id="disp-name">NAME SURNAME</div>
                     <div class="person-position" id="disp-position">POSITION</div>
 
@@ -338,7 +339,7 @@
     </div>
 
     <div class="editor-section">
-        
+         
         <div id="inputs-front">
             <div class="form-group">
                 <label>Company Name</label>
@@ -397,10 +398,12 @@
         let currentTab = 'front';
         function switchTab(tab) {
             currentTab = tab;
-            
+             
             // Update Buttons
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            if(event) {
+                event.target.classList.add('active');
+            }
 
             // Update Cards
             document.querySelectorAll('.card-wrapper').forEach(card => card.classList.remove('active'));
@@ -415,50 +418,84 @@
         function scalePreview() {
             const container = document.getElementById('preview-box');
             const targetWidth = container.clientWidth;
-            // Native card width is 800px. Scale it down to fit screen width.
             const scale = targetWidth / 800; 
-            
+             
             document.querySelectorAll('.card-wrapper').forEach(card => {
                 card.style.transform = `scale(${scale})`;
             });
-            // Adjust container height to match the scaled down card height
             container.style.height = `${450 * scale}px`;
         }
 
         window.addEventListener('resize', scalePreview);
-        // Initial scale on load
         scalePreview();
 
-        // Save Image functionality utilizing html2canvas
-        function saveImage() {
-            // Get currently active card
-            const activeCard = document.getElementById(`card-${currentTab}`);
-            
-            // Temporarily remove scaling to capture high-res image
-            const currentTransform = activeCard.style.transform;
-            activeCard.style.transform = 'scale(1)';
+        // Optimized async processing to generate a stacked showcase canvas
+        async function saveImage() {
+            const frontCard = document.getElementById('card-front');
+            const backCard = document.getElementById('card-back');
 
-            html2canvas(activeCard, {
-                scale: 2, // 2x resolution for better quality
-                backgroundColor: "#ffffff",
-                useCORS: true
-            }).then(canvas => {
-                // Restore scale
-                activeCard.style.transform = currentTransform;
+            // 1. Temporarily save original CSS display/transform attributes
+            const frontDisplay = frontCard.style.display;
+            const frontTransform = frontCard.style.transform;
+            const backDisplay = backCard.style.display;
+            const backTransform = backCard.style.transform;
 
-                // Create download link
-                const link = document.createElement('a');
-                link.download = `business_card_${currentTab}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                
-                /* NOTE FOR ANDROID WEBVIEW IMPLEMENTATION: 
-                   If running inside Kotlin/Android WebView, standard anchor tag downloads 
-                   might require you to override `setDownloadListener` in your WebViewClient, 
-                   or alternatively inject a JS Interface to pass the Base64 string directly 
-                   to your Kotlin environment (e.g., AndroidInterface.saveBase64(canvas.toDataURL())).
-                */
-            });
+            // 2. Force full rendering properties so html2canvas renders accurate hidden tabs
+            frontCard.style.display = 'block';
+            frontCard.style.transform = 'scale(1)';
+            backCard.style.display = 'block';
+            backCard.style.transform = 'scale(1)';
+
+            try {
+                // 3. Render both sides to separate underlying graphic fragments concurrently
+                const [canvasFront, canvasBack] = await Promise.all([
+                    html2canvas(frontCard, { scale: 2, backgroundColor: "#ffffff", useCORS: true }),
+                    html2canvas(backCard, { scale: 2, backgroundColor: "#ffffff", useCORS: true })
+                ]);
+
+                // 4. Restore interactive layout immediately
+                frontCard.style.display = frontDisplay;
+                frontCard.style.transform = frontTransform;
+                backCard.style.display = backDisplay;
+                backCard.style.transform = backTransform;
+
+                // 5. Structure Showcase Canvas Config (accounts for html2canvas scale: 2 resolution multiplication)
+                const marginPadding = 120; 
+                const verticalElementGap = 90; 
+
+                const masterCanvas = document.createElement('canvas');
+                masterCanvas.width = Math.max(canvasFront.width, canvasBack.width) + (marginPadding * 2);
+                masterCanvas.height = canvasFront.height + canvasBack.height + (marginPadding * 2) + verticalElementGap;
+
+                const ctx = masterCanvas.getContext('2d');
+
+                // Fill custom layout backdrop background color (#f0f2f5)
+                ctx.fillStyle = '#f0f2f5';
+                ctx.fillRect(0, 0, masterCanvas.width, masterCanvas.height);
+
+                // Draw Front Card centered horizontally 
+                const xFrontPos = (masterCanvas.width - canvasFront.width) / 2;
+                ctx.drawImage(canvasFront, xFrontPos, marginPadding);
+
+                // Draw Back Card centered horizontally and offset underneath the front card
+                const xBackPos = (masterCanvas.width - canvasBack.width) / 2;
+                const yBackPos = marginPadding + canvasFront.height + verticalElementGap;
+                ctx.drawImage(canvasBack, xBackPos, yBackPos);
+
+                // 6. Initiate downscaled target package file stream delivery
+                const downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.download = 'business_card_presentation.png';
+                downloadAnchorNode.href = masterCanvas.toDataURL('image/png');
+                downloadAnchorNode.click();
+
+            } catch (error) {
+                console.error("Failed to generate unified layout map:", error);
+                // Emergency failover style recovery
+                frontCard.style.display = frontDisplay;
+                frontCard.style.transform = frontTransform;
+                backCard.style.display = backDisplay;
+                backCard.style.transform = backTransform;
+            }
         }
     </script>
 </body>
