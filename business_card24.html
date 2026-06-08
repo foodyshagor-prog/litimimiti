@@ -79,6 +79,7 @@
             display: flex;
             align-items: center;
             gap: 6px;
+            cursor: pointer;
         }
 
         .save-btn:active {
@@ -245,7 +246,7 @@
         </div>
         <button class="save-btn" onclick="saveCard()">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path><path d="M17 21v-8H7v8"></path><path d="M7 3v5h8V3"></path></svg>
-            Save Image
+            Save Presentation Image
         </button>
     </div>
 
@@ -351,7 +352,7 @@
         </div>
         <div class="input-group">
             <label>Phone Number</label>
-            <input type="tel" id="in-phone" value="123-456-7890" oninput="updateText('#out-phone', this.value)">
+            <input type="tel" id="in-phone" value="123-456-7890" oninput="updateText('#in-phone', this.value)">
         </div>
         <div class="input-group">
             <label>Location</label>
@@ -391,39 +392,77 @@
         function resizePreview() {
             const previewBox = document.getElementById('preview-box');
             const wrapper = document.getElementById('scale-wrapper');
-            // Base width is 800. We want it to take up roughly 90% of screen width.
             const targetWidth = previewBox.clientWidth * 0.95;
             const scale = targetWidth / 800;
             
-            // Max scale limit to avoid blowing up on tablets
             wrapper.style.transform = `scale(${Math.min(scale, 1)})`;
         }
 
-        // Save functionality utilizing HTML2Canvas
+        // Modernized Save Functionality combining Front and Back into a structured presentation graphic
         function saveCard() {
             const btn = document.querySelector('.save-btn');
             const originalText = btn.innerHTML;
             btn.innerHTML = "Saving...";
             
-            const activeCardId = currentSide === 'front' ? 'card-front' : 'card-back';
-            const cardElement = document.getElementById(activeCardId);
+            // 1. Create a pristine presentation wrapper off-screen
+            const presentationContainer = document.createElement('div');
+            presentationContainer.style.position = 'absolute';
+            presentationContainer.style.top = '-9999px';
+            presentationContainer.style.left = '-9999px';
+            presentationContainer.style.background = '#f0f2f5'; // Light gray layout presentation bg
+            presentationContainer.style.display = 'flex';
+            presentationContainer.style.flexDirection = 'column'; // Vertical stack alignment
+            presentationContainer.style.alignItems = 'center';
+            presentationContainer.style.padding = '60px'; // Outer display margins
+            presentationContainer.style.gap = '40px';      // Balanced structural gap between cards
+            presentationContainer.style.width = 'max-content';
 
-            // Because the card is absolutely positioned and sized at 800x450,
-            // HTML2Canvas captures the high-res 800x450 element directly regardless of CSS scale transform!
-            html2canvas(cardElement, {
-                scale: 2, // 2x multiplier for ultra-crisp output (1600x900)
-                backgroundColor: null,
-                useCORS: true 
+            // 2. Deep clone layout targets directly to avoid runtime CSS transform corruption
+            const frontCardOriginal = document.getElementById('card-front');
+            const backCardOriginal = document.getElementById('card-back');
+            
+            const frontClone = frontCardOriginal.cloneNode(true);
+            const backClone = backCardOriginal.cloneNode(true);
+
+            // 3. Reset internal view properties to force 1:1 scale ratios natively
+            frontClone.style.display = 'block';
+            frontClone.style.transform = 'none';
+            frontClone.style.position = 'relative';
+            frontClone.style.top = '0';
+            frontClone.style.left = '0';
+
+            backClone.style.display = 'block';
+            backClone.style.transform = 'none';
+            backClone.style.position = 'relative';
+            backClone.style.top = '0';
+            backClone.style.left = '0';
+
+            // Append structured nodes to container
+            presentationContainer.appendChild(frontClone);
+            presentationContainer.appendChild(backClone);
+            document.body.appendChild(presentationContainer);
+
+            // 4. Capture complete unscaled layout structure smoothly
+            html2canvas(presentationContainer, {
+                scale: 2, // 2x Multiplier ensures crisp, readable small type configurations
+                backgroundColor: '#f0f2f5',
+                useCORS: true,
+                logging: false
             }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = `business_card_${currentSide}.png`;
+                link.download = `business_card_presentation.png`;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
                 
+                // Tear down temporary DOM node trees
+                document.body.removeChild(presentationContainer);
                 btn.innerHTML = originalText;
             }).catch(err => {
-                console.error("Error saving image: ", err);
-                alert("Could not save the image.");
+                console.error("Error saving image presentation: ", err);
+                alert("Could not process your composite presentation image.");
+                if (document.body.contains(presentationContainer)) {
+                    document.body.removeChild(presentationContainer);
+                }
                 btn.innerHTML = originalText;
             });
         }
@@ -434,7 +473,6 @@
         // Initial setup
         window.onload = () => {
             resizePreview();
-            // Trigger UI updates so data is formatted safely on load
             updateText('#out-name', document.getElementById('in-name').value);
             updateText('#out-title', document.getElementById('in-title').value);
         };
