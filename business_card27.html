@@ -78,10 +78,10 @@
             color: #fff;
         }
 
-        /* --- Card Styles (Matches Provided Image) --- */
+        /* --- Card Styles --- */
         .card-container {
             width: 340px;
-            height: 194px; /* Approx 1.75 aspect ratio */
+            height: 194px;
             background: var(--bg-dark);
             border-radius: 12px;
             position: relative;
@@ -419,13 +419,12 @@
             </div>
         </div>
 
-        <button class="save-btn" onclick="saveImage()">Save Current Side</button>
+        <button class="save-btn" onclick="saveImage()">Save Presentation Image</button>
     </div>
 
     <script>
         // Data Binding: Update visual elements when input changes
         function updateText() {
-            // Company and Slogan (Front & Back updates simultaneously)
             const cw = document.getElementById('in-comp-w').value;
             const co = document.getElementById('in-comp-o').value;
             const sl = document.getElementById('in-slogan').value;
@@ -472,29 +471,84 @@
             }
         }
 
-        // High-Quality Image Saving via html2canvas
+        // High-Quality Presentation Image Composition Setup
         function saveImage() {
             const btn = document.querySelector('.save-btn');
-            btn.innerText = "Generating...";
+            btn.innerText = "Generating Presentation...";
             
-            const targetElement = document.getElementById(currentSide === 'front' ? 'card-front' : 'card-back');
+            const cardFront = document.getElementById('card-front');
+            const cardBack = document.getElementById('card-back');
 
-            // Using scale: 3 for high-resolution photorealistic export quality
-            html2canvas(targetElement, { 
-                scale: 3, 
-                backgroundColor: "#000000",
-                useCORS: true 
-            }).then(canvas => {
+            // 1. Create a safe, hidden DOM wrapper to compile card nodes flawlessly 
+            // without causing visible flashing or layout shifts on the screen.
+            const renderContainer = document.createElement('div');
+            renderContainer.style.position = 'fixed';
+            renderContainer.style.top = '0';
+            renderContainer.style.left = '0';
+            renderContainer.style.zIndex = '-9999';
+            renderContainer.style.pointerEvents = 'none';
+            renderContainer.style.overflow = 'hidden';
+            renderContainer.style.width = '400px';
+            renderContainer.style.height = '500px';
+
+            const frontClone = cardFront.cloneNode(true);
+            const backClone = cardBack.cloneNode(true);
+
+            // Force clones to be visible inside the container for html2canvas compilation metrics
+            frontClone.style.display = 'block';
+            backClone.style.display = 'block';
+
+            renderContainer.appendChild(frontClone);
+            renderContainer.appendChild(backClone);
+            document.body.appendChild(renderContainer);
+
+            // 2. Capture both cards in high fidelity (scale: 3) asynchronously
+            Promise.all([
+                html2canvas(frontClone, { scale: 3, backgroundColor: "#0a0a0a", useCORS: true }),
+                html2canvas(backClone, { scale: 3, backgroundColor: "#0a0a0a", useCORS: true })
+            ]).then(([canvasFront, canvasBack]) => {
+                // Drop the temporary DOM node safely
+                document.body.removeChild(renderContainer);
+
+                // 3. Configure the final layout sizing constants (scaled by 3 to match resolution)
+                const scale = 3;
+                const padding = 45 * scale;  // Outer margins
+                const gap = 30 * scale;      // Balanced vertical distance between cards
+
+                const cardWidth = canvasFront.width;
+                const cardHeight = canvasFront.height;
+
+                // Create presentation composite master canvas
+                const presentationCanvas = document.createElement('canvas');
+                presentationCanvas.width = cardWidth + (padding * 2);
+                presentationCanvas.height = (cardHeight * 2) + (padding * 2) + gap;
+
+                const ctx = presentationCanvas.getContext('2d');
+
+                // Fill with presentation background layout color (#f0f2f5)
+                ctx.fillStyle = '#f0f2f5';
+                ctx.fillRect(0, 0, presentationCanvas.width, presentationCanvas.height);
+
+                // Draw front card perfectly centered horizontally on top half
+                ctx.drawImage(canvasFront, padding, padding);
+
+                // Draw back card perfectly centered horizontally on bottom half
+                ctx.drawImage(canvasBack, padding, padding + cardHeight + gap);
+
+                // 4. Download finalized composite file
                 const link = document.createElement('a');
-                link.download = `BusinessCard_${currentSide}.png`;
-                link.href = canvas.toDataURL('image/png');
+                link.download = `BusinessCard_Full_Presentation.png`;
+                link.href = presentationCanvas.toDataURL('image/png');
                 link.click();
                 
-                btn.innerText = "Save Current Side";
+                btn.innerText = "Save Presentation Image";
             }).catch(err => {
-                console.error("Error saving image: ", err);
-                alert("Failed to save image. Please try again.");
-                btn.innerText = "Save Current Side";
+                console.error("Error creating full presentation view: ", err);
+                alert("Failed to build presentation image layout. Please try again.");
+                if (document.body.contains(renderContainer)) {
+                    document.body.removeChild(renderContainer);
+                }
+                btn.innerText = "Save Presentation Image";
             });
         }
     </script>
