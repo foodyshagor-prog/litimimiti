@@ -228,17 +228,14 @@
         /* --- EDITOR PANEL (BOTTOM - SCROLLABLE) --- */
         .editor-panel {
             flex-grow: 1;
-            min-height: 0; /* Crucial fix for flex item inner scrolling */
+            min-height: 0;
             background: var(--panel-bg);
             border-top-left-radius: 24px;
             border-top-right-radius: 24px;
             padding: 24px 20px;
-            
-            /* Enhanced WebView Scroll Rigging */
             overflow-y: auto;
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch; 
-            
             display: flex;
             flex-direction: column;
             gap: 20px;
@@ -304,7 +301,7 @@
             font-size: 15px;
             font-weight: 700;
             margin-top: 10px;
-            margin-bottom: 20px; /* Space for structural bottom hitboxes/gestures */
+            margin-bottom: 20px;
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(255, 146, 0, 0.3);
             display: flex;
@@ -475,7 +472,7 @@
 
         <button class="save-btn" onclick="exportCardImage()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Save Card Image
+            Save Combined Image
         </button>
     </div>
 
@@ -518,18 +515,66 @@
         setupLiveBindings('in-web', 'UI-bind-web');
 
         function exportCardImage() {
-            const targetId = currentSide === 'front' ? 'render-front' : 'render-back';
-            const element = document.getElementById(targetId);
+            const frontElement = document.getElementById('render-front');
+            const backElement = document.getElementById('render-back');
             
-            html2canvas(element, {
-                scale: 3, 
+            // Save current visibility state
+            const frontOriginalDisplay = frontElement.style.display;
+            const backOriginalDisplay = backElement.style.display;
+
+            // Temporarily force both elements to display: block so html2canvas can compute layouts
+            frontElement.style.display = 'block';
+            backElement.style.display = 'block';
+
+            const renderScale = 3; // High-resolution export modifier
+            const renderOptions = {
+                scale: renderScale, 
                 backgroundColor: null,
                 logging: false,
                 useCORS: true
-            }).then(canvas => {
-                const dataUrl = canvas.toDataURL('image/png');
+            };
+
+            // Capture snapshots of both layouts synchronously
+            const frontCapture = html2canvas(frontElement, renderOptions);
+            const backCapture = html2canvas(backElement, renderOptions);
+
+            // Revert back immediately to keep UI visual state intact
+            frontElement.style.display = frontOriginalDisplay;
+            backElement.style.display = backOriginalDisplay;
+
+            // Process canvas compiling asynchronously
+            Promise.all([frontCapture, backCapture]).then(([frontCanvas, backCanvas]) => {
+                const combinedCanvas = document.createElement('canvas');
+                const ctx = combinedCanvas.getContext('2d');
+
+                // Define design presentations layout spacing (proportional to renderScale)
+                const paddingValue = 45 * renderScale; // Outer padding surrounding cards
+                const separationGap = 35 * renderScale; // Gap separating Front and Back layouts
+
+                const designMaxWidth = Math.max(frontCanvas.width, backCanvas.width);
+                
+                // Compute final image dimensions
+                combinedCanvas.width = designMaxWidth + (paddingValue * 2);
+                combinedCanvas.height = frontCanvas.height + backCanvas.height + separationGap + (paddingValue * 2);
+
+                // 1. Paint background with presentation canvas gray (replicating sample provided)
+                ctx.fillStyle = '#f0f2f5';
+                ctx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
+
+                // 2. Stitch Front Design Centered
+                const frontX = (combinedCanvas.width - frontCanvas.width) / 2;
+                const frontY = paddingValue;
+                ctx.drawImage(frontCanvas, frontX, frontY);
+
+                // 3. Stitch Back Design Centered Below
+                const backX = (combinedCanvas.width - backCanvas.width) / 2;
+                const backY = frontY + frontCanvas.height + separationGap;
+                ctx.drawImage(backCanvas, backX, backY);
+
+                // Export final presentation image asset
+                const dataUrl = combinedCanvas.toDataURL('image/png');
                 const link = document.createElement('a');
-                link.download = `BusinessCard_${currentSide}_${Date.now()}.png`;
+                link.download = `BusinessCard_FullLayout_${Date.now()}.png`;
                 link.href = dataUrl;
                 document.body.appendChild(link);
                 link.click();
