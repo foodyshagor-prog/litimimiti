@@ -40,7 +40,7 @@
             overflow: hidden;
         }
 
-        /* --- PREVIEW SECTION (TOP) --- */
+        /* --- PREVIEW SECTION --- */
         .preview-section {
             height: 42vh;
             display: flex;
@@ -88,32 +88,28 @@
             position: relative;
         }
 
-        /* --- ACCURATE CARD ARCHITECTURE --- */
+        /* --- CARD ARCHITECTURE --- */
         .business-card {
-            width: 100%;
-            height: 100%;
+            width: var(--card-width);
+            height: var(--card-height);
             background: #0d0d0e;
             box-shadow: 0 15px 35px rgba(0,0,0,0.6);
             position: absolute;
             top: 0;
             left: 0;
-            display: none;
+            display: none; 
             overflow: hidden;
         }
 
         .business-card.active {
-            display: block;
+            display: flex; 
         }
 
         /* --- FRONT SIDE DESIGN --- */
-        .card-front {
-            display: flex;
-        }
-
         .front-left-stripe {
             width: 22%;
             height: 100%;
-            background: var(--accent-green);
+            background: #00c853; 
             border-left: 12px solid #000000;
             display: flex;
             flex-direction: column;
@@ -166,10 +162,11 @@
             letter-spacing: 1px;
             text-transform: uppercase;
             line-height: 1.2;
+            color: #ffffff;
         }
 
         .profile-name span {
-            color: var(--accent-green);
+            color: #00c853;
         }
 
         .profile-title {
@@ -185,20 +182,8 @@
         .decorator-line {
             width: 75px;
             height: 1.5px;
-            background: linear-gradient(90deg, var(--accent-green) 55%, #ffffff 55%);
+            background: linear-gradient(90deg, #00c853 55%, #ffffff 55%);
             margin-top: 5px;
-        }
-
-        /* Right Corner Accent Area */
-        .white-corner-accent {
-            position: absolute;
-            right: 0;
-            bottom: 0;
-            width: 22px;
-            height: 90px;
-            background: #ffffff;
-            border-top-left-radius: 14px;
-            z-index: 1;
         }
 
         .contact-list {
@@ -206,8 +191,8 @@
             flex-direction: column;
             align-items: flex-end;
             gap: 6px;
-            margin-right: -20px; /* Aligns precisely into the right zone overlay */
             z-index: 2;
+            width: 100%;
         }
 
         .contact-row {
@@ -233,28 +218,27 @@
         }
 
         .contact-icon-pill {
-            background: var(--accent-green);
+            background: #00c853;
             width: 42px;
-            height: 13px;
+            height: 14px;
             border-top-left-radius: 10px;
             border-bottom-left-radius: 10px;
             display: flex;
             align-items: center;
-            padding-left: 10px;
+            justify-content: center;
             color: #ffffff;
-            font-size: 7px;
+            font-size: 7.5px;
+            margin-right: -20px; /* Safe containment margin boundary */
         }
 
         /* --- BACK SIDE DESIGN --- */
         .card-back {
-            display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             position: relative;
         }
 
-        /* Subtle Large Watermark Motif */
         .back-watermark {
             position: absolute;
             width: 180px;
@@ -280,7 +264,7 @@
         }
 
         .back-company-title {
-            color: var(--accent-green);
+            color: #00c853;
             font-size: 19px;
             font-weight: 700;
             letter-spacing: 2.5px;
@@ -311,13 +295,12 @@
             text-transform: lowercase;
         }
 
-        /* Vector Component Core styling */
         .vector-logo {
             width: 100%;
             height: 100%;
         }
 
-        /* --- EDITOR ENGINE SECTION (BOTTOM) --- */
+        /* --- EDITOR ENGINE SECTION --- */
         .editor-section {
             height: 58vh;
             background: var(--panel-bg);
@@ -397,7 +380,7 @@
             gap: 8px;
         }
 
-        /* High Compatibility Modal Overlay for WebView Long Press Saves */
+        /* Webview Overlay Modal */
         .export-modal {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -411,9 +394,11 @@
         }
         .modal-card-view {
             max-width: 100%;
+            max-height: 75vh;
             border-radius: 8px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             margin-bottom: 20px;
+            object-fit: contain;
         }
         .modal-close-btn {
             background: #ffffff;
@@ -436,6 +421,7 @@
         </div>
 
         <div class="card-stage">
+            <!-- Front Card (Starts Active) -->
             <div class="business-card card-front active" id="render-front">
                 <div class="front-left-stripe">
                     <div class="vertical-text-wrap">
@@ -454,8 +440,6 @@
                         <div class="profile-title" id="display-title">Professional Director</div>
                         <div class="decorator-line"></div>
                     </div>
-                    
-                    <div class="white-corner-accent"></div>
                     
                     <div class="contact-list">
                         <div class="contact-row">
@@ -483,6 +467,7 @@
                 </div>
             </div>
 
+            <!-- Back Card -->
             <div class="business-card card-back" id="render-back">
                 <div class="back-watermark">
                     <svg style="width:100%; height:100%;" viewBox="0 0 100 100">
@@ -562,7 +547,7 @@
         </div>
 
         <button class="save-btn" onclick="triggerCardExport()">
-            <i class="fa-solid fa-circle-down"></i> Save Current Side
+            <i class="fa-solid fa-circle-down"></i> Save Both Sides
         </button>
     </div>
 
@@ -575,7 +560,7 @@
     <script>
         let currentSide = 'front';
 
-        // Bind real-time input fields to mirror design details immediately
+        // Real-time Input Listeners
         document.getElementById('input-company').addEventListener('input', function() {
             const elements = document.querySelectorAll('.target-company');
             elements.forEach(el => el.innerText = this.value);
@@ -616,42 +601,96 @@
             document.getElementById('display-web2').innerText = this.value;
         });
 
-        // Frame view toggle switcher execution logic
+        // Tab View Swapper
         function switchCardSide(side) {
             currentSide = side;
             document.getElementById('btn-front').classList.toggle('active', side === 'front');
             document.getElementById('btn-back').classList.toggle('active', side === 'back');
-            document.getElementById('render-front').classList.toggle('active', side === 'front');
-            document.getElementById('render-back').classList.toggle('active', side === 'back');
+            
+            if(side === 'front') {
+                document.getElementById('render-front').classList.add('active');
+                document.getElementById('render-back').classList.remove('active');
+            } else {
+                document.getElementById('render-front').classList.remove('active');
+                document.getElementById('render-back').classList.add('active');
+            }
         }
 
-        // High precision canvas generation and cross-platform mobile saving bridge logic
+        // High-Stability Export Engine
         function triggerCardExport() {
-            const TargetId = currentSide === 'front' ? 'render-front' : 'render-back';
-            const element = document.getElementById(TargetId);
-
-            // Execute html2canvas rendering sequence configurations optimized for mobile screens
-            html2canvas(element, {
-                scale: 3, // Upscales resolution cleanly for physical standard vector printing
-                useCORS: true,
-                backgroundColor: null,
-                logging: false
-            }).then(canvas => {
-                const dataUrl = canvas.toDataURL('image/png');
+            document.fonts.ready.then(() => {
+                const frontCard = document.getElementById('render-front');
+                const backCard = document.getElementById('render-back');
                 
-                // Triggers native browser downloader link
-                const downloadLink = document.createElement('a');
-                downloadLink.download = `BusinessCard_${currentSide}.png`;
-                downloadLink.href = dataUrl;
-                document.body.appendChild(downloadLink);
-                downloadLink.click();
-                document.body.removeChild(downloadLink);
+                // Track original visual states
+                const originalFrontClass = frontCard.className;
+                const originalBackClass = backCard.className;
 
-                // Fallback for isolated WebViews that lack configured file download handlers
-                document.getElementById('exportedImageContainer').src = dataUrl;
-                document.getElementById('previewModal').style.display = 'flex';
-            }).catch(err => {
-                alert("Generation error: " + err);
+                // Momentarily force visibility layout structures synchronously
+                frontCard.classList.add('active');
+                backCard.classList.add('active');
+
+                const renderOptions = {
+                    scale: 3, 
+                    useCORS: true,
+                    backgroundColor: null,
+                    logging: false,
+                    width: 350,  // Exact layout width constraints
+                    height: 200  // Exact layout height constraints
+                };
+
+                // Capture Front Side Block
+                html2canvas(frontCard, renderOptions).then(frontCanvas => {
+                    // Capture Back Side Block
+                    html2canvas(backCard, renderOptions).then(backCanvas => {
+                        
+                        // Revert active class structures before browser re-draw runs
+                        frontCard.className = originalFrontClass;
+                        backCard.className = originalBackClass;
+
+                        const mainCanvas = document.createElement('canvas');
+                        const ctx = mainCanvas.getContext('2d');
+
+                        const cardW = frontCanvas.width;
+                        const cardH = frontCanvas.height;
+
+                        const paddingX = cardW * 0.12; 
+                        const paddingY = cardH * 0.15; 
+                        const gapY = cardH * 0.12;     
+
+                        mainCanvas.width = cardW + (paddingX * 2);
+                        mainCanvas.height = (cardH * 2) + (paddingY * 2) + gapY;
+
+                        // Canvas Base Fill Layer
+                        ctx.fillStyle = '#f0f2f5';
+                        ctx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+
+                        // Position Elements
+                        ctx.drawImage(frontCanvas, paddingX, paddingY);
+                        ctx.drawImage(backCanvas, paddingX, paddingY + cardH + gapY);
+
+                        const dataUrl = mainCanvas.toDataURL('image/png');
+                        
+                        const downloadLink = document.createElement('a');
+                        downloadLink.download = `BusinessCard_Presentation.png`;
+                        downloadLink.href = dataUrl;
+                        document.body.appendChild(downloadLink);
+                        downloadLink.click();
+                        document.body.removeChild(downloadLink);
+
+                        document.getElementById('exportedImageContainer').src = dataUrl;
+                        document.getElementById('previewModal').style.display = 'flex';
+
+                    }).catch(err => {
+                        frontCard.className = originalFrontClass;
+                        backCard.className = originalBackClass;
+                        alert("Export computation crash: " + err);
+                    });
+                }).catch(err => {
+                    frontCard.className = originalFrontClass;
+                    backCard.className = originalBackClass;
+                    alert("Export computation crash: " + err);
+                });
             });
         }
 
