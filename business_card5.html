@@ -574,36 +574,84 @@
         bindInputToUI('field-c1', 'bind-text-c1');
         bindInputToUI('field-c2', '', true);
         bindInputToUI('field-tag', 'bind-text-tag');
-        bindInputToUI('field-front-web', 'bind-text-front-web'); // Front Link Connector
+        bindInputToUI('field-front-web', 'bind-text-front-web');
         bindInputToUI('field-fn', 'bind-text-fn');
         bindInputToUI('field-ln', 'bind-text-ln');
         bindInputToUI('field-title', 'bind-text-title');
         bindInputToUI('field-phone', 'bind-text-phone');
         bindInputToUI('field-email', 'bind-text-email');
-        bindInputToUI('field-back-web', 'bind-text-back-web'); // Back Link Connector
+        bindInputToUI('field-back-web', 'bind-text-back-web');
         bindInputToUI('field-loc', 'bind-text-loc');
 
-        // High Definition Render Export Engine
+        // High Definition Combined Studio Render Export Engine
         function triggerCardDownload() {
-            const currentActiveId = surfaceSide === 'front' ? 'container-front' : 'container-back';
-            const designTarget = document.getElementById(currentActiveId);
-            
-            html2canvas(designTarget, {
+            const originalSide = surfaceSide;
+
+            // Sequential capture ensures hidden items get accurate calculations inside html2canvas
+            switchSide('front');
+            html2canvas(document.getElementById('container-front'), {
                 scale: 3, 
                 backgroundColor: null,
                 logging: false,
                 useCORS: true,
                 allowTaint: true
-            }).then(canvas => {
-                const outputUri = canvas.toDataURL('image/png');
-                const downloaderLink = document.createElement('a');
-                downloaderLink.download = `PremiumCard_${surfaceSide}_${Date.now()}.png`;
-                downloaderLink.href = outputUri;
-                document.body.appendChild(downloaderLink);
-                downloaderLink.click();
-                document.body.removeChild(downloaderLink);
+            }).then(frontCanvas => {
+                
+                switchSide('back');
+                html2canvas(document.getElementById('container-back'), {
+                    scale: 3,
+                    backgroundColor: null,
+                    logging: false,
+                    useCORS: true,
+                    allowTaint: true
+                }).then(backCanvas => {
+                    
+                    // Return workspace back to user's selected active tab state
+                    switchSide(originalSide);
+
+                    // Create master composition canvas layout
+                    const masterCanvas = document.createElement('canvas');
+                    const ctx = masterCanvas.getContext('2d');
+
+                    // Studio presentation sizing config (Values adjusted proportionally for scale: 3)
+                    const paddingX = 90;      // Outer horizontal margins 
+                    const paddingY = 90;      // Outer vertical margins
+                    const verticalGap = 70;   // Space separating the front and back cards
+
+                    const cardWidth = frontCanvas.width;
+                    const cardHeight = frontCanvas.height;
+
+                    const masterWidth = cardWidth + (paddingX * 2);
+                    const masterHeight = (cardHeight * 2) + verticalGap + (paddingY * 2);
+
+                    masterCanvas.width = masterWidth;
+                    masterCanvas.height = masterHeight;
+
+                    // Apply the clear light-gray presentation background matching target setup
+                    ctx.fillStyle = '#f0f2f5';
+                    ctx.fillRect(0, 0, masterWidth, masterHeight);
+
+                    // Compute clean centered coordinates
+                    const horizontalX = paddingX; 
+                    const frontY = paddingY;
+                    const backY = paddingY + cardHeight + verticalGap;
+
+                    // Draw layered cards onto custom template
+                    ctx.drawImage(frontCanvas, horizontalX, frontY);
+                    ctx.drawImage(backCanvas, horizontalX, backY);
+
+                    // Execute image pipeline generation download
+                    const outputUri = masterCanvas.toDataURL('image/png');
+                    const downloaderLink = document.createElement('a');
+                    downloaderLink.download = `PremiumCard_Presentation_${Date.now()}.png`;
+                    downloaderLink.href = outputUri;
+                    document.body.appendChild(downloaderLink);
+                    downloaderLink.click();
+                    document.body.removeChild(downloaderLink);
+                });
             }).catch(error => {
-                console.error("Canvas transformation breakdown: ", error);
+                console.error("Canvas composite presentation transformation failure: ", error);
+                switchSide(originalSide);
             });
         }
     </script>
