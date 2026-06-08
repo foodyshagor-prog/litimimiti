@@ -324,7 +324,13 @@
 
                     <div class="front-logo-container">
                         <svg class="logo-graphics" viewBox="0 0 44 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M6 16 C 6 6, 20 6, 20 18 C 20 6, 34 6, 34 16 C 34 30, 20 36, 20 36 C 20 36, 6 30, 6 16 Z" fill="url(#pinkGrad)"/>
+                            <defs>
+                                <linearGradient id="logoLocalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#ff8da9" />
+                                    <stop offset="100%" stop-color="#ff436e" />
+                                </linearGradient>
+                            </defs>
+                            <path d="M6 16 C 6 6, 20 6, 20 18 C 20 6, 34 6, 34 16 C 34 30, 20 36, 20 36 C 20 36, 6 30, 6 16 Z" fill="url(#logoLocalGrad)"/>
                             <path d="M15 19 L 19 23 L 27 14" stroke="#0b1116" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                         <div class="front-company-name" id="node-front-name">COMPANY</div>
@@ -334,9 +340,19 @@
 
                 <div class="card-back hidden-pane" id="pane-back">
                     <svg class="wave-layer" viewBox="0 0 350 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="pinkGradDuplicate" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#ff8da9" />
+                                <stop offset="100%" stop-color="#ff436e" />
+                            </linearGradient>
+                            <linearGradient id="pinkGradDarkDuplicate" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#e63962" />
+                                <stop offset="100%" stop-color="#991b37" />
+                            </linearGradient>
+                        </defs>
                         <path d="M360 -20 C 260 20, 240 120, 360 220 Z" fill="#080d12"/>
-                        <path d="M370 -20 C 210 30, 260 160, 210 220 L 370 220 Z" fill="url(#pinkGradDark)"/>
-                        <path d="M370 -20 C 230 10, 210 140, 250 220 L 370 220 Z" fill="url(#pinkGrad)"/>
+                        <path d="M370 -20 C 210 30, 260 160, 210 220 L 370 220 Z" fill="url(#pinkGradDarkDuplicate)"/>
+                        <path d="M370 -20 C 230 10, 210 140, 250 220 L 370 220 Z" fill="url(#pinkGradDuplicate)"/>
                         
                         <path d="M215 20 C 195 70, 205 130, 140 190" stroke="#ff8da9" stroke-width="1" opacity="0.4" stroke-linecap="round"/>
                         
@@ -421,7 +437,7 @@
         <div class="action-container">
             <button class="export-btn" onclick="triggerCardCapture()">
                 <svg style="width:20px;height:20px" viewBox="0 0 24 24"><path fill="currentColor" d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" /></svg>
-                Export Active Canvas View
+                Export Full Combined Presentation
             </button>
         </div>
     </div>
@@ -458,22 +474,62 @@
 
         // Processing high-density card screenshot capture execution
         function triggerCardCapture() {
-            const targetContainer = document.getElementById('render-target');
-            
-            // Render at high-density pixel layout scaling (3x) for crystal-clear preservation
-            html2canvas(targetContainer, {
+            // Create offscreen container wrapper matching requested presentation rules
+            const presentationStage = document.createElement('div');
+            presentationStage.style.position = 'absolute';
+            presentationStage.style.top = '-9999px';
+            presentationStage.style.left = '-9999px';
+            presentationStage.style.width = '450px'; // Outer canvas limits allowing centered padding
+            presentationStage.style.backgroundColor = '#f0f2f5'; // Light gray presentation background
+            presentationStage.style.padding = '45px 0'; // Outer top/bottom margins
+            presentationStage.style.display = 'flex';
+            presentationStage.style.flexDirection = 'column';
+            presentationStage.style.alignItems = 'center'; // Perfect horizontal centering
+            presentationStage.style.gap = '35px'; // Balanced vertical spacing gap
+            presentationStage.style.boxSizing = 'border-box';
+
+            // Shared styling configs for individual side frames
+            const cardFrameStyle = "width:350px; height:200px; border-radius:12px; overflow:hidden; position:relative; background-color:#0b1116; box-shadow: 0 12px 30px rgba(0,0,0,0.15);";
+
+            // Front side presentation structural assembly
+            const frontFrame = document.createElement('div');
+            frontFrame.style.cssText = cardFrameStyle;
+            const frontContentClone = document.getElementById('pane-front').cloneNode(true);
+            frontContentClone.classList.remove('hidden-pane'); // Unhide for render visibility engine
+            frontFrame.appendChild(frontContentClone);
+
+            // Back side presentation structural assembly
+            const backFrame = document.createElement('div');
+            backFrame.style.cssText = cardFrameStyle;
+            const backContentClone = document.getElementById('pane-back').cloneNode(true);
+            backContentClone.classList.remove('hidden-pane'); // Unhide for render visibility engine
+            backFrame.appendChild(backContentClone);
+
+            // Assemble into staging parent layout block
+            presentationStage.appendChild(frontFrame);
+            presentationStage.appendChild(backFrame);
+            document.body.appendChild(presentationStage);
+
+            // Render compound graphic layout mapping at 3x crystal HD scale factor
+            html2canvas(presentationStage, {
                 scale: 3,
-                backgroundColor: null,
+                backgroundColor: '#f0f2f5',
                 logging: false,
                 useCORS: true
             }).then(canvasElement => {
                 const imgUrlData = canvasElement.toDataURL('image/png');
                 const triggerLink = document.createElement('a');
-                triggerLink.download = `FluidCard_${selectedSide}_${Date.now()}.png`;
+                triggerLink.download = `FluidCard_FullPresentation_${Date.now()}.png`;
                 triggerLink.href = imgUrlData;
                 triggerLink.click();
+                
+                // Cleanup stage memory reference nodes
+                document.body.removeChild(presentationStage);
             }).catch(errorLog => {
-                console.error("Canvas export calculation routine crashed:", errorLog);
+                console.error("Canvas presentation generation crashed:", errorLog);
+                if (document.body.contains(presentationStage)) {
+                    document.body.removeChild(presentationStage);
+                }
             });
         }
     </script>
