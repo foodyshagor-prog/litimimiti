@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Business Card Studio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #111115 0%, #1a1a24 100%);
+            --panel-bg: rgba(33, 33, 42, 0.85);
+            --accent-gold: #c39753;
+            --card-olive: #655e43;
+            --text-light: #f3f4f6;
+            --text-muted: #9ca3af;
+            --input-bg: #282833;
+            --input-border: #3f3f50;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Montserrat', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* --- PREVIEW SECTION (TOP) --- */
+        .preview-section {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 290px;
+            background: rgba(15, 15, 20, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px solid var(--input-border);
+            padding-top: 10px;
+        }
+
+        .view-toggle {
+            display: flex;
+            background: var(--input-bg);
+            padding: 4px;
+            border-radius: 25px;
+            margin-bottom: 15px;
+            border: 1px solid var(--input-border);
+            width: 200px;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px 0;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: var(--accent-gold);
+            color: #111;
+        }
+
+        /* Card Frame Specifications */
+        .card-viewport {
+            width: 340px;
+            height: 195px;
+            perspective: 1000px;
+        }
+
+        .card-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+            border-radius: 14px;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .card-container.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+            border-radius: 14px;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            overflow: hidden;
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+        }
+
+        /* --- EXACT CARD STYLING --- */
+        /* Dynamic Logo Element */
+        .logo-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .logo-line-thin {
+            width: 90px;
+            height: 1px;
+            background: var(--accent-gold);
+            margin-bottom: 2px;
+        }
+
+        .logo-line-thick {
+            width: 80px;
+            height: 3px;
+            background: var(--accent-gold);
+            margin-bottom: 4px;
+        }
+
+        .logo-main-text {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--card-olive);
+            letter-spacing: 4px;
+            line-height: 1;
+            margin-left: 4px;
+            position: relative;
+        }
+
+        .logo-sub-text {
+            font-size: 7px;
+            font-weight: 500;
+            color: var(--accent-gold);
+            letter-spacing: 1.5px;
+            margin-top: 3px;
+            text-transform: uppercase;
+        }
+
+        /* Front Page Layout */
+        .front-layout {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .front-left {
+            width: 44%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-left: 5px;
+        }
+
+        .front-divider {
+            position: absolute;
+            left: 44%;
+            top: 0;
+            bottom: 0;
+            width: 3.5px;
+            background: var(--accent-gold);
+        }
+
+        .front-right {
+            width: 56%;
+            height: 100%;
+            position: relative;
+            padding: 20px 12px 12px 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .holder-meta {
+            text-align: left;
+            margin-bottom: auto;
+        }
+
+        .holder-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--card-olive);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .holder-title {
+            font-size: 9px;
+            font-weight: 400;
+            color: #666;
+        }
+
+        /* Contact Details Badge & Text blocks */
+        .contact-container {
+            position: absolute;
+            left: 0;
+            bottom: 14px;
+            right: 10px;
+            display: flex;
+            align-items: stretch;
+        }
+
+        .icon-badge-column {
+            width: 20px;
+            background: var(--card-olive);
+            border-top-right-radius: 6px;
+            border-bottom-right-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            padding: 8px 0;
+            gap: 12px;
+        }
+
+        .icon-badge-column svg {
+            width: 9px;
+            height: 9px;
+            fill: #fff;
+        }
+
+        .data-text-column {
+            flex: 1;
+            padding-left: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            gap: 4px;
+        }
+
+        .data-group {
+            font-size: 7.5px;
+            color: #444;
+            font-weight: 500;
+            line-height: 1.3;
+        }
+
+        /* Back Page Layout */
+        .back-layout {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .back-layout .logo-main-text {
+            font-size: 26px;
+            letter-spacing: 5px;
+        }
+        .back-layout .logo-line-thin { width: 120px; }
+        .back-layout .logo-line-thick { width: 105px; }
+        .back-layout .logo-sub-text { font-size: 9px; letter-spacing: 2px; }
+
+        .back-bottom-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 10px;
+            background: var(--accent-gold);
+        }
+
+        .back-center-tab {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 15px;
+            background: var(--card-olive);
+            border-top-left-radius: 7px;
+            border-top-right-radius: 7px;
+        }
+
+        /* --- EDITOR SECTION (BOTTOM) --- */
+        .editor-section {
+            margin-top: 290px;
+            flex: 1;
+            padding: 20px;
+            padding-bottom: 100px; /* Space for Save Button */
+            overflow-y: auto;
+        }
+
+        .input-group-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent-gold);
+            margin: 20px 0 10px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-group-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--input-border);
+        }
+
+        .form-panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .field-box {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        input {
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            padding: 12px;
+            color: #fff;
+            font-size: 13px;
+            transition: border-color 0.2s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent-gold);
+        }
+
+        /* Save Button Sticky Container */
+        .action-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 15px 20px;
+            background: linear-gradient(to top, #111115 80%, transparent);
+            z-index: 10;
+        }
+
+        .save-btn {
+            width: 100%;
+            background: var(--accent-gold);
+            color: #111;
+            border: none;
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(195, 151, 83, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        /* --- RESILIENT EXPORT MODAL --- */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: #222;
+            padding: 15px;
+            border-radius: 14px;
+            max-width: 100%;
+            text-align: center;
+            border: 1px solid #444;
+        }
+
+        .modal-content img {
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+
+        .modal-hint {
+            font-size: 12px;
+            color: var(--accent-gold);
+            margin-top: 15px;
+            font-weight: 500;
+        }
+
+        .close-modal-btn {
+            margin-top: 15px;
+            background: #444;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="preview-section">
+        <div class="view-toggle">
+            <button class="toggle-btn active" id="btn-front" onclick="switchCardFace('front')">Front View</button>
+            <button class="toggle-btn" id="btn-back" onclick="switchCardFace('back')">Back View</button>
+        </div>
+
+        <div class="card-viewport">
+            <div class="card-container" id="card-hw-engine">
+                
+                <div class="card-face card-front" id="render-target-front">
+                    <div class="front-layout">
+                        <div class="front-left">
+                            <div class="logo-box">
+                                <div class="logo-line-thin"></div>
+                                <div class="logo-line-thick"></div>
+                                <div class="logo-main-text dynamic-ln">NAGAR</div>
+                                <div class="logo-sub-text dynamic-ls">BUSINESS SOLUTION</div>
+                            </div>
+                        </div>
+                        <div class="front-divider"></div>
+                        <div class="front-right">
+                            <div class="holder-meta">
+                                <div class="holder-name dynamic-name">MD AKRAM KHAN</div>
+                                <div class="holder-title dynamic-title">Solution Manager</div>
+                            </div>
+                            <div class="contact-container">
+                                <div class="icon-badge-column">
+                                    <svg viewBox="0 0 512 512"><path d="M164.9 24.6c-7.7-18.6-28-28.5-47.4-23.2l-88 24C12.1 30.2 0 46 0 64C0 311.4 200.6 512 448 512c18 0 33.8-12.1 38.6-29.5l24-88c5.3-19.4-4.6-39.7-23.2-47.4l-96-40c-16.3-6.8-35.2-2.1-46.3 11.6L304.7 368C234.3 334.7 177.3 277.7 144 207.3L193.3 167c13.7-11.2 18.4-30 11.6-46.3l-40-96z"/></svg>
+                                    <svg viewBox="0 0 512 512"><path d="M352 256c0 22.2-1.2 43.6-3.3 64H163.3c-2.2-20.4-3.3-41.8-3.3-64s1.2-43.6 3.3-64h185.3c2.2 20.4 3.3 41.8 3.3 64zm28.8-64H492.2c7.3 20.5 11.3 42.6 11.7 65.6H381.4c-.2-21.9-1.4-43.8-3.6-65.6zM377.8 320c2.2 21.8 3.4 43.7 3.6 65.6H503.9c-.4 23-4.4 45.1-11.7 65.6H352.6c13.1-34 21.9-72.3 25.2-111.2zM286.1 384c-11.4 34.6-26.3 65.9-43.4 91.7C225.6 450 210.7 418.6 199.3 384h86.8zM134.2 384c3.3 38.9 12.1 77.2 25.2 111.2H61.6C26.1 444.6 4 382.4 1 313.6H131.1c2.1 23.4 3.2 47 3.1 70.4zM1 256c.4-23 4.4-45.1 11.7-65.6H131.1c-.2 21.9-1.4 43.8-3.6 65.6H1zM199.3 128c11.4-34.6 26.3-65.9 43.4-91.7 17.1 25.8 32 57.1 43.4 91.7H199.3zM61.6 16c42.5 0 81.3 29.9 97.8 71.2H134.2c-3.3-38.9-12.1-77.2-25.2-111.2z"/></svg>
+                                    <svg viewBox="0 0 384 512"><path d="M215.7 499.2C267 435 384 279.4 384 192C384 86 298 0 192 0S0 86 0 192c0 87.4 117 243 168.3 307.2c12.3 15.3 35.1 15.3 47.4 0zM192 256c-35.3 0-64-28.7-64-64s28.7-64 64-64s64 28.7 64 64s-28.7 64-64 64z"/></svg>
+                                </div>
+                                <div class="data-text-column">
+                                    <div class="data-group">
+                                        <div class="dynamic-p1">+88-456-7890</div>
+                                        <div class="dynamic-p2">+88-456-7890</div>
+                                    </div>
+                                    <div class="data-group">
+                                        <div class="dynamic-em">urname@gmail.com</div>
+                                        <div class="dynamic-wb">urwebsitename.com</div>
+                                    </div>
+                                    <div class="data-group">
+                                        <div class="dynamic-a1">Street Address Here</div>
+                                        <div class="dynamic-a2">Dhaka, 1212</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-face card-back" id="render-target-back">
+                    <div class="back-layout">
+                        <div class="logo-box">
+                            <div class="logo-line-thin"></div>
+                            <div class="logo-line-thick"></div>
+                            <div class="logo-main-text dynamic-ln">NAGAR</div>
+                            <div class="logo-sub-text dynamic-ls">BUSINESS SOLUTION</div>
+                        </div>
+                        <div class="back-bottom-bar"></div>
+                        <div class="back-center-tab"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="editor-section">
+        
+        <div class="input-group-title">Company Identity</div>
+        <div class="form-panel">
+            <div class="field-box">
+                <label>Company Name</label>
+                <input type="text" id="in-ln" value="NAGAR" oninput="syncData('dynamic-ln', this.value)">
+            </div>
+            <div class="field-box">
+                <label>Tagline / Business Type</label>
+                <input type="text" id="in-ls" value="BUSINESS SOLUTION" oninput="syncData('dynamic-ls', this.value)">
+            </div>
+        </div>
+
+        <div class="input-group-title">Personal Information</div>
+        <div class="form-panel">
+            <div class="field-box">
+                <label>Full Name</label>
+                <input type="text" id="in-name" value="MD AKRAM KHAN" oninput="syncData('dynamic-name', this.value)">
+            </div>
+            <div class="field-box">
+                <label>Designation</label>
+                <input type="text" id="in-title" value="Solution Manager" oninput="syncData('dynamic-title', this.value)">
+            </div>
+        </div>
+
+        <div class="input-group-title">Contact Communications</div>
+        <div class="form-panel">
+            <div class="field-box">
+                <label>Primary Phone</label>
+                <input type="text" id="in-p1" value="+88-456-7890" oninput="syncData('dynamic-p1', this.value)">
+            </div>
+            <div class="field-box">
+                <label>Secondary Phone</label>
+                <input type="text" id="in-p2" value="+88-456-7890" oninput="syncData('dynamic-p2', this.value)">
+            </div>
+            <div class="field-box">
+                <label>Email Address</label>
+                <input type="text" id="in-em" value="urnamedomain@gmail.com" oninput="syncData('dynamic-em', this.value)">
+            </div>
+            <div class="field-box">
+                <label>Website URL</label>
+                <input type="text" id="in-wb" value="urwebsitename.com" oninput="syncData('dynamic-wb', this.value)">
+            </div>
+        </div>
+
+        <div class="input-group-title">Location Address</div>
+        <div class="form-panel">
+            <div class="field-box">
+                <label>Line 1 (Street)</label>
+                <input type="text" id="in-a1" value="Street Address Here" oninput="syncData('dynamic-a1', this.value)">
+            </div>
+            <div class="field-box">
+                <label>Line 2 (City & Zip)</label>
+                <input type="text" id="in-a2" value="Dhaka, 1212" oninput="syncData('dynamic-a2', this.value)">
+            </div>
+        </div>
+    </div>
+
+    <div class="action-container">
+        <button class="save-btn" onclick="triggerCardExport()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Save Card Image
+        </button>
+    </div>
+
+    <div class="modal" id="export-modal">
+        <div class="modal-content">
+            <h3 style="font-size:15px; margin-bottom:10px; color:#fff;">Card Rendered Successfully</h3>
+            <img id="export-preview-img" src="" alt="Business Card Render">
+            <p class="modal-hint">Long-press on the card image above to save it directly to your mobile gallery.</p>
+            <button class="close-modal-btn" onclick="closeModal()">Close Preview</button>
+        </div>
+    </div>
+
+    <script>
+        let currentFace = 'front';
+
+        // Flips card view container smoothly 
+        function switchCardFace(face) {
+            currentFace = face;
+            const container = document.getElementById('card-hw-engine');
+            const btnFront = document.getElementById('btn-front');
+            const btnBack = document.getElementById('btn-back');
+
+            if(face === 'back') {
+                container.classList.add('flipped');
+                btnBack.classList.add('active');
+                btnFront.classList.remove('active');
+            } else {
+                container.classList.remove('flipped');
+                btnFront.classList.add('active');
+                btnBack.classList.remove('active');
+            }
+        }
+
+        // Live synchronizer mapping input string text changes straight into front & back elements
+        function syncData(className, value) {
+            const targets = document.getElementsByClassName(className);
+            for (let i = 0; i < targets.length; i++) {
+                targets[i].innerText = value;
+            }
+        }
+
+        // Processing high-fidelity capture engine
+        function triggerCardExport() {
+            // Determine active window rendering container target
+            const targetId = currentFace === 'front' ? 'render-target-front' : 'render-target-back';
+            const element = document.getElementById(targetId);
+
+            // Execute html2canvas rendering inside webview memory space
+            html2canvas(element, {
+                scale: 3, // Multiplies output density context scale for crisp high-resolution print quality
+                useCORS: true,
+                backgroundColor: null,
+                logging: false
+            }).then(canvas => {
+                const dataUrl = canvas.toDataURL('image/png');
+                
+                // Mount captured image output structure into our persistent backup modal view
+                document.getElementById('export-preview-img').src = dataUrl;
+                document.getElementById('export-modal').style.display = 'flex';
+
+                // Standard Web API download action baseline fallback strategy
+                const downloadLink = document.createElement('a');
+                downloadLink.download = `BusinessCard_${currentFace}_${Date.now()}.png`;
+                downloadLink.href = dataUrl;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+            }).catch(err => {
+                alert("Render Failure code: " + err);
+            });
+        }
+
+        function closeModal() {
+            document.getElementById('export-modal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

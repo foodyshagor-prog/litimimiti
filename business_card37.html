@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Business Card Studio</title>
+    <style>
+        /* Modern Dark Gradient Theme */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f111a 0%, #1a1d2e 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* App Layout */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* Header Layout */
+        header {
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(25, 29, 49, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            z-index: 10;
+        }
+
+        header h1 {
+            font-size: 18px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn-save:active {
+            transform: scale(0.95);
+        }
+
+        /* Preview Window Container */
+        .preview-section {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 17, 26, 0.5);
+            position: relative;
+        }
+
+        /* Toggle Switch styling */
+        .toggle-container {
+            display: inline-flex;
+            background: rgba(255, 255, 255, 0.06);
+            padding: 4px;
+            border-radius: 24px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .toggle-btn {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #94a3b8;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: #312e81;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+
+        /* Responsive Card Wrapper */
+        .card-aspect-ratio-box {
+            width: 100%;
+            max-width: 350px;
+            aspect-ratio: 1.75 / 1; /* Standard 3.5" x 2" business card ratio */
+            position: relative;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #ffffff;
+        }
+
+        .card-side {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            background: #fff;
+            color: #000;
+        }
+
+        .card-side.active {
+            display: block;
+        }
+
+        /* FRONT SIDE LAYOUT MOCKUP */
+        .front-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .front-content {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: 42% 58%;
+        }
+
+        .front-left {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding-left: 8px;
+            padding-right: 16px;
+            color: #fff;
+        }
+
+        .logo-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            margin-bottom: 2px;
+        }
+
+        .logo-title {
+            font-size: 15px;
+            font-weight: 800;
+            color: #543d1d;
+            line-height: 1.1;
+        }
+
+        .logo-sub {
+            font-size: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #ca8a04;
+            font-weight: 600;
+        }
+
+        .front-right {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 16px 24px 16px 0;
+            text-align: right;
+            position: relative;
+        }
+
+        .profile-info h2 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 2px;
+        }
+
+        .profile-info p {
+            font-size: 8px;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .contact-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            align-items: flex-end;
+            margin-top: auto;
+            padding-right: 14px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            font-size: 7.5px;
+            color: #334155;
+            font-weight: 500;
+            width: 100%;
+        }
+
+        /* Right Side Icon Strip Container */
+        .icon-strip {
+            position: absolute;
+            right: 6px;
+            top: 45%;
+            transform: translateY(-20%);
+            width: 12px;
+            background: #0f2427;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5.5px;
+            padding: 6px 0;
+        }
+
+        .icon-strip svg {
+            width: 6px;
+            height: 6px;
+            fill: #c49a45;
+        }
+
+        /* BACK SIDE LAYOUT MOCKUP */
+        .back-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: #fff;
+        }
+
+        .back-content .logo-icon {
+            width: 65px;
+            height: 65px;
+        }
+
+        .back-content .logo-title {
+            font-size: 22px;
+        }
+
+        .back-content .logo-sub {
+            font-size: 9px;
+            letter-spacing: 1px;
+        }
+
+        .back-footer-bar {
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            width: 100%;
+            height: 16px;
+            background: #0f2427;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 7.5px;
+            color: #fff;
+        }
+
+        .back-footer-bar span {
+            font-weight: 400;
+        }
+
+        /* Scrollable Controls Panel Layout */
+        .editor-section {
+            flex: 1;
+            background: rgba(20, 24, 41, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .editor-section::-webkit-scrollbar {
+            width: 4px;
+        }
+        .editor-section::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+        }
+
+        .input-group-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            margin-bottom: 12px;
+            margin-top: 8px;
+            font-weight: 700;
+        }
+
+        .input-field {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 14px;
+            transition: all 0.3s;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #6366f1;
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+
+        /* Hidden standard canvas asset configuration */
+        #exportCanvas {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <h1>Card Studio</h1>
+        <button class="btn-save" onclick="exportCardImage()">Save Image</button>
+    </header>
+
+    <div class="preview-section">
+        <div class="toggle-container">
+            <button class="toggle-btn active" id="btn-front" onclick="switchSide('front')">Front View</button>
+            <button class="toggle-btn" id="btn-back" onclick="switchSide('back')">Back View</button>
+        </div>
+
+        <div class="card-aspect-ratio-box" id="card-capture-box">
+            <div class="card-side active" id="view-front">
+                <svg class="front-bg" viewBox="0 0 350 200" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M 0,0 L 135,0 L 175,75 C 160,110 135,115 115,125 L 45,200 L 0,200 Z" fill="#c49a45"/>
+                    <path d="M 135,0 L 155,0 L 195,75 C 175,118 140,123 118,138 L 45,200 L 25,200 L 102,122 C 125,102 150,98 165,70 Z" fill="#0f2427"/>
+                    <path d="M 0,200 L 25,200 L 0,175 Z" fill="#0f2427"/>
+                </svg>
+                
+                <div class="front-content">
+                    <div class="front-left">
+                        <div class="logo-box">
+                            <svg class="logo-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 48 C 12 56, 52 56, 52 48" stroke="#543d1d" stroke-width="3" stroke-linecap="round"/>
+                                <path d="M20 48 L24 32 L40 32 L44 48" stroke="#543d1d" stroke-width="3"/>
+                                <path d="M24 32 C 24 20, 44 20, 42 32 Z" fill="#eac580" stroke="#543d1d" stroke-width="2"/>
+                                <path d="M42 26 L48 28 L44 32" fill="#ef4444"/>
+                                <circle cx="28" cy="12" r="1.5" fill="#ca8a04"/>
+                                <circle cx="36" cy="10" r="2" fill="#ef4444"/>
+                                <circle cx="44" cy="14" r="1.5" fill="#06b6d4"/>
+                            </svg>
+                            <span class="logo-title" id="val-logo-text">Modicrafts</span>
+                            <span class="logo-sub" id="val-tagline-text">Beyond Work</span>
+                        </div>
+                    </div>
+                    
+                    <div class="front-right">
+                        <div class="profile-info">
+                            <h2 id="val-name">Yiğitcan ÇİFTÇİ</h2>
+                            <p id="val-title">Mobilya ve İç Mekân Tasarım Uzmanı</p>
+                        </div>
+                        
+                        <div class="contact-list">
+                            <div class="contact-item" id="val-phone">+90 530 454 18 07</div>
+                            <div class="contact-item" id="val-web">www.modicrafts.com</div>
+                            <div class="contact-item" id="val-email">slparis@modicrafts.com</div>
+                            <div class="contact-item" id="val-address" style="font-size: 6px; white-space: pre-line;">Fatih Mah. Bosna Cad. No: 547&#10;TOKAT / NİKSAR</div>
+                            <div class="contact-item" id="val-instagram" style="margin-top: 4px;">instagram/modicraftss</div>
+                        </div>
+
+                        <div class="icon-strip">
+                            <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                            <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                            <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-12-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                            <svg viewBox="0 0 24 24"><path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8A3.6 3.6 0 0 0 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6A3.6 3.6 0 0 0 16.4 4H7.6m8.4 2.25a.75.75 0 0 1 .75.75.75.75 0 0 1-.75.75.75.75 0 0 1-.75-.75.75.75 0 0 1 .75-.75M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-side" id="view-back">
+                <div class="back-content">
+                    <div class="logo-box">
+                        <svg class="logo-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 48 C 12 56, 52 56, 52 48" stroke="#543d1d" stroke-width="3" stroke-linecap="round"/>
+                            <path d="M20 48 L24 32 L40 32 L44 48" stroke="#543d1d" stroke-width="3"/>
+                            <path d="M24 32 C 24 20, 44 20, 42 32 Z" fill="#eac580" stroke="#543d1d" stroke-width="2"/>
+                            <path d="M42 26 L48 28 L44 32" fill="#ef4444"/>
+                            <circle cx="28" cy="12" r="1.5" fill="#ca8a04"/>
+                            <circle cx="36" cy="10" r="2" fill="#ef4444"/>
+                            <circle cx="44" cy="14" r="1.5" fill="#06b6d4"/>
+                        </svg>
+                        <span class="logo-title" id="val-back-logo-text">Modicrafts</span>
+                        <span class="logo-sub" id="val-back-tagline-text">Beyond Work</span>
+                    </div>
+                    
+                    <div class="back-footer-bar">
+                        <span id="val-back-instagram">instagram/modicraftss</span>
+                        <span id="val-back-web">www.modicrafts.com</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="editor-section">
+        <div class="input-group-title">Company Identity</div>
+        <input type="text" id="input-logo-text" class="input-field" value="Modicrafts" placeholder="Company Name" oninput="updateCards()">
+        <input type="text" id="input-tagline-text" class="input-field" value="Beyond Work" placeholder="Tagline / Slogan" oninput="updateCards()">
+
+        <div class="input-group-title">Personal Details</div>
+        <input type="text" id="input-name" class="input-field" value="Yiğitcan ÇİFTÇİ" placeholder="Full Name" oninput="updateCards()">
+        <input type="text" id="input-title" class="input-field" value="Mobilya ve İç Mekân Tasarım Uzmanı" placeholder="Job Title" oninput="updateCards()">
+
+        <div class="input-group-title">Contact Channels</div>
+        <input type="text" id="input-phone" class="input-field" value="+90 530 454 18 07" placeholder="Phone Number" oninput="updateCards()">
+        <input type="text" id="input-web" class="input-field" value="www.modicrafts.com" placeholder="Website Link" oninput="updateCards()">
+        <input type="text" id="input-email" class="input-field" value="slparis@modicrafts.com" placeholder="Email Address" oninput="updateCards()">
+        <textarea id="input-address" class="input-field" rows="2" placeholder="Physical Address" oninput="updateCards()">Fatih Mah. Bosna Cad. No: 547&#10;TOKAT / NİKSAR</textarea>
+        <input type="text" id="input-instagram" class="input-field" value="instagram/modicraftss" placeholder="Instagram Profile" oninput="updateCards()">
+    </div>
+</div>
+
+<canvas id="exportCanvas" width="1400" height="800"></canvas>
+
+<script>
+    let currentSide = 'front';
+
+    function switchSide(side) {
+        currentSide = side;
+        document.getElementById('btn-front').classList.toggle('active', side === 'front');
+        document.getElementById('btn-back').classList.toggle('active', side === 'back');
+        document.getElementById('view-front').classList.toggle('active', side === 'front');
+        document.getElementById('view-back').classList.toggle('active', side === 'back');
+    }
+
+    function updateCards() {
+        const logoText = document.getElementById('input-logo-text').value;
+        const taglineText = document.getElementById('input-tagline-text').value;
+        const name = document.getElementById('input-name').value;
+        const title = document.getElementById('input-title').value;
+        const phone = document.getElementById('input-phone').value;
+        const web = document.getElementById('input-web').value;
+        const email = document.getElementById('input-email').value;
+        const address = document.getElementById('input-address').value;
+        const instagram = document.getElementById('input-instagram').value;
+
+        // Sync Front Page Components
+        document.getElementById('val-logo-text').innerText = logoText;
+        document.getElementById('val-tagline-text').innerText = taglineText;
+        document.getElementById('val-name').innerText = name;
+        document.getElementById('val-title').innerText = title;
+        document.getElementById('val-phone').innerText = phone;
+        document.getElementById('val-web').innerText = web;
+        document.getElementById('val-email').innerText = email;
+        document.getElementById('val-address').innerText = address;
+        document.getElementById('val-instagram').innerText = instagram;
+
+        // Sync Back Page Components
+        document.getElementById('val-back-logo-text').innerText = logoText;
+        document.getElementById('val-back-tagline-text').innerText = taglineText;
+        document.getElementById('val-back-web').innerText = web;
+        document.getElementById('val-back-instagram').innerText = instagram;
+    }
+
+    // High fidelity export routine utilizing native high-density system primitives
+    function exportCardImage() {
+        const canvas = document.getElementById('exportCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const logoText = document.getElementById('input-logo-text').value;
+        const taglineText = document.getElementById('input-tagline-text').value;
+        const name = document.getElementById('input-name').value;
+        const title = document.getElementById('input-title').value;
+        const phone = document.getElementById('input-phone').value;
+        const web = document.getElementById('input-web').value;
+        const email = document.getElementById('input-email').value;
+        const address = document.getElementById('input-address').value;
+        const instagram = document.getElementById('input-instagram').value;
+
+        // Clear Background Frame
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, 1400, 800);
+
+        if (currentSide === 'front') {
+            // Render Gold Section Polygon
+            ctx.fillStyle = "#c49a45";
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(540, 0);
+            ctx.lineTo(700, 300);
+            ctx.bezierCurveTo(640, 440, 540, 460, 460, 500);
+            ctx.lineTo(180, 800);
+            ctx.lineTo(0, 800);
+            ctx.closePath();
+            ctx.fill();
+
+            // Render Accent Border Wave Stroke
+            ctx.fillStyle = "#0f2427";
+            ctx.beginPath();
+            ctx.moveTo(540, 0);
+            ctx.lineTo(620, 0);
+            ctx.lineTo(780, 300);
+            ctx.bezierCurveTo(700, 472, 560, 492, 472, 552);
+            ctx.lineTo(180, 800);
+            ctx.lineTo(100, 800);
+            ctx.lineTo(408, 488);
+            ctx.bezierCurveTo(500, 408, 600, 392, 660, 280);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(0, 800);
+            ctx.lineTo(100, 800);
+            ctx.lineTo(0, 700);
+            ctx.closePath();
+            ctx.fill();
+
+            // Render Core Logo Asset Matrix
+            drawLogoAsset(ctx, 220, 260, 1.3, logoText, taglineText, true);
+
+            // Text Right-aligned Configuration Details
+            ctx.textAlign = "right";
+            
+            // Name
+            ctx.fillStyle = "#0f172a";
+            ctx.font = "bold 60px -apple-system, BlinkMacSystemFont, sans-serif";
+            ctx.fillText(name, 1300, 140);
+            
+            // Title
+            ctx.fillStyle = "#64748b";
+            ctx.font = "500 30px -apple-system, BlinkMacSystemFont, sans-serif";
+            ctx.fillText(title, 1300, 195);
+
+            // Icon Strip Container Panel
+            ctx.fillStyle = "#0f2427";
+            ctx.beginPath();
+            ctx.roundRect(1316, 300, 44, 280, 22);
+            ctx.fill();
+
+            // Draw micro inline vector glyph designators
+            ctx.fillStyle = "#c49a45";
+            for(let i=0; i<5; i++) {
+                ctx.beginPath();
+                ctx.arc(1338, 335 + (i * 52), 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Contact Values Text Layout
+            ctx.fillStyle = "#334155";
+            ctx.font = "600 28px -apple-system, BlinkMacSystemFont, sans-serif";
+            ctx.fillText(phone, 1280, 345);
+            ctx.fillText(web, 1280, 397);
+            ctx.fillText(email, 1280, 449);
+
+            // Multi-line layout system safe address renderer
+            ctx.font = "500 22px -apple-system, BlinkMacSystemFont, sans-serif";
+            const lines = address.split('\n');
+            let currentY = 501;
+            lines.forEach(line => {
+                ctx.fillText(line, 1280, currentY);
+                currentY += 30;
+            });
+
+            ctx.font = "600 28px -apple-system, BlinkMacSystemFont, sans-serif";
+            ctx.fillText(instagram, 1280, 565);
+
+        } else {
+            // Render Back Page Layout Sequence
+            drawLogoAsset(ctx, 700, 360, 2.0, logoText, taglineText, false);
+
+            // Footer Ribbon Bar Layout Base
+            ctx.fillStyle = "#0f2427";
+            ctx.fillRect(0, 660, 1400, 64);
+
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "400 28px -apple-system, BlinkMacSystemFont, sans-serif";
+            ctx.textAlign = "left";
+            ctx.fillText(instagram, 80, 702);
+
+            ctx.textAlign = "right";
+            ctx.fillText(web, 1320, 702);
+        }
+
+        // Generate download stream pipeline
+        const dataUrl = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = `BusinessCard_${currentSide}.png`;
+        link.href = dataUrl;
+        link.click();
+    }
+
+    // Isolated vector layout drawing method for standard graphic reuse instances
+    function drawLogoAsset(ctx, x, y, scale, title, sub, isLeftAligned) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+
+        // Rocking Horse Base Runner Coordinates
+        ctx.strokeStyle = "#543d1d";
+        ctx.lineWidth = 4;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.arc(0, -10, 40, 0.2 * Math.PI, 0.8 * Math.PI, false);
+        ctx.stroke();
+
+        // Struts Layout
+        ctx.beginPath();
+        ctx.moveTo(-20, 18); ctx.lineTo(-12, -2);
+        ctx.moveTo(20, 18);  ctx.lineTo(12, -2);
+        ctx.stroke();
+
+        // Horse Body Core Frame Shape Polygon
+        ctx.fillStyle = "#eac580";
+        ctx.beginPath();
+        ctx.arc(0, -6, 20, 0, Math.PI, true);
+        ctx.lineTo(-24, -24);
+        ctx.quadraticCurveTo(-10, -30, 0, -6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Mane / Ribbon details
+        ctx.fillStyle = "#ef4444";
+        ctx.beginPath();
+        ctx.moveTo(14, -16); ctx.lineTo(26, -12); ctx.lineTo(18, -4);
+        ctx.closePath();
+        ctx.fill();
+
+        // Ambient Decorative Vector Stars Layout Array
+        ctx.fillStyle = "#ca8a04"; ctx.beginPath(); ctx.arc(-15, -45, 3, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = "#ef4444"; ctx.beginPath(); ctx.arc(5, -50, 4, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = "#06b6d4"; ctx.beginPath(); ctx.arc(25, -40, 3, 0, Math.PI*2); ctx.fill();
+
+        ctx.restore();
+
+        // Text Content Sub-system Layout configuration values
+        ctx.save();
+        ctx.textAlign = "center";
+        
+        if(isLeftAligned) {
+            ctx.fillStyle = "#543d1d";
+            ctx.font = "800 52px -apple-system, BlinkMacSystemFont, sans-serif";
+            ctx.fillText(title, x, y + (scale * 55));
+
+            ctx.fillStyle = "#ca8a04";
+            ctx.font = "bold 20px -apple-system, BlinkMacSystemFont, sans-serif";
+            ctx.fillText(sub.toUpperCase(), x, y + (scale * 75));
+        } else {
+            ctx.fillStyle = "#ba903b";
+            ctx.font = "800 76px -apple-system, BlinkMacSystemFont, sans-serif";
+            ctx.fillText(title, x, y + (scale * 50));
+
+            ctx.fillStyle = "#78716c";
+            ctx.font = "bold 28px -apple-system, BlinkMacSystemFont, sans-serif";
+            ctx.fillText(sub.toUpperCase(), x, y + (scale * 72));
+        }
+        ctx.restore();
+    }
+</script>
+
+</body>
+</html>

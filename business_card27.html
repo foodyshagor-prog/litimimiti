@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Business Card Editor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        :root {
+            --primary-orange: #f0831a;
+            --bg-dark: #0a0a0a;
+            --text-light: #ffffff;
+            --ui-bg: linear-gradient(145deg, #16161e, #0d0d12);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Montserrat', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: var(--ui-bg);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- UI Components --- */
+        .header {
+            text-align: center;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: 700;
+            background: rgba(0,0,0,0.3);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .preview-section {
+            padding: 20px 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background: var(--ui-bg);
+            z-index: 10;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+
+        .switch-wrapper {
+            display: flex;
+            background: #22222f;
+            border-radius: 25px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            width: 200px;
+        }
+
+        .switch-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            color: #888;
+            font-weight: 600;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+
+        .switch-btn.active {
+            background: var(--primary-orange);
+            color: #fff;
+        }
+
+        /* --- Card Styles (Matches Provided Image) --- */
+        .card-container {
+            width: 340px;
+            height: 194px; /* Approx 1.75 aspect ratio */
+            background: var(--bg-dark);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+        }
+
+        /* Front Card Elements */
+        .accent-top, .accent-bottom {
+            position: absolute;
+            width: 35%;
+            height: 12px;
+            background: var(--primary-orange);
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .accent-top {
+            top: 0;
+            border-radius: 0 0 10px 10px;
+        }
+        .accent-bottom {
+            bottom: 0;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .center-logo-block {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            width: 100%;
+        }
+
+        .logo-svg {
+            width: 50px;
+            height: 50px;
+            margin-bottom: 8px;
+        }
+
+        .company-title {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .company-title span { color: var(--primary-orange); }
+        .slogan {
+            font-size: 8px;
+            color: #aaa;
+            letter-spacing: 1px;
+            margin-top: 3px;
+        }
+
+        /* Back Card Elements */
+        #card-back {
+            display: none;
+        }
+
+        .back-layout {
+            display: flex;
+            height: 100%;
+            width: 100%;
+        }
+
+        .back-left {
+            width: 45%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .u-shape {
+            position: absolute;
+            top: 15%;
+            bottom: 15%;
+            left: 0;
+            width: 85%;
+            border: 3px solid var(--primary-orange);
+            border-left: none;
+            border-radius: 0 30px 30px 0;
+        }
+
+        .back-left .center-logo-block {
+            transform: scale(0.85) translate(-50%, -50%);
+            left: 45%;
+        }
+
+        .back-right {
+            width: 55%;
+            padding: 25px 10px 20px 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .person-name {
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .person-title {
+            font-size: 9px;
+            color: #aaa;
+            margin-top: 3px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .icon-circle {
+            width: 16px;
+            height: 16px;
+            background: var(--primary-orange);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .icon-circle svg {
+            width: 8px;
+            height: 8px;
+            fill: #fff;
+        }
+
+        .contact-text {
+            font-size: 7.5px;
+            color: #ddd;
+            line-height: 1.3;
+        }
+
+        /* --- Editor Styles --- */
+        .editor-section {
+            padding: 20px 15px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background: #1a1a24;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary-orange);
+            box-shadow: 0 0 0 2px rgba(240, 131, 26, 0.2);
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+        }
+        .row .input-group { flex: 1; }
+
+        .save-btn {
+            width: 100%;
+            padding: 15px;
+            background: var(--primary-orange);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            margin-top: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(240, 131, 26, 0.4);
+            transition: transform 0.1s;
+        }
+
+        .save-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">Card Editor</div>
+
+    <div class="preview-section">
+        <div class="switch-wrapper">
+            <button class="switch-btn active" onclick="switchCard('front')">Front</button>
+            <button class="switch-btn" onclick="switchCard('back')">Back</button>
+        </div>
+
+        <div id="card-front" class="card-container">
+            <div class="accent-top"></div>
+            <div class="center-logo-block">
+                <svg class="logo-svg" viewBox="0 0 100 100">
+                    <polygon points="50,20 85,80 15,80" fill="none" stroke="#f0831a" stroke-width="6"/>
+                    <polygon points="50,38 75,88 25,88" fill="none" stroke="#ffffff" stroke-width="6"/>
+                </svg>
+                <div class="company-title">
+                    <span id="disp-comp-w-f" style="color:#fff">COMPANY</span> 
+                    <span id="disp-comp-o-f">NAME</span>
+                </div>
+                <div class="slogan" id="disp-slogan-f">SLOGAN HERE</div>
+            </div>
+            <div class="accent-bottom"></div>
+        </div>
+
+        <div id="card-back" class="card-container">
+            <div class="back-layout">
+                <div class="back-left">
+                    <div class="u-shape"></div>
+                    <div class="center-logo-block">
+                        <svg class="logo-svg" viewBox="0 0 100 100">
+                            <polygon points="50,20 85,80 15,80" fill="none" stroke="#f0831a" stroke-width="6"/>
+                            <polygon points="50,38 75,88 25,88" fill="none" stroke="#ffffff" stroke-width="6"/>
+                        </svg>
+                        <div class="company-title">
+                            <span id="disp-comp-w-b" style="color:#fff">COMPANY</span> 
+                            <span id="disp-comp-o-b">NAME</span>
+                        </div>
+                        <div class="slogan" id="disp-slogan-b">SLOGAN HERE</div>
+                    </div>
+                </div>
+                
+                <div class="back-right">
+                    <div class="person-name" id="disp-name">Dylan Wills</div>
+                    <div class="person-title" id="disp-title">MANAGAR</div>
+                    
+                    <div class="contact-item">
+                        <div class="icon-circle">
+                            <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                        </div>
+                        <div class="contact-text" id="disp-phone">050 150 8228<br>050 150 8228</div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="icon-circle">
+                            <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                        </div>
+                        <div class="contact-text" id="disp-email">DylanWills@dayrep.com<br>DylanWills@dayrep.com</div>
+                    </div>
+
+                    <div class="contact-item">
+                        <div class="icon-circle">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                        </div>
+                        <div class="contact-text" id="disp-address">Ahlströminkatu 73<br>80007 JOENSUU</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="editor-section">
+        
+        <div class="row">
+            <div class="input-group">
+                <label>Company Word 1 (White)</label>
+                <input type="text" id="in-comp-w" value="COMPANY" onkeyup="updateText()">
+            </div>
+            <div class="input-group">
+                <label>Company Word 2 (Orange)</label>
+                <input type="text" id="in-comp-o" value="NAME" onkeyup="updateText()">
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <label>Slogan</label>
+            <input type="text" id="in-slogan" value="SLOGAN HERE" onkeyup="updateText()">
+        </div>
+
+        <div class="row">
+            <div class="input-group">
+                <label>Full Name</label>
+                <input type="text" id="in-name" value="Dylan Wills" onkeyup="updateText()">
+            </div>
+            <div class="input-group">
+                <label>Job Title</label>
+                <input type="text" id="in-title" value="MANAGAR" onkeyup="updateText()">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-group">
+                <label>Phone Line 1</label>
+                <input type="text" id="in-phone1" value="050 150 8228" onkeyup="updateText()">
+            </div>
+            <div class="input-group">
+                <label>Phone Line 2</label>
+                <input type="text" id="in-phone2" value="050 150 8228" onkeyup="updateText()">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-group">
+                <label>Email Line 1</label>
+                <input type="text" id="in-email1" value="DylanWills@dayrep.com" onkeyup="updateText()">
+            </div>
+            <div class="input-group">
+                <label>Email Line 2</label>
+                <input type="text" id="in-email2" value="DylanWills@dayrep.com" onkeyup="updateText()">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-group">
+                <label>Address Line 1</label>
+                <input type="text" id="in-add1" value="Ahlströminkatu 73" onkeyup="updateText()">
+            </div>
+            <div class="input-group">
+                <label>Address Line 2</label>
+                <input type="text" id="in-add2" value="80007 JOENSUU" onkeyup="updateText()">
+            </div>
+        </div>
+
+        <button class="save-btn" onclick="saveImage()">Save Current Side</button>
+    </div>
+
+    <script>
+        // Data Binding: Update visual elements when input changes
+        function updateText() {
+            // Company and Slogan (Front & Back updates simultaneously)
+            const cw = document.getElementById('in-comp-w').value;
+            const co = document.getElementById('in-comp-o').value;
+            const sl = document.getElementById('in-slogan').value;
+
+            document.getElementById('disp-comp-w-f').innerText = cw;
+            document.getElementById('disp-comp-o-f').innerText = co;
+            document.getElementById('disp-comp-w-b').innerText = cw;
+            document.getElementById('disp-comp-o-b').innerText = co;
+            
+            document.getElementById('disp-slogan-f').innerText = sl;
+            document.getElementById('disp-slogan-b').innerText = sl;
+
+            // Personal Info
+            document.getElementById('disp-name').innerText = document.getElementById('in-name').value;
+            document.getElementById('disp-title').innerText = document.getElementById('in-title').value;
+
+            // Contact Formatting (Handles multi-line correctly)
+            document.getElementById('disp-phone').innerHTML = 
+                document.getElementById('in-phone1').value + '<br>' + document.getElementById('in-phone2').value;
+            
+            document.getElementById('disp-email').innerHTML = 
+                document.getElementById('in-email1').value + '<br>' + document.getElementById('in-email2').value;
+            
+            document.getElementById('disp-address').innerHTML = 
+                document.getElementById('in-add1').value + '<br>' + document.getElementById('in-add2').value;
+        }
+
+        // Card Toggle Logic
+        let currentSide = 'front';
+        function switchCard(side) {
+            currentSide = side;
+            
+            // Toggle active styling on buttons
+            document.querySelectorAll('.switch-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Toggle visibility
+            if(side === 'front') {
+                document.getElementById('card-front').style.display = 'block';
+                document.getElementById('card-back').style.display = 'none';
+            } else {
+                document.getElementById('card-front').style.display = 'none';
+                document.getElementById('card-back').style.display = 'block';
+            }
+        }
+
+        // High-Quality Image Saving via html2canvas
+        function saveImage() {
+            const btn = document.querySelector('.save-btn');
+            btn.innerText = "Generating...";
+            
+            const targetElement = document.getElementById(currentSide === 'front' ? 'card-front' : 'card-back');
+
+            // Using scale: 3 for high-resolution photorealistic export quality
+            html2canvas(targetElement, { 
+                scale: 3, 
+                backgroundColor: "#000000",
+                useCORS: true 
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `BusinessCard_${currentSide}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                btn.innerText = "Save Current Side";
+            }).catch(err => {
+                console.error("Error saving image: ", err);
+                alert("Failed to save image. Please try again.");
+                btn.innerText = "Save Current Side";
+            });
+        }
+    </script>
+</body>
+</html>

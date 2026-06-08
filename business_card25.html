@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Business Card Maker Studio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --bg-dark-gradient: linear-gradient(135deg, #0f172a 0%, #020617 100%);
+            --panel-bg: rgba(30, 41, 59, 0.7);
+            --accent-orange: #ff9f00;
+            --accent-orange-dark: #e67e00;
+            --card-navy: #0d1f2d;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Montserrat', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: var(--bg-dark-gradient);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* --- STICKY TOP PREVIEW AREA --- */
+        .preview-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 16px;
+            z-index: 100;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+
+        /* Switch & Save Controls */
+        .control-bar {
+            width: 100%;
+            max-width: 360px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .toggle-switch {
+            display: flex;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 4px;
+            border-radius: 30px;
+            border: 1px solid var(--border-color);
+        }
+
+        .toggle-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 6px 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: var(--accent-orange);
+            color: #000;
+            box-shadow: 0 2px 8px rgba(255, 159, 0, 0.4);
+        }
+
+        .save-btn {
+            background: linear-gradient(90deg, #ff9f00, #ff7300);
+            border: none;
+            color: #fff;
+            padding: 8px 18px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(255, 115, 0, 0.3);
+        }
+
+        /* --- CARD CANVAS LAYOUT (Exact Aspect Ratio 3.5" x 2") --- */
+        .card-viewport {
+            width: 100%;
+            max-width: 350px;
+            height: 200px;
+            perspective: 1000px;
+        }
+
+        .business-card {
+            width: 100%;
+            height: 100%;
+            background-color: var(--card-navy);
+            position: relative;
+            overflow: hidden;
+            border-radius: 6px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            display: none;
+        }
+
+        .business-card.active {
+            display: block;
+        }
+
+        /* Dynamic SVG Wave Backgrounds */
+        .card-bg-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .card-content {
+            position: relative;
+            zIndex: 2;
+            width: 100%;
+            height: 100%;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 5;
+        }
+
+        /* --- CARD FRONT DESIGN --- */
+        .front-header {
+            align-self: flex-end;
+            text-align: right;
+            margin-top: 4px;
+        }
+
+        .front-name {
+            font-size: 1.25rem;
+            font-weight: 400;
+            letter-spacing: 2px;
+            color: #ffffff;
+            text-transform: uppercase;
+        }
+
+        .front-title {
+            font-size: 0.55rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            color: var(--accent-orange);
+            text-transform: uppercase;
+            margin-top: 2px;
+            display: inline-block;
+            position: relative;
+            padding-bottom: 4px;
+        }
+
+        /* Two tone decoration line under title */
+        .front-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 80px;
+            height: 1.5px;
+            background: linear-gradient(90deg, transparent 0%, #fff 40%, var(--accent-orange) 40%, var(--accent-orange) 100%);
+        }
+
+        .front-details {
+            align-self: flex-end;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 4px;
+            width: 62%;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #ffffff;
+            font-size: 0.6rem;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-icon {
+            width: 16px;
+            height: 16px;
+            background: var(--accent-orange);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .detail-icon svg {
+            width: 9px;
+            height: 9px;
+            fill: #0d1f2d;
+        }
+
+        .detail-text {
+            white-space: pre-line;
+            line-height: 1.3;
+        }
+
+        /* --- CARD BACK DESIGN --- */
+        .back-content {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .logo-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 2px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            fill: var(--accent-orange);
+        }
+
+        .logo-text {
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: #ffffff;
+            text-transform: uppercase;
+        }
+
+        .logo-text span {
+            color: var(--accent-orange);
+            margin-left: 5px;
+        }
+
+        .logo-tagline {
+            font-size: 0.55rem;
+            font-weight: 600;
+            letter-spacing: 3px;
+            color: var(--accent-orange);
+            text-transform: uppercase;
+        }
+
+
+        /* --- BOTTOM SCROLLABLE EDITOR PANEL --- */
+        .editor-panel {
+            margin-top: 275px; /* Offset for fixed header preview area */
+            flex-grow: 1;
+            padding: 20px;
+            background: var(--panel-bg);
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            border-top: 1px solid var(--border-color);
+            box-shadow: 0 -8px 32px rgba(0,0,0,0.3);
+            overflow-y: auto;
+            padding-bottom: 40px;
+        }
+
+        .editor-section {
+            display: none;
+        }
+
+        .editor-section.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-light);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: var(--accent-orange);
+            border-radius: 2px;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-group input, .input-group textarea {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 12px 14px;
+            color: #fff;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus, .input-group textarea:focus {
+            border-color: var(--accent-orange);
+            box-shadow: 0 0 0 3px rgba(255, 159, 0, 0.15);
+        }
+
+        .input-group textarea {
+            resize: none;
+            height: 55px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="preview-container">
+        <div class="control-bar">
+            <div class="toggle-switch">
+                <button class="toggle-btn active" onclick="switchSide('front')">Front Side</button>
+                <button class="toggle-btn" onclick="switchSide('back')">Back Side</button>
+            </div>
+            <button class="save-btn" onclick="exportCard()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Save Card
+            </button>
+        </div>
+
+        <div class="card-viewport">
+            <div id="card-front" class="business-card active">
+                <svg class="card-bg-svg" viewBox="0 0 350 200" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#ffb703" />
+                            <stop offset="50%" stop-color="#fb8500" />
+                            <stop offset="100%" stop-color="#ffb703" />
+                        </linearGradient>
+                        <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#fb8500" opacity="0.4"/>
+                            <stop offset="100%" stop-color="#d05a00" opacity="0.1"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M -10,-10 L 195,-10 C 140,40 70,140 64,210 L -10,210 Z" fill="url(#grad2)" />
+                    <path d="M -10,-10 L 180,-10 C 115,45 65,145 42,210 L -10,210 Z" fill="url(#grad1)" />
+                </svg>
+                
+                <div class="card-content">
+                    <div class="front-header">
+                        <div id="preview-name" class="front-name">Shan Shaw Di</div>
+                        <div id="preview-title" class="front-title">Professional</div>
+                    </div>
+                    
+                    <div class="front-details">
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <svg viewBox="0 0 24 24"><path d="M20 15.5c-1.2 0-2.4-.2-3.6-.6-.3-.1-.7 0-1 .3l-2.2 2.2c-2.8-1.4-5.1-3.8-6.6-6.6l2.2-2.2c.3-.3.4-.7.2-1-.3-1.1-.5-2.3-.5-3.5 0-.6-.4-1-1-1H4c-.6 0-1 .4-1 1 0 9.4 7.6 17 17 17 .6 0 1-.4 1-1v-3.5c0-.6-.4-1-1-1z"/></svg>
+                            </div>
+                            <div id="preview-phone" class="detail-text">+91- 1234- 567-89&#10;+91- 1234- 567-89</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <svg viewBox="0 0 24 24"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5c-1.4 0-2.5-1.1-2.5-2.5s1.1-2.5 2.5-2.5 2.5 1.1 2.5 2.5-1.1 2.5-2.5 2.5z"/></svg>
+                            </div>
+                            <div id="preview-address" class="detail-text">103\8 Address Sample&#10;Here</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-icon">
+                                <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                            </div>
+                            <div id="preview-web" class="detail-text">website address&#10;here go</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="card-back" class="business-card">
+                <svg class="card-bg-svg" viewBox="0 0 350 200" preserveAspectRatio="none">
+                    <path d="M -10,-10 L 150,-10 C 110,30 30,80 -10,105 Z" fill="url(#grad1)" />
+                    <path d="M 360,210 L 210,210 C 240,160 300,110 360,85 Z" fill="url(#grad1)" />
+                    <path d="M 360,210 L 195,210 C 230,150 290,100 360,70 Z" fill="url(#grad2)" />
+                </svg>
+                
+                <div class="card-content back-content">
+                    <div class="logo-container">
+                        <svg class="logo-icon" viewBox="0 0 24 24">
+                            <path d="M12,2 A6,6 0 0,1 18,8 A6,6 0 0,1 12,14 A6,6 0 0,1 6,8 A6,6 0 0,1 12,2 Z" opacity="0.75"/>
+                            <path d="M16,10 A6,6 0 0,1 22,16 A6,6 0 0,1 16,22 A6,6 0 0,1 10,16 A6,6 0 0,1 16,10 Z" opacity="0.85"/>
+                            <path d="M8,10 A6,6 0 0,1 14,16 A6,6 0 0,1 8,22 A6,6 0 0,1 2,16 A6,6 0 0,1 8,10 Z"/>
+                        </svg>
+                    </div>
+                    <div id="preview-logo-text" class="logo-text">Your <span>Logo</span></div>
+                    <div id="preview-tagline" class="logo-tagline">Tagline Here</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="editor-panel">
+        <div id="editor-front" class="editor-section active">
+            <div class="section-title">Edit Card Front Side</div>
+            
+            <div class="input-group">
+                <label for="input-name">Full Name</label>
+                <input type="text" id="input-name" value="Shan Shaw Di" oninput="updateText('preview-name', this.value)">
+            </div>
+            
+            <div class="input-group">
+                <label for="input-title">Professional Title</label>
+                <input type="text" id="input-title" value="Professional" oninput="updateText('preview-title', this.value)">
+            </div>
+            
+            <div class="input-group">
+                <label for="input-phone">Phone Numbers (Use Enter for newline)</label>
+                <textarea id="input-phone" oninput="updateText('preview-phone', this.value)">+91- 1234- 567-89&#10;+91- 1234- 567-89</textarea>
+            </div>
+            
+            <div class="input-group">
+                <label for="input-address">Address Details</label>
+                <textarea id="input-address" oninput="updateText('preview-address', this.value)">103\8 Address Sample&#10;Here</textarea>
+            </div>
+            
+            <div class="input-group">
+                <label for="input-web">Website / Email Info</label>
+                <textarea id="input-web" oninput="updateText('preview-web', this.value)">website address&#10;here go</textarea>
+            </div>
+        </div>
+
+        <div id="editor-back" class="editor-section">
+            <div class="section-title">Edit Card Back Side</div>
+            
+            <div class="input-group">
+                <label for="input-logo-main">Company Name (First Word)</label>
+                <input type="text" id="input-logo-main" value="Your" oninput="updateLogoText()">
+            </div>
+
+            <div class="input-group">
+                <label for="input-logo-sub">Company Name (Second Word)</label>
+                <input type="text" id="input-logo-sub" value="Logo" oninput="updateLogoText()">
+            </div>
+            
+            <div class="input-group">
+                <label for="input-tagline">Brand Tagline</label>
+                <input type="text" id="input-tagline" value="Tagline Here" oninput="updateText('preview-tagline', this.value)">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Synchronized Text Input Propagation Engine
+        function updateText(targetId, value) {
+            const element = document.getElementById(targetId);
+            if (element) {
+                // Ensure proper newline preservation mapping for textareas
+                element.innerText = value;
+            }
+        }
+
+        function updateLogoText() {
+            const mainW = document.getElementById('input-logo-main').value;
+            const subW = document.getElementById('input-logo-sub').value;
+            document.getElementById('preview-logo-text').innerHTML = `${mainW} <span>${subW}</span>`;
+        }
+
+        // Segment Switch Toggle Management Pipeline
+        function switchSide(side) {
+            // Update Toggle Tab UI highlights
+            const buttons = document.querySelectorAll('.toggle-btn');
+            buttons[0].classList.toggle('active', side === 'front');
+            buttons[1].classList.toggle('active', side === 'back');
+
+            // Swap Active Canvas Context
+            document.getElementById('card-front').classList.toggle('active', side === 'front');
+            document.getElementById('card-back').classList.toggle('active', side === 'back');
+
+            // Rotate visible editor forms synchronously
+            document.getElementById('editor-front').classList.toggle('active', side === 'front');
+            document.getElementById('editor-back').classList.toggle('active', side === 'back');
+        }
+
+        // Document Object Model Render Capture Export
+        function exportCard() {
+            // Determine currently active container configuration to output
+            const activeCard = document.querySelector('.business-card.active');
+            const sideName = activeCard.id === 'card-front' ? 'front' : 'back';
+            
+            // Inform mobile container layer processing loop started
+            const saveBtn = document.querySelector('.save-btn');
+            saveBtn.innerText = "Processing...";
+            saveBtn.disabled = true;
+
+            // Execute html2canvas frame execution using a 3x scale factor matrix for pristine printing clarity
+            html2canvas(activeCard, {
+                scale: 3, 
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: null
+            }).then(canvas => {
+                const dataUrl = canvas.toDataURL('image/png');
+                
+                // Native programmatic simulated download link handler
+                const downloadLink = document.createElement('a');
+                downloadLink.download = `business_card_${sideName}.png`;
+                downloadLink.href = dataUrl;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+
+                // Revert CTA string state
+                saveBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Save Card`;
+                saveBtn.disabled = false;
+            }).catch(err => {
+                console.error("Render capture pipeline failure:", err);
+                saveBtn.innerText = "Error Saving";
+                setTimeout(() => {
+                    saveBtn.innerText = "Save Card";
+                    saveBtn.disabled = false;
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>

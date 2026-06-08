@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Premium Business Card Editor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        :root {
+            --bg-gradient-start: #14161d;
+            --bg-gradient-end: #0b0c10;
+            --panel-bg: rgba(30, 33, 45, 0.75);
+            --accent-cyan: #00b4d8;
+            --accent-blue: #0077b6;
+            --text-light: #ffffff;
+            --text-muted: #8ecae6;
+            --card-dark: #121214;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(180deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            color: var(--text-light);
+        }
+
+        /* Main Layout Screen Split */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100vh;
+        }
+
+        /* Top Preview Area */
+        .preview-zone {
+            flex: 0 0 45%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+            padding: 10px;
+            z-index: 10;
+        }
+
+        /* Bottom Editor Area */
+        .editor-zone {
+            flex: 1;
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            padding: 24px;
+            overflow-y: auto;
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        /* View Toggle Tabs */
+        .toggle-container {
+            display: flex;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 50px;
+            padding: 4px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .toggle-btn {
+            padding: 6px 20px;
+            border: none;
+            background: none;
+            color: #aaa;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: var(--accent-cyan);
+            color: #000;
+            font-weight: 600;
+        }
+
+        /* Business Card Viewport Scaling Window */
+        .card-viewport {
+            width: 350px;
+            height: 200px;
+            perspective: 1000px;
+            margin-bottom: 15px;
+        }
+
+        /* Business Card Canvas Core Base */
+        .business-card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+            background: var(--card-dark);
+            overflow: hidden;
+            display: none;
+        }
+
+        .business-card.active {
+            display: block;
+        }
+
+        /* --- CARD FRONT DESIGNS --- */
+        .card-front-bg {
+            position: absolute;
+            right: 0; top: 0; bottom: 0;
+            width: 55%;
+            background: url('https://images.unsplash.com/photo-1578894381163-e72c17f2d45f?q=80&w=600') center/cover;
+            z-index: 1;
+            transition: background 0.3s ease;
+        }
+
+        .card-front-accent {
+            position: absolute;
+            left: 30%; top: 0; bottom: 0;
+            width: 30%;
+            background: var(--accent-cyan);
+            transform: skewX(-25deg);
+            z-index: 2;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.3);
+        }
+
+        .card-front-dark-overlay {
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 50%;
+            background: linear-gradient(135deg, #1a1a1e 0%, #111113 100%);
+            transform: skewX(-25deg);
+            transform-origin: top left;
+            z-index: 3;
+        }
+
+        .front-content {
+            position: absolute;
+            left: 0; top: 0; width: 100%; height: 100%;
+            z-index: 4;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .front-header {
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .name-accent-block {
+            width: 12px;
+            height: 24px;
+            background: var(--accent-cyan);
+            margin-right: 8px;
+            border-bottom: 4px solid #555;
+        }
+
+        .user-name {
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            line-height: 1.2;
+            text-transform: uppercase;
+        }
+        
+        .user-name span {
+            color: var(--accent-cyan);
+        }
+
+        .user-title {
+            font-size: 8.5px;
+            color: #999;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            font-weight: 400;
+            margin-top: 2px;
+        }
+
+        /* Company Center Branding Layout */
+        .company-brand {
+            display: flex;
+            align-items: center;
+            margin-top: -5px;
+        }
+
+        .brand-logo {
+            width: 26px;
+            height: 26px;
+            margin-right: 6px;
+        }
+
+        .brand-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            line-height: 1;
+            letter-spacing: 0.5px;
+        }
+        
+        .brand-name span {
+            color: #fff;
+            font-weight: 400;
+        }
+
+        .brand-subtext {
+            font-size: 5px;
+            color: #aaa;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-top: 1px;
+        }
+
+        /* Contact Details Layout */
+        .contact-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-bottom: 4px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            font-size: 8.5px;
+            color: #ddd;
+            font-weight: 300;
+        }
+
+        .contact-icon {
+            width: 12px;
+            height: 12px;
+            fill: var(--accent-cyan);
+            margin-right: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* --- CARD BACK DESIGNS --- */
+        .card-back-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: url('https://images.unsplash.com/photo-1578894381163-e72c17f2d45f?q=80&w=600') center/cover;
+            transition: background 0.3s ease;
+        }
+
+        .card-back-overlay {
+            position: absolute;
+            bottom: 25px;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: rgba(0, 119, 182, 0.75);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .back-logo {
+            width: 32px;
+            height: 32px;
+            margin-bottom: 2px;
+            filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.3));
+        }
+
+        .back-brand-title {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            line-height: 1;
+        }
+
+        .back-brand-sub {
+            color: rgba(255,255,255,0.7);
+            font-size: 5.5px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .card-back-footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 25px;
+            background: #111113;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            color: #ccc;
+            letter-spacing: 0.5px;
+        }
+
+        .footer-icon {
+            width: 10px;
+            height: 10px;
+            fill: #fff;
+            margin-right: 5px;
+        }
+
+        /* --- FORM EDITOR FIELDS --- */
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #fff;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: #fff;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            background: rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 10px rgba(0, 180, 216, 0.2);
+        }
+
+        /* Mobile Image Upload Layout styling */
+        .upload-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 180, 216, 0.1);
+            border: 2px dashed rgba(0, 180, 216, 0.4);
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-wrapper:active {
+            background: rgba(0, 180, 216, 0.2);
+        }
+
+        .upload-wrapper input[type="file"] {
+            position: absolute;
+            left: 0; top: 0; width: 100%; height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .upload-text {
+            font-size: 13px;
+            color: var(--accent-cyan);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .upload-icon {
+            width: 18px;
+            height: 18px;
+            fill: var(--accent-cyan);
+        }
+
+        /* Action Buttons */
+        .save-btn {
+            width: 100%;
+            background: linear-gradient(90deg, var(--accent-cyan) 0%, var(--accent-blue) 100%);
+            border: none;
+            border-radius: 50px;
+            padding: 12px;
+            color: #000;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 180, 216, 0.3);
+            margin-top: 10px;
+            transition: transform 0.1s ease;
+        }
+
+        .save-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    
+    <div class="preview-zone">
+        <div class="toggle-container">
+            <button class="toggle-btn active" onclick="switchSide('front')">Front Side</button>
+            <button class="toggle-btn" onclick="switchSide('back')">Back Side</button>
+        </div>
+
+        <div class="card-viewport">
+            <div id="card-front" class="business-card active">
+                <div class="card-front-bg" id="bg-front-canvas"></div>
+                <div class="card-front-accent"></div>
+                <div class="card-front-dark-overlay"></div>
+                
+                <div class="front-content">
+                    <div class="front-header">
+                        <div class="name-accent-block"></div>
+                        <div>
+                            <div class="user-name" id="lbl-name">JOHN <span>SMITH</span></div>
+                            <div class="user-title" id="lbl-title">Graphic Designer</div>
+                        </div>
+                    </div>
+
+                    <div class="company-brand">
+                        <svg class="brand-logo" viewBox="0 0 100 100">
+                            <polygon points="50,10 85,75 15,75" fill="none" stroke="#00b4d8" stroke-width="8"/>
+                            <polygon points="50,28 70,70 30,70" fill="#00b4d8"/>
+                            <circle cx="50" cy="53" r="6" fill="#fff"/>
+                        </svg>
+                        <div>
+                            <div class="brand-name" id="lbl-company-f">COMPANY <span>INC</span></div>
+                            <div class="brand-subtext" id="lbl-slogan-f">Creativegoldmedia</div>
+                        </div>
+                    </div>
+
+                    <ul class="contact-list">
+                        <li class="contact-item">
+                            <svg class="contact-icon" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                            <span id="lbl-phone">000-123-456-789</span>
+                        </li>
+                        <li class="contact-item">
+                            <svg class="contact-icon" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                            <span id="lbl-email">yourmail@gmail.com</span>
+                        </li>
+                        <li class="contact-item">
+                            <svg class="contact-icon" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                            <span id="lbl-address">your address here 1234 road, NY</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div id="card-back" class="business-card">
+                <div class="card-back-bg" id="bg-back-canvas"></div>
+                <div class="card-back-overlay">
+                    <svg class="brand-logo back-logo" viewBox="0 0 100 100">
+                        <polygon points="50,10 85,75 15,75" fill="none" stroke="#ffffff" stroke-width="8"/>
+                        <polygon points="50,28 70,70 30,70" fill="#ffffff"/>
+                        <circle cx="50" cy="53" r="6" fill="#0077b6"/>
+                    </svg>
+                    <div class="back-brand-title" id="lbl-company-b">COMPANY INC</div>
+                    <div class="back-brand-sub" id="lbl-slogan-b">Creativegoldmedia</div>
+                </div>
+                <div class="card-back-footer">
+                    <svg class="footer-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.53c-.26-.81-1-1.4-1.9-1.4h-1v-3c0-.55-.45-1-1-1h-6v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                    <span id="lbl-web">WWW.YOURCOMPANY.COM</span>
+                </div>
+            </div>
+        </div>
+        
+        <button class="save-btn" onclick="exportCardImage()">Save Card Image</button>
+    </div>
+
+    <div class="editor-zone">
+        <h2 class="section-title">Card Credentials</h2>
+        
+        <div class="form-group">
+            <label>Card Background Image</label>
+            <div class="upload-wrapper">
+                <svg class="upload-icon" viewBox="0 0 24 24">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z"/>
+                </svg>
+                <div class="upload-text">Choose from Gallery</div>
+                <input type="file" id="gallery-input" accept="image/*" onchange="handleImageUpload(this)">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="input-name" value="John Smith" oninput="updateCardFields()">
+        </div>
+
+        <div class="form-group">
+            <label>Job Title</label>
+            <input type="text" id="input-title" value="Graphic Designer" oninput="updateCardFields()">
+        </div>
+
+        <div class="form-group">
+            <label>Company Name</label>
+            <input type="text" id="input-company" value="COMPANY INC" oninput="updateCardFields()">
+        </div>
+
+        <div class="form-group">
+            <label>Slogan / Subtext</label>
+            <input type="text" id="input-slogan" value="Creativegoldmedia" oninput="updateCardFields()">
+        </div>
+
+        <div class="form-group">
+            <label>Phone Number</label>
+            <input type="text" id="input-phone" value="000-123-456-789" oninput="updateCardFields()">
+        </div>
+
+        <div class="form-group">
+            <label>Email Address</label>
+            <input type="text" id="input-email" value="yourmail@gmail.com" oninput="updateCardFields()">
+        </div>
+
+        <div class="form-group">
+            <label>Office Address</label>
+            <input type="text" id="input-address" value="your address here 1234 road, NY" oninput="updateCardFields()">
+        </div>
+
+        <div class="form-group">
+            <label>Website URL</label>
+            <input type="text" id="input-web" value="WWW.YOURCOMPANY.COM" oninput="updateCardFields()">
+        </div>
+    </div>
+</div>
+
+<script>
+    // Local Gallery Upload Processing Logic Block
+    function handleImageUpload(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const imgUrl = e.target.result;
+                // Update both front and back layout background states
+                document.getElementById('bg-front-canvas').style.backgroundImage = `url('${imgUrl}')`;
+                document.getElementById('bg-back-canvas').style.backgroundImage = `url('${imgUrl}')`;
+            };
+            
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    // Interface Tab Side Controller Switching Logic
+    function switchSide(side) {
+        document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.business-card').forEach(card => card.classList.remove('active'));
+        
+        if(side === 'front') {
+            document.querySelectorAll('.toggle-btn')[0].classList.add('active');
+            document.getElementById('card-front').classList.add('active');
+        } else {
+            document.querySelectorAll('.toggle-btn')[1].classList.add('active');
+            document.getElementById('card-back').classList.add('active');
+        }
+    }
+
+    // Dynamic Live Parsing Bind Update Function
+    function updateCardFields() {
+        const nameVal = document.getElementById('input-name').value;
+        const words = nameVal.split(' ');
+        if(words.length > 1) {
+            const firstWord = words[0];
+            const remaining = words.slice(1).join(' ');
+            document.getElementById('lbl-name').innerHTML = `${firstWord} <span>${remaining}</span>`;
+        } else {
+            document.getElementById('lbl-name').innerHTML = nameVal;
+        }
+
+        document.getElementById('lbl-title').innerText = document.getElementById('input-title').value;
+        
+        const compVal = document.getElementById('input-company').value;
+        const compWords = compVal.split(' ');
+        if(compWords.length > 1) {
+            document.getElementById('lbl-company-f').innerHTML = `${compWords[0]} <span>${compWords.slice(1).join(' ')}</span>`;
+        } else {
+            document.getElementById('lbl-company-f').innerHTML = compVal;
+        }
+        
+        document.getElementById('lbl-company-b').innerText = compVal;
+        
+        const slogan = document.getElementById('input-slogan').value;
+        document.getElementById('lbl-slogan-f').innerText = slogan;
+        document.getElementById('lbl-slogan-b').innerText = slogan;
+
+        document.getElementById('lbl-phone').innerText = document.getElementById('input-phone').value;
+        document.getElementById('lbl-email').innerText = document.getElementById('input-email').value;
+        document.getElementById('lbl-address').innerText = document.getElementById('input-address').value;
+        document.getElementById('lbl-web').innerText = document.getElementById('input-web').value.toUpperCase();
+    }
+
+    // HTML2Canvas high-resolution snapshot download processing logic block
+    function exportCardImage() {
+        const activeCard = document.querySelector('.business-card.active');
+        const activeSideName = activeCard.id === 'card-front' ? 'front' : 'back';
+        
+        const originalBoxShadow = activeCard.style.boxShadow;
+        activeCard.style.boxShadow = "none";
+
+        html2canvas(activeCard, {
+            scale: 4, // Clean high-resolution pixel matrix matching premium device displays
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: null
+        }).then(canvas => {
+            activeCard.style.boxShadow = originalBoxShadow;
+            
+            const imageURI = canvas.toDataURL("image/png");
+            
+            const downloadLink = document.createElement('a');
+            downloadLink.download = `business_card_${activeSideName}_preview.png`;
+            downloadLink.href = imageURI;
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }).catch(err => {
+            console.error("Error generating image output asset matrix: ", err);
+        });
+    }
+
+    // Initialize formatting triggers on window load runtime cycles
+    window.onload = function() {
+        updateCardFields();
+    };
+</script>
+
+</body>
+</html>

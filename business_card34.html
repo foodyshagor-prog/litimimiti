@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Business Card Maker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #1f1c2c, #0f0e17);
+            --panel-bg: rgba(255, 255, 255, 0.05);
+            --accent-yellow: #f3b917;
+            --card-dark: #332c2c;
+            --text-light: #ffffff;
+            --text-muted: #a0a0a0;
+            --input-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* --- STICKY TOP PREVIEW AREA --- */
+        .preview-container {
+            position: sticky;
+            top: 0;
+            background: linear-gradient(180deg, #1f1c2c 80%, rgba(31, 28, 44, 0));
+            padding: 15px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        /* Toggle Switch styling */
+        .view-toggle {
+            display: flex;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 25px;
+            padding: 4px;
+            margin-bottom: 15px;
+            border: 1px solid var(--input-border);
+            width: 80%;
+            max-width: 300px;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px 0;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: var(--accent-yellow);
+            color: #000;
+        }
+
+        /* Card Canvas Window */
+        .card-window {
+            width: 100%;
+            max-width: 350px;
+            aspect-ratio: 1.75 / 1; /* Standard business card ratio */
+            position: relative;
+            perspective: 1000px;
+        }
+
+        .business-card {
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            position: absolute;
+            overflow: hidden;
+            display: none;
+            background: var(--card-dark);
+        }
+
+        .business-card.active-view {
+            display: block;
+        }
+
+        /* --- FRONT SIDE DESIGN --- */
+        .card-front {
+            display: flex;
+            flex-direction: column;
+        }
+        .front-top {
+            height: 40%;
+            background: var(--card-dark);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+        .front-bottom {
+            height: 60%;
+            background: var(--accent-yellow);
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 0 20px;
+            position: relative;
+        }
+        .logo-block {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .logo-icon {
+            width: 20px;
+            height: 20px;
+            background: var(--accent-yellow);
+            color: #000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .logo-text {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .web-disp {
+            color: var(--accent-yellow);
+            font-size: 10px;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .qr-badge {
+            position: absolute;
+            left: 20px;
+            top: -35px;
+            width: 85px;
+            height: 85px;
+            background: var(--card-dark);
+            border: 5px solid var(--accent-yellow);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .qr-badge img {
+            width: 75%;
+            height: 75%;
+            object-fit: contain;
+        }
+        .welcome-msg {
+            color: #000;
+            font-size: 18px;
+            font-weight: 800;
+            text-align: right;
+            line-height: 1.2;
+            max-width: 180px;
+        }
+
+        /* --- BACK SIDE DESIGN --- */
+        .card-back {
+            background: var(--card-dark);
+            padding: 15px 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .back-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .meta-block {
+            text-align: right;
+        }
+        .name-disp {
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .title-disp {
+            color: var(--accent-yellow);
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+        .back-body {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 70%;
+            margin-top: 5px;
+        }
+        .avatar-frame {
+            width: 75px;
+            height: 75px;
+            border-radius: 50%;
+            border: 4px solid var(--accent-yellow);
+            overflow: hidden;
+            background: #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .avatar-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .contact-timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+            width: 60%;
+        }
+        /* Vertical connecting line */
+        .contact-timeline::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 10px;
+            bottom: 10px;
+            width: 1.5px;
+            background: var(--accent-yellow);
+            z-index: 1;
+        }
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 2;
+        }
+        .icon-circle {
+            width: 20px;
+            height: 20px;
+            background: var(--accent-yellow);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .icon-circle svg {
+            width: 11px;
+            height: 11px;
+            fill: #000;
+        }
+        .contact-details {
+            display: flex;
+            flex-direction: column;
+        }
+        .contact-details span {
+            color: #fff;
+            font-size: 8px;
+            line-height: 1.2;
+            word-break: break-all;
+        }
+
+        /* --- SCROLLABLE EDITOR PANEL --- */
+        .editor-container {
+            flex: 1;
+            padding: 20px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent-yellow);
+            margin-bottom: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .editor-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 12px;
+            padding: 15px;
+            backdrop-filter: blur(5px);
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        input[type="text"], input[type="tel"], input[type="email"] {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: #fff;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent-yellow);
+        }
+
+        /* Custom File Input Styling */
+        .file-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0,0,0,0.2);
+            border: 1px dashed var(--input-border);
+            padding: 8px;
+            border-radius: 8px;
+        }
+
+        input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-custom-btn {
+            background: rgba(255,255,255,0.1);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .file-name {
+            font-size: 12px;
+            color: var(--text-muted);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Action Buttons */
+        .btn-save {
+            background: linear-gradient(90deg, #f3b917, #d49f0c);
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            width: 100%;
+            margin-top: 10px;
+            box-shadow: 0 5px 15px rgba(243, 185, 23, 0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-save:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="preview-container">
+        <div class="view-toggle">
+            <button class="toggle-btn active" id="btn-show-front" onclick="switchView('front')">Front Side</button>
+            <button class="toggle-btn" id="btn-show-back" onclick="switchView('back')">Back Side</button>
+        </div>
+
+        <div class="card-window">
+            
+            <div class="business-card active-view" id="render-front">
+                <div class="card-front" style="height:100%;">
+                    <div class="front-top">
+                        <div class="logo-block">
+                            <div class="logo-icon">b</div>
+                            <div class="logo-text val-logo-text">bourjart</div>
+                        </div>
+                        <div class="web-disp val-web-url">www.companame.com</div>
+                    </div>
+                    <div class="front-bottom">
+                        <div class="qr-badge">
+                            <img id="img-qr-preview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='white'/><path d='M10 10h30v30h-30zm40 0h10v10h-10zm20 0h20v20h-20zm-70 50h20v20h-20zm50 0h10v10h-10zm20 0h10v20h-10zm-60-40h10v10h-10zm60 0h10v10h-10zm-60 50h10v10h-10zm50 20h20v10h-25z' fill='black'/></svg>" alt="QR">
+                        </div>
+                        <div class="welcome-msg val-welcome-text">Welcome<br>to our Company</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="business-card" id="render-back">
+                <div class="card-back" style="height:100%;">
+                    <div class="back-header">
+                        <div class="logo-block">
+                            <div class="logo-icon">b</div>
+                            <div class="logo-text val-logo-text">bourjart</div>
+                        </div>
+                        <div class="meta-block">
+                            <div class="name-disp val-name">Michael John</div>
+                            <div class="title-disp val-title">Creative Director</div>
+                        </div>
+                    </div>
+                    <div class="back-body">
+                        <div class="avatar-frame">
+                            <img id="img-avatar-preview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23888888'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5-4-8-4z'/></svg>" alt="Profile">
+                        </div>
+                        <div class="contact-timeline">
+                            <div class="contact-item">
+                                <div class="icon-circle">
+                                    <svg viewBox="0 0 24 24"><path d='M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z'/></svg>
+                                </div>
+                                <div class="contact-details">
+                                    <span class="val-phone1">(+123) 123 456 7890</span>
+                                    <span class="val-phone2">(+123) 123 456 7890</span>
+                                </div>
+                            </div>
+                            <div class="contact-item">
+                                <div class="icon-circle">
+                                    <svg viewBox="0 0 24 24"><path d='M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95c-.32-1.25-.78-2.45-1.38-3.56 1.84.42 3.47 1.65 4.33 3.56zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14c-.16-.64-.26-1.31-.26-2s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2 0 .68.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56-1.84-.42-3.47-1.65-4.33-3.56zm2.95-8H5.08c.86-1.91 2.49-3.14 4.33-3.56-.6 1.11-1.06 2.31-1.38 3.56zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zm2.52-5.96h-5.04c-.09-.66-.16-1.32-.16-2 0-.68.07-1.35.16-2h5.04c.09.65.16 1.32.16 2 0 .68-.07 1.34-.16 2zm1.51 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95c-.86 1.91-2.49 3.14-4.33 3.56zm1.38-5.56c.08-.66.14-1.32.14-2 0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z'/></svg>
+                                </div>
+                                <div class="contact-details">
+                                    <span class="val-web-url">www.companame.com</span>
+                                    <span class="val-email">companame@domain.com</span>
+                                </div>
+                            </div>
+                            <div class="contact-item">
+                                <div class="icon-circle">
+                                    <svg viewBox="0 0 24 24"><path d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z'/></svg>
+                                </div>
+                                <div class="contact-details">
+                                    <span class="val-address1">1234, City Name, Street</span>
+                                    <span class="val-address2">Name, City, Country</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="editor-container">
+
+        <div class="editor-card">
+            <div class="section-title">Brand Identity</div>
+            <div class="input-group">
+                <label>Company / Brand Name</label>
+                <input type="text" id="input-brand-name" value="bourjart" onkeyup="syncText('val-logo-text', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Website Link</label>
+                <input type="text" id="input-web-url" value="www.companame.com" onkeyup="syncText('val-web-url', this.value)">
+            </div>
+        </div>
+
+        <div class="editor-card">
+            <div class="section-title">Front Side Customization</div>
+            <div class="input-group">
+                <label>Tagline / Welcome Message (Use &lt;br&gt; for line breaks)</label>
+                <input type="text" id="input-welcome" value="Welcome<br>to our Company" onkeyup="syncHTML('val-welcome-text', this.value)">
+            </div>
+            <div class="input-group">
+                <label>QR Code Image</label>
+                <div class="file-input-wrapper">
+                    <div class="file-custom-btn">Choose QR File</div>
+                    <div class="file-name" id="label-qr">No file chosen</div>
+                    <input type="file" id="input-qr" accept="image/*" onchange="processImage(this, 'img-qr-preview', 'label-qr')">
+                </div>
+            </div>
+        </div>
+
+        <div class="editor-card">
+            <div class="section-title">Back Side Customization</div>
+            <div class="input-group">
+                <label>Full Name</label>
+                <input type="text" id="input-name" value="Michael John" onkeyup="syncText('val-name', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Job Designation</label>
+                <input type="text" id="input-title" value="Creative Director" onkeyup="syncText('val-title', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Profile Picture</label>
+                <div class="file-input-wrapper">
+                    <div class="file-custom-btn">Upload Avatar</div>
+                    <div class="file-name" id="label-avatar">No file chosen</div>
+                    <input type="file" id="input-avatar" accept="image/*" onchange="processImage(this, 'img-avatar-preview', 'label-avatar')">
+                </div>
+            </div>
+            <div class="input-group">
+                <label>Phone Line 1</label>
+                <input type="tel" id="input-phone1" value="(+123) 123 456 7890" onkeyup="syncText('val-phone1', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Phone Line 2</label>
+                <input type="tel" id="input-phone2" value="(+123) 123 456 7890" onkeyup="syncText('val-phone2', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Business Email Address</label>
+                <input type="email" id="input-email" value="companame@domain.com" onkeyup="syncText('val-email', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Address Line 1</label>
+                <input type="text" id="input-addr1" value="1234, City Name, Street" onkeyup="syncText('val-address1', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Address Line 2</label>
+                <input type="text" id="input-addr2" value="Name, City, Country" onkeyup="syncText('val-address2', this.value)">
+            </div>
+        </div>
+
+        <button class="btn-save" onclick="exportCardImage()">
+            <svg style="width:20px;height:20px;fill:currentColor" viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+            Save Current Side Layout
+        </button>
+
+    </div>
+
+    <script>
+        let visibleSide = 'front';
+
+        // Interface Toggle Handling Engine
+        function switchView(side) {
+            visibleSide = side;
+            document.querySelectorAll('.business-card').forEach(card => card.classList.remove('active-view'));
+            document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+            
+            if (side === 'front') {
+                document.getElementById('render-front').classList.add('active-view');
+                document.getElementById('btn-show-front').classList.add('active');
+            } else {
+                document.getElementById('render-back').classList.add('active-view');
+                document.getElementById('btn-show-back').classList.add('active');
+            }
+        }
+
+        // Live DOM Updating Real-time Engines
+        function syncText(className, content) {
+            document.querySelectorAll('.' + className).forEach(el => {
+                el.innerText = content;
+            });
+        }
+
+        function syncHTML(className, content) {
+            document.querySelectorAll('.' + className).forEach(el => {
+                el.innerHTML = content;
+            });
+        }
+
+        // Safe Local System Base64 Image Processing Engine
+        function processImage(inputSource, previewImageId, labelId) {
+            if (inputSource.files && inputSource.files[0]) {
+                const fileObj = inputSource.files[0];
+                document.getElementById(labelId).innerText = fileObj.name;
+                
+                const fileReader = new FileReader();
+                fileReader.onload = function(e) {
+                    document.getElementById(previewImageId).src = e.target.result;
+                };
+                fileReader.readAsDataURL(fileObj);
+            }
+        }
+
+        // High-Quality Bitmap Generation & Download Engine
+        function exportCardImage() {
+            const targetID = visibleSide === 'front' ? 'render-front' : 'render-back';
+            const nodeElement = document.getElementById(targetID);
+
+            // Temporarily standardizing scale parameters to prevent low resolution artifact bugs on dynamic ViewPorts
+            html2canvas(nodeElement, {
+                scale: 3, // Upscaling output definition matrix size
+                useCORS: true,
+                backgroundColor: null,
+                logging: false
+            }).then(canvas => {
+                const dataUrlRepresentation = canvas.toDataURL("image/png");
+                
+                // Dynamic clean pipeline processing safe virtual anchor execution
+                const executionAnchor = document.createElement('a');
+                executionAnchor.download = `BusinessCard_${visibleSide}_${Date.now()}.png`;
+                executionAnchor.href = dataUrlRepresentation;
+                document.body.appendChild(executionAnchor);
+                executionAnchor.click();
+                document.body.removeChild(executionAnchor);
+            }).catch(err => {
+                console.error("Canvas output execution failure exception stack: ", err);
+                alert("Failed to compile image layout layer graphics components processing exception.");
+            });
+        }
+    </script>
+</body>
+</html>

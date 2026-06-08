@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Business Card Maker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            --primary: #f97316; /* Orange matching the card */
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Preview Area (Sticky for Mobile) */
+        .preview-section {
+            position: sticky;
+            top: 0;
+            background: rgba(15, 32, 39, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            padding: 15px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .switch-container {
+            display: flex;
+            background: var(--glass-bg);
+            border-radius: 20px;
+            padding: 4px;
+            margin-bottom: 15px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .switch-btn {
+            background: transparent;
+            color: #888;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .switch-btn.active {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(249, 115, 22, 0.3);
+        }
+
+        .card-wrapper {
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 1000 / 600; /* Standard high-res ratio */
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .card {
+            width: 1000px;
+            height: 600px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            background: #fff;
+            color: #1a1a1a;
+            display: none;
+            overflow: hidden;
+            border-radius: 40px; /* High-res border radius */
+        }
+
+        .card.active {
+            display: block;
+        }
+
+        /* SVG Backgrounds for Pixel-Perfect Recreation */
+        .card-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* Card Content Layer */
+        .card-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+
+        /* Front Card Elements */
+        .front-logo-container {
+            position: absolute;
+            left: 90px;
+            top: 110px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #fff;
+        }
+        
+        .logo-icon {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 10px;
+            object-fit: contain;
+        }
+
+        .front-logo-container h2 {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        .header-text {
+            position: absolute;
+            right: 120px;
+            top: 100px;
+        }
+
+        .header-text h1 {
+            font-size: 46px;
+            color: #1a1a1a;
+            display: flex;
+            gap: 15px;
+        }
+
+        .header-text h1 span:first-child { font-weight: 700; }
+        .header-text h1 span:last-child { font-weight: 300; }
+        
+        .header-text p {
+            font-size: 20px;
+            color: #444;
+            margin-top: 5px;
+            letter-spacing: 1px;
+        }
+
+        .header-divider {
+            width: 60px;
+            height: 4px;
+            background: #444;
+            margin-top: 15px;
+            border-radius: 2px;
+        }
+
+        .contact-info {
+            position: absolute;
+            left: 540px;
+            top: 280px;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 18px;
+            color: #1a1a1a;
+            font-weight: 400;
+        }
+
+        .contact-icon {
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        /* Back Card Elements */
+        .card-back { background: #1a1a1a; }
+        
+        .back-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #fff;
+            width: 100%;
+        }
+
+        .back-center .logo-icon { width: 110px; height: 110px; margin-bottom: 20px; }
+        .back-center h2 { font-size: 42px; font-weight: 700; letter-spacing: 3px; }
+        .back-center p { font-size: 20px; font-weight: 300; letter-spacing: 5px; margin-top: 5px; color: #aaa; text-transform: uppercase; }
+        
+        .back-website {
+            position: absolute;
+            bottom: 60px;
+            width: 100%;
+            text-align: center;
+            color: #fff;
+            font-size: 22px;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        /* Bottom Editor Area */
+        .editor-section {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            padding-bottom: 100px; /* Space for FAB */
+        }
+
+        .input-group {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .input-row:last-child { margin-bottom: 0; }
+
+        input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus { border-color: var(--primary); }
+
+        input[type="file"] {
+            padding: 8px;
+            font-size: 12px;
+        }
+
+        /* Floating Action Button */
+        .fab {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(45deg, #f97316, #ea580c);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 600;
+            box-shadow: 0 10px 20px rgba(234, 88, 12, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            z-index: 1000;
+            width: 90%;
+            max-width: 400px;
+            justify-content: center;
+        }
+
+        .fab:active { transform: translateX(-50%) scale(0.95); }
+
+        /* Offscreen render container */
+        #render-container {
+            position: absolute;
+            left: -9999px;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 50px;
+            background: transparent;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="preview-section">
+        <div class="switch-container">
+            <button class="switch-btn active" onclick="switchSide('front')">Front</button>
+            <button class="switch-btn" onclick="switchSide('back')">Back</button>
+        </div>
+
+        <div class="card-wrapper" id="cardWrapper">
+            <div class="card active" id="cardFront">
+                <svg class="card-bg" viewBox="0 0 1000 600" preserveAspectRatio="none">
+                    <defs>
+                        <clipPath id="cardClip"><rect width="1000" height="600" rx="40"/></clipPath>
+                    </defs>
+                    <g clip-path="url(#cardClip)">
+                        <rect width="1000" height="600" fill="#ffffff" />
+                        <polygon points="0,0 420,0 200,600 0,600" fill="#18181b" />
+                        <polygon points="410,0 450,0 230,600 190,600" fill="#3f3f46" />
+                        <polygon points="420,600 850,0 1100,0 650,600" fill="#f97316" />
+                        <polygon points="260,320 650,0 520,380" fill="#c2410c" />
+                        <polygon points="320,0 650,0 380,240 260,320" fill="#f97316" />
+                    </g>
+                </svg>
+
+                <div class="card-content">
+                    <div class="front-logo-container">
+                        <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' stroke='%23f97316' stroke-width='8' fill='none'/><path d='M 30 20 L 30 60 A 10 10 0 0 0 50 60 L 50 20 M 50 20 L 50 60 A 10 10 0 0 0 70 60 L 70 20' stroke='%23f97316' stroke-width='8' fill='none'/></svg>" class="logo-icon" id="preview-logo-front" alt="Logo">
+                        <h2 id="preview-company-front">LOGO</h2>
+                    </div>
+
+                    <div class="header-text">
+                        <h1>
+                            <span id="preview-fname">Saiful Islam</span> 
+                            <span id="preview-lname">Shagor</span>
+                        </h1>
+                        <p id="preview-role">Android Developer</p>
+                        <div class="header-divider"></div>
+                    </div>
+
+                    <div class="contact-info">
+                        <div class="contact-item">
+                            <div class="contact-icon"><i class="fas fa-phone"></i></div>
+                            <span id="preview-phone">+880 123 456 789</span>
+                        </div>
+                        <div class="contact-item">
+                            <div class="contact-icon"><i class="fas fa-envelope"></i></div>
+                            <span id="preview-email">contact@megatoolbox.net</span>
+                        </div>
+                        <div class="contact-item">
+                            <div class="contact-icon"><i class="fas fa-map-marker-alt"></i></div>
+                            <span id="preview-address">Savar, Dhaka, Bangladesh</span>
+                        </div>
+                        <div class="contact-item">
+                            <div class="contact-icon"><i class="fas fa-mouse-pointer"></i></div>
+                            <span id="preview-website">www.megatoolbox.net</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-back" id="cardBack">
+                <svg class="card-bg" viewBox="0 0 1000 600" preserveAspectRatio="none">
+                    <defs>
+                        <clipPath id="cardClipBack"><rect width="1000" height="600" rx="40"/></clipPath>
+                    </defs>
+                    <rect width="1000" height="600" fill="#18181b" clip-path="url(#cardClipBack)"/>
+                </svg>
+
+                <div class="card-content">
+                    <div class="back-center">
+                        <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' stroke='%23f97316' stroke-width='8' fill='none'/><path d='M 30 20 L 30 60 A 10 10 0 0 0 50 60 L 50 20 M 50 20 L 50 60 A 10 10 0 0 0 70 60 L 70 20' stroke='%23f97316' stroke-width='8' fill='none'/></svg>" class="logo-icon" id="preview-logo-back" alt="Logo">
+                        <h2 id="preview-company-back">FOODY SHAGOR</h2>
+                        <p id="preview-tagline">PERFECTX</p>
+                    </div>
+                    <div class="back-website" id="preview-website-back">www.megatoolbox.net</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="editor-section">
+        <div class="input-group">
+            <label>Brand & Logo</label>
+            <input type="file" id="logoInput" accept="image/*" style="margin-bottom: 10px;">
+            <input type="text" id="input-company" placeholder="Company Name" value="Foody Shagor">
+            <input type="text" id="input-tagline" placeholder="Tagline" value="PerfectX" style="margin-top: 10px;">
+        </div>
+
+        <div class="input-group">
+            <label>Personal Information</label>
+            <div class="input-row">
+                <input type="text" id="input-fname" placeholder="First Name" value="Saiful Islam">
+                <input type="text" id="input-lname" placeholder="Last Name" value="Shagor">
+            </div>
+            <input type="text" id="input-role" placeholder="Job Title" value="Android Developer">
+        </div>
+
+        <div class="input-group">
+            <label>Contact Details</label>
+            <input type="text" id="input-phone" placeholder="Phone Number" value="+880 123 456 789" style="margin-bottom: 10px;">
+            <input type="text" id="input-email" placeholder="Email Address" value="contact@megatoolbox.net" style="margin-bottom: 10px;">
+            <input type="text" id="input-address" placeholder="Address" value="Savar, Dhaka, Bangladesh" style="margin-bottom: 10px;">
+            <input type="text" id="input-website" placeholder="Website URL" value="www.megatoolbox.net">
+        </div>
+    </div>
+
+    <button class="fab" onclick="downloadCard()">
+        <i class="fas fa-download"></i> Save Image
+    </button>
+
+    <div id="render-container"></div>
+
+    <script>
+        // --- 1. Scalable Mobile Preview ---
+        function scaleCard() {
+            const wrapper = document.getElementById('cardWrapper');
+            const front = document.getElementById('cardFront');
+            const back = document.getElementById('cardBack');
+            
+            // The actual card is 1000px wide. We scale it CSS transform to fit mobile container.
+            const scale = wrapper.clientWidth / 1000;
+            front.style.transform = `scale(${scale})`;
+            back.style.transform = `scale(${scale})`;
+        }
+
+        window.addEventListener('resize', scaleCard);
+        window.addEventListener('load', scaleCard);
+
+        // --- 2. Side Switching Logic ---
+        function switchSide(side) {
+            const btns = document.querySelectorAll('.switch-btn');
+            btns.forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById('cardFront').classList.remove('active');
+            document.getElementById('cardBack').classList.remove('active');
+
+            if(side === 'front') {
+                btns[0].classList.add('active');
+                document.getElementById('cardFront').classList.add('active');
+            } else {
+                btns[1].classList.add('active');
+                document.getElementById('cardBack').classList.add('active');
+            }
+        }
+
+        // --- 3. Live Data Binding ---
+        const bindData = (inputId, targetIds, isUpperCase = false) => {
+            const input = document.getElementById(inputId);
+            input.addEventListener('input', (e) => {
+                let val = e.target.value || '';
+                if(isUpperCase) val = val.toUpperCase();
+                targetIds.forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.textContent = val;
+                });
+            });
+            // Trigger initial
+            input.dispatchEvent(new Event('input'));
+        };
+
+        bindData('input-fname', ['preview-fname']);
+        bindData('input-lname', ['preview-lname']);
+        bindData('input-role', ['preview-role']);
+        bindData('input-phone', ['preview-phone']);
+        bindData('input-email', ['preview-email']);
+        bindData('input-address', ['preview-address']);
+        bindData('input-website', ['preview-website', 'preview-website-back']);
+        bindData('input-company', ['preview-company-front', 'preview-company-back'], true);
+        bindData('input-tagline', ['preview-tagline'], true);
+
+        // Logo Image Upload
+        document.getElementById('logoInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    document.getElementById('preview-logo-front').src = event.target.result;
+                    document.getElementById('preview-logo-back').src = event.target.result;
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // --- 4. High-Res Image Export Logic ---
+        async function downloadCard() {
+            const btn = document.querySelector('.fab');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            btn.disabled = true;
+
+            try {
+                // To ensure high quality and get both sides, we clone them into an unscaled hidden container
+                const renderContainer = document.getElementById('render-container');
+                renderContainer.innerHTML = ''; // Clear previous
+
+                const cloneFront = document.getElementById('cardFront').cloneNode(true);
+                const cloneBack = document.getElementById('cardBack').cloneNode(true);
+                
+                // Force visibility and standard scale for html2canvas
+                const prepClone = (clone) => {
+                    clone.style.display = 'block';
+                    clone.style.position = 'relative';
+                    clone.style.transform = 'none';
+                    clone.style.borderRadius = '0px'; // Prevent edge artifacts during render
+                    renderContainer.appendChild(clone);
+                };
+
+                prepClone(cloneFront);
+                prepClone(cloneBack);
+
+                // Render Front
+                const canvasFront = await html2canvas(cloneFront, {
+                    scale: 2, // High DPI
+                    useCORS: true,
+                    backgroundColor: null
+                });
+
+                // Render Back
+                const canvasBack = await html2canvas(cloneBack, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: null
+                });
+
+                // Create a master canvas to stack them vertically
+                const finalCanvas = document.createElement('canvas');
+                const ctx = finalCanvas.getContext('2d');
+                const gap = 100; // Gap between front and back in output
+
+                finalCanvas.width = canvasFront.width;
+                finalCanvas.height = canvasFront.height + canvasBack.height + gap;
+
+                // Fill background white/transparent
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+
+                // Draw both canvases
+                ctx.drawImage(canvasFront, 0, 0);
+                ctx.drawImage(canvasBack, 0, canvasFront.height + gap);
+
+                // Trigger Download
+                const link = document.createElement('a');
+                link.download = 'PerfectX-Business-Card.png';
+                link.href = finalCanvas.toDataURL('image/png');
+                link.click();
+
+                // Cleanup
+                renderContainer.innerHTML = '';
+
+            } catch (error) {
+                console.error("Export failed:", error);
+                alert("Failed to save image. Please try again.");
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Business Card Maker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --app-bg: linear-gradient(135deg, #0f172a, #1e293b);
+            --card-bg: #0a0a0a;
+            --accent-green: #10b981;
+            --accent-green-dark: #059669;
+            --text-main: #ffffff;
+            --text-sub: #a3a3a3;
+            --shape-light: #ffffff;
+            --shape-mid: #a3a3a3;
+            --shape-dark: #262626;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background: var(--app-bg);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- Preview Section --- */
+        .preview-section {
+            flex: 0 0 auto;
+            padding: 20px 15px 15px 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 5px;
+            border-radius: 25px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            color: var(--text-sub);
+            border: none;
+            padding: 8px 24px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-green-dark));
+            color: white;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        /* Responsive Scaler Wrapper */
+        .card-scaler {
+            position: relative;
+            width: 100%;
+            max-width: 400px; /* Max width for mobile view */
+            aspect-ratio: 16 / 9;
+            border-radius: 4px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+            overflow: hidden;
+        }
+
+        /* Actual Card Dimensions (Fixed for high-res export) */
+        .card {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 800px;
+            height: 450px;
+            background-color: var(--card-bg);
+            transform-origin: top left;
+            display: none;
+            overflow: hidden;
+        }
+
+        .card.active {
+            display: block;
+        }
+
+        /* --- Card Design: Reusable Elements --- */
+        .logo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 18px);
+            grid-template-rows: repeat(3, 18px);
+            gap: 4px;
+        }
+        .diamond { border-radius: 5px; }
+        .d-top { border: 3px solid var(--shape-light); grid-column: 2; grid-row: 1; }
+        .d-left { background: var(--shape-light); grid-column: 1; grid-row: 2; }
+        .d-right { background: var(--shape-mid); grid-column: 3; grid-row: 2; }
+        .d-bottom { border: 3px solid var(--shape-mid); grid-column: 2; grid-row: 3; }
+
+        .shape-rect {
+            position: absolute;
+            width: 450px;
+            height: 450px;
+            border-radius: 50px;
+            transform: rotate(45deg);
+            box-shadow: 15px 15px 30px rgba(0,0,0,0.6);
+        }
+
+        /* --- Card Front Design --- */
+        .front-shapes { position: absolute; top: -150px; left: -150px; }
+        .fs-1 { background: var(--shape-light); top: -60px; left: -60px; z-index: 3; }
+        .fs-2 { background: var(--shape-mid); top: 20px; left: 20px; z-index: 2; }
+        .fs-3 { background: var(--shape-dark); top: 100px; left: 100px; z-index: 1; }
+
+        .front-content {
+            position: absolute;
+            right: 80px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 10;
+        }
+        .front-logo { margin-bottom: 25px; }
+        .text-company { font-size: 56px; font-weight: 900; letter-spacing: 2px; color: var(--text-main); margin: 0; }
+        .text-slogan { font-size: 16px; letter-spacing: 4px; color: var(--text-sub); margin: 5px 0 0 0; text-transform: uppercase; }
+
+        /* --- Card Back Design --- */
+        .back-bg-split {
+            position: absolute;
+            width: 900px;
+            height: 900px;
+            background: #1a1a1a;
+            transform: rotate(45deg);
+            top: -500px;
+            right: -300px;
+            z-index: 0;
+            box-shadow: -15px 15px 30px rgba(0,0,0,0.4);
+        }
+
+        .back-shapes { position: absolute; bottom: -200px; right: -200px; z-index: 5; }
+        .bs-1 { background: var(--shape-dark); bottom: 100px; right: 100px; z-index: 3; }
+        .bs-2 { background: var(--shape-mid); bottom: 20px; right: 20px; z-index: 2; }
+        .bs-3 { background: var(--shape-light); bottom: -60px; right: -60px; z-index: 1; }
+
+        .back-left {
+            position: absolute;
+            left: 60px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+        }
+        .back-logo-scale { transform: scale(0.65); transform-origin: left center; }
+        .back-company { font-size: 38px; font-weight: 900; letter-spacing: 1.5px; color: var(--text-main); margin-top: 5px; }
+        .back-slogan { font-size: 11px; letter-spacing: 3px; color: var(--text-sub); text-transform: uppercase;}
+        
+        .contact-group { margin-top: 45px; display: flex; flex-direction: column; gap: 18px; }
+        .contact-item { display: flex; align-items: center; gap: 15px; font-size: 13px; font-weight: 700; color: #e5e5e5; }
+        .contact-item svg { width: 16px; height: 16px; fill: var(--text-main); flex-shrink: 0; }
+
+        .back-right {
+            position: absolute;
+            right: 320px;
+            top: 40%;
+            text-align: right;
+            z-index: 10;
+        }
+        .text-name { font-size: 38px; font-weight: 800; color: var(--text-main); border-bottom: 4px solid var(--text-main); padding-bottom: 10px; margin-bottom: 12px; text-transform: uppercase; }
+        .text-title { font-size: 15px; font-weight: 600; color: #d4d4d4; letter-spacing: 2px; text-transform: uppercase; }
+
+
+        /* --- Editor Section --- */
+        .editor-section {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* Custom Scrollbar for modern look */
+        .editor-section::-webkit-scrollbar { width: 6px; }
+        .editor-section::-webkit-scrollbar-track { background: transparent; }
+        .editor-section::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+        .input-group { display: flex; flex-direction: column; gap: 6px; }
+        .input-group label { font-size: 12px; color: #cbd5e1; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .input-group input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        .input-group input:focus {
+            border-color: var(--accent-green);
+            background: rgba(255, 255, 255, 0.08);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-green-dark));
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 16px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: transform 0.1s ease;
+        }
+        .btn-save:active { transform: scale(0.98); }
+
+    </style>
+</head>
+<body>
+
+    <div class="preview-section">
+        <div class="tabs">
+            <button class="tab-btn active" data-side="front">Front Page</button>
+            <button class="tab-btn" data-side="back">Back Page</button>
+        </div>
+
+        <div class="card-scaler" id="card-scaler">
+            
+            <div id="card-front" class="card active">
+                <div class="front-shapes">
+                    <div class="shape-rect fs-1"></div>
+                    <div class="shape-rect fs-2"></div>
+                    <div class="shape-rect fs-3"></div>
+                </div>
+                <div class="front-content">
+                    <div class="front-logo logo-grid">
+                        <div class="diamond d-top"></div>
+                        <div class="diamond d-left"></div>
+                        <div class="diamond d-right"></div>
+                        <div class="diamond d-bottom"></div>
+                    </div>
+                    <h1 class="text-company disp-company">BLOCK</h1>
+                    <p class="text-slogan disp-slogan">COMPANY SLOGAN HERE</p>
+                </div>
+            </div>
+
+            <div id="card-back" class="card">
+                <div class="back-bg-split"></div>
+                
+                <div class="back-shapes">
+                    <div class="shape-rect bs-1"></div>
+                    <div class="shape-rect bs-2"></div>
+                    <div class="shape-rect bs-3"></div>
+                </div>
+
+                <div class="back-left">
+                    <div class="back-logo-scale">
+                        <div class="logo-grid">
+                            <div class="diamond d-top"></div>
+                            <div class="diamond d-left"></div>
+                            <div class="diamond d-right"></div>
+                            <div class="diamond d-bottom"></div>
+                        </div>
+                        <h1 class="back-company disp-company">BLOCK</h1>
+                        <p class="back-slogan disp-slogan">COMPANY SLOGAN HERE</p>
+                    </div>
+                    
+                    <div class="contact-group">
+                        <div class="contact-item">
+                            <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                            <span class="disp-phone">+0011 001 1230</span>
+                        </div>
+                        <div class="contact-item">
+                            <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                            <span class="disp-email">ADAMSMITH@BLOCK.COM</span>
+                        </div>
+                        <div class="contact-item">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                            <span class="disp-address">LIVERPOOL, MAIN STREET, 23.C</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="back-right">
+                    <div class="text-name disp-name">ADAM SMITH</div>
+                    <div class="text-title disp-title">GENERAL MANAGER</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="editor-section">
+        <div class="input-group">
+            <label>Company Name</label>
+            <input type="text" id="inp-company" value="BLOCK">
+        </div>
+        <div class="input-group">
+            <label>Slogan</label>
+            <input type="text" id="inp-slogan" value="COMPANY SLOGAN HERE">
+        </div>
+        <div class="input-group">
+            <label>Full Name</label>
+            <input type="text" id="inp-name" value="ADAM SMITH">
+        </div>
+        <div class="input-group">
+            <label>Job Title</label>
+            <input type="text" id="inp-title" value="GENERAL MANAGER">
+        </div>
+        <div class="input-group">
+            <label>Phone Number</label>
+            <input type="text" id="inp-phone" value="+0011 001 1230">
+        </div>
+        <div class="input-group">
+            <label>Email Address</label>
+            <input type="text" id="inp-email" value="ADAMSMITH@BLOCK.COM">
+        </div>
+        <div class="input-group">
+            <label>Location Address</label>
+            <input type="text" id="inp-address" value="LIVERPOOL, MAIN STREET, 23.C">
+        </div>
+
+        <button class="btn-save" id="btn-save">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="white"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            Save Active Image
+        </button>
+    </div>
+
+    <script>
+        // 1. Data Binding Logic
+        const fields = ['company', 'slogan', 'name', 'title', 'phone', 'email', 'address'];
+        fields.forEach(field => {
+            const input = document.getElementById(`inp-${field}`);
+            input.addEventListener('input', (e) => {
+                document.querySelectorAll(`.disp-${field}`).forEach(el => {
+                    el.innerText = e.target.value;
+                });
+            });
+        });
+
+        // 2. Tab Switching Logic
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                
+                const side = e.target.dataset.side;
+                document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+                document.getElementById(`card-${side}`).classList.add('active');
+            });
+        });
+
+        // 3. Responsive Scaling Logic for Mobile Webview Viewport
+        function adjustCardScale() {
+            const scaler = document.getElementById('card-scaler');
+            const targetWidth = 800; // Fixed width of our .card
+            const currentWidth = scaler.clientWidth;
+            const scaleRatio = currentWidth / targetWidth;
+            
+            document.querySelectorAll('.card').forEach(card => {
+                card.style.transform = `scale(${scaleRatio})`;
+            });
+            
+            // Adjust scaler container height to fit the scaled card
+            scaler.style.height = `${450 * scaleRatio}px`;
+        }
+        
+        window.addEventListener('resize', adjustCardScale);
+        // Initial setup
+        setTimeout(adjustCardScale, 100);
+
+        // 4. Save Image via HTML2Canvas
+        document.getElementById('btn-save').addEventListener('click', () => {
+            const btn = document.getElementById('btn-save');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Rendering...';
+            btn.style.opacity = '0.7';
+
+            const activeCard = document.querySelector('.card.active');
+            
+            // Briefly remove the CSS transform scale so html2canvas captures 
+            // the full high-res 800x450 base dimensions, not the shrunk mobile view.
+            const originalTransform = activeCard.style.transform;
+            activeCard.style.transform = 'scale(1)';
+
+            html2canvas(activeCard, {
+                scale: 2, // 2x resolution for sharper export (1600x900)
+                backgroundColor: '#0a0a0a',
+                logging: false
+            }).then(canvas => {
+                // Restore UI scale
+                activeCard.style.transform = originalTransform;
+                
+                const imageData = canvas.toDataURL("image/png");
+                
+                // If intercepted by Android WebView interface bridging:
+                if (window.AndroidBridge && window.AndroidBridge.saveBase64Image) {
+                    // Stripping the MIME type header for native processing
+                    const base64Data = imageData.split(',')[1];
+                    window.AndroidBridge.saveBase64Image(base64Data);
+                } else {
+                    // Standard web download fallback
+                    const link = document.createElement('a');
+                    link.download = 'business_card.png';
+                    link.href = imageData;
+                    link.click();
+                }
+
+                btn.innerHTML = originalText;
+                btn.style.opacity = '1';
+            }).catch(err => {
+                console.error("Error capturing image: ", err);
+                activeCard.style.transform = originalTransform;
+                btn.innerHTML = originalText;
+                btn.style.opacity = '1';
+            });
+        });
+    </script>
+</body>
+</html>

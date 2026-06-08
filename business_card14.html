@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fluid Wave Business Card Designer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        /* --- Dark Premium App Theme UI --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', 'Segoe UI', Roboto, Helvetica, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(180deg, #090d12 0%, #141b24 100%);
+            color: #f1f5f9;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* --- Split Layout Engine --- */
+        .preview-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(9, 13, 18, 0.95);
+            backdrop-filter: blur(12px);
+            padding: 16px 12px;
+            z-index: 100;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .editor-container {
+            margin-top: 325px; /* Ensures dynamic top preview clearance */
+            padding: 20px 16px;
+            flex-grow: 1;
+            padding-bottom: 30px;
+        }
+
+        /* --- View Selection Toggle Switch --- */
+        .toggle-switch {
+            display: flex;
+            background: #1a232e;
+            border-radius: 30px;
+            padding: 4px;
+            margin-bottom: 16px;
+            width: 240px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .toggle-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            padding: 10px 0;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 25px;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(135deg, #ff577f 0%, #ff88a5 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(255, 87, 127, 0.35);
+        }
+
+        /* --- Card Render Viewport --- */
+        .card-viewport {
+            width: 350px;
+            height: 200px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .business-card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background-color: #0b1116;
+            overflow: hidden;
+        }
+
+        .hidden-pane {
+            display: none !important;
+        }
+
+        /* --- Shared SVG Wave Layer Styling --- */
+        .wave-layer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        /* --- Front Side Specific Layout --- */
+        .card-front {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .front-logo-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 10;
+            margin-top: -10px;
+        }
+
+        .logo-graphics {
+            width: 44px;
+            height: 40px;
+            margin-bottom: 8px;
+        }
+
+        .front-company-name {
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            line-height: 1.2;
+            text-transform: uppercase;
+        }
+
+        .front-company-slogan {
+            color: #94a3b8;
+            font-size: 8px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        /* --- Back Side Specific Layout --- */
+        .card-back {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            padding: 30px 24px;
+        }
+
+        .back-identity {
+            position: absolute;
+            left: 24px;
+            top: 32px;
+            z-index: 10;
+        }
+
+        .back-name {
+            color: #ff7597;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            line-height: 1.1;
+        }
+
+        .back-position {
+            color: #94a3b8;
+            font-size: 9px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        .back-contact-details {
+            position: absolute;
+            left: 24px;
+            bottom: 24px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            color: #cbd5e1;
+            font-size: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .contact-icon {
+            width: 10px;
+            height: 10px;
+            margin-right: 10px;
+            opacity: 0.8;
+            flex-shrink: 0;
+        }
+
+        /* --- Editor Form UI Elements --- */
+        .editor-section {
+            background: #111823;
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .section-headline {
+            font-size: 13px;
+            font-weight: 700;
+            color: #ff577f;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .input-wrapper {
+            margin-bottom: 14px;
+        }
+
+        .input-wrapper:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            font-size: 11px;
+            color: #64748b;
+            margin-bottom: 6px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input {
+            width: 100%;
+            background: #1a2432;
+            border: 1px solid #2e3d52;
+            border-radius: 8px;
+            padding: 12px;
+            color: #ffffff;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #ff577f;
+            background: #1e2a3a;
+        }
+
+        /* --- Footer Sticky Export Tool --- */
+        .action-container {
+            padding: 4px 0 20px 0;
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, #ff577f 0%, #e1305c 100%);
+            color: #ffffff;
+            border: none;
+            width: 100%;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(255, 87, 127, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .export-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="preview-container">
+        <div class="toggle-switch">
+            <button class="toggle-btn active" id="btn-front" onclick="toggleActiveSide('front')">FRONT PREVIEW</button>
+            <button class="toggle-btn" id="btn-back" onclick="toggleActiveSide('back')">BACK PREVIEW</button>
+        </div>
+
+        <div class="card-viewport">
+            <div class="business-card" id="render-target">
+                
+                <div class="card-front" id="pane-front">
+                    <svg class="wave-layer" viewBox="0 0 350 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="pinkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#ff8da9" />
+                                <stop offset="100%" stop-color="#ff436e" />
+                            </linearGradient>
+                            <linearGradient id="pinkGradDark" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#e63962" />
+                                <stop offset="100%" stop-color="#991b37" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M-20 -20 C 60 40, 100 -10, 130 -30 Z" fill="url(#pinkGradDark)" opacity="0.6"/>
+                        <path d="M-20 -20 C 40 80, 110 20, 110 -30 Z" fill="url(#pinkGrad)"/>
+                        
+                        <path d="M370 220 C 260 140, 240 210, 200 230 Z" fill="url(#pinkGradDark)" opacity="0.7"/>
+                        <path d="M370 220 C 290 110, 210 170, 220 230 Z" fill="url(#pinkGrad)"/>
+                    </svg>
+
+                    <div class="front-logo-container">
+                        <svg class="logo-graphics" viewBox="0 0 44 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6 16 C 6 6, 20 6, 20 18 C 20 6, 34 6, 34 16 C 34 30, 20 36, 20 36 C 20 36, 6 30, 6 16 Z" fill="url(#pinkGrad)"/>
+                            <path d="M15 19 L 19 23 L 27 14" stroke="#0b1116" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <div class="front-company-name" id="node-front-name">COMPANY</div>
+                        <div class="front-company-slogan" id="node-front-slogan">YOUR SLOGAN</div>
+                    </div>
+                </div>
+
+                <div class="card-back hidden-pane" id="pane-back">
+                    <svg class="wave-layer" viewBox="0 0 350 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M360 -20 C 260 20, 240 120, 360 220 Z" fill="#080d12"/>
+                        <path d="M370 -20 C 210 30, 260 160, 210 220 L 370 220 Z" fill="url(#pinkGradDark)"/>
+                        <path d="M370 -20 C 230 10, 210 140, 250 220 L 370 220 Z" fill="url(#pinkGrad)"/>
+                        
+                        <path d="M215 20 C 195 70, 205 130, 140 190" stroke="#ff8da9" stroke-width="1" opacity="0.4" stroke-linecap="round"/>
+                        
+                        <circle cx="225" cy="25" r="3" stroke="#ff8da9" stroke-width="1" fill="none"/>
+                        <circle cx="288" cy="42" r="4" stroke="#ffffff" stroke-width="1" opacity="0.3" fill="none"/>
+                        <circle cx="235" cy="110" r="8" fill="#ff436e"/>
+                        <circle cx="222" cy="164" r="3" stroke="#ff8da9" stroke-width="1" fill="none"/>
+                        <circle cx="130" cy="180" r="4" fill="#ff436e" opacity="0.8"/>
+                    </svg>
+
+                    <div class="back-identity">
+                        <div class="back-name" id="node-back-name">YOUR NAME</div>
+                        <div class="back-position" id="node-back-position">YOUR POSITION</div>
+                    </div>
+
+                    <div class="back-contact-details">
+                        <div class="contact-item">
+                            <svg class="contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                            <span id="node-back-phone">+0123-456-789</span>
+                        </div>
+                        <div class="contact-item">
+                            <svg class="contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                            <span id="node-back-address">123 Street, State, Country</span>
+                        </div>
+                        <div class="contact-item">
+                            <svg class="contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                            <span id="node-back-email">youremail@email.com</span>
+                        </div>
+                        <div class="contact-item">
+                            <svg class="contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                            <span id="node-back-web">www.lorem-ipsum.com</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="editor-container">
+        
+        <div class="editor-section">
+            <div class="section-headline">Front View Elements</div>
+            <div class="input-wrapper">
+                <label for="input-front-name">Company Designation</label>
+                <input type="text" id="input-front-name" value="COMPANY" oninput="pushLiveText('front-name')">
+            </div>
+            <div class="input-wrapper">
+                <label for="input-front-slogan">Corporate Slogan</label>
+                <input type="text" id="input-front-slogan" value="YOUR SLOGAN" oninput="pushLiveText('front-slogan')">
+            </div>
+        </div>
+
+        <div class="editor-section">
+            <div class="section-headline">Back View Details</div>
+            <div class="input-wrapper">
+                <label for="input-back-name">Cardholder Name</label>
+                <input type="text" id="input-back-name" value="YOUR NAME" oninput="pushLiveText('back-name')">
+            </div>
+            <div class="input-wrapper">
+                <label for="input-back-position">Professional Position</label>
+                <input type="text" id="input-back-position" value="YOUR POSITION" oninput="pushLiveText('back-position')">
+            </div>
+            <div class="input-wrapper">
+                <label for="input-back-phone">Contact Number</label>
+                <input type="text" id="input-back-phone" value="+0123-456-789" oninput="pushLiveText('back-phone')">
+            </div>
+            <div class="input-wrapper">
+                <label for="input-back-address">Office Address</label>
+                <input type="text" id="input-back-address" value="123 Street, State, Country" oninput="pushLiveText('back-address')">
+            </div>
+            <div class="input-wrapper">
+                <label for="input-back-email">Email Address</label>
+                <input type="text" id="input-back-email" value="youremail@email.com" oninput="pushLiveText('back-email')">
+            </div>
+            <div class="input-wrapper">
+                <label for="input-back-web">Web URL</label>
+                <input type="text" id="input-back-web" value="www.lorem-ipsum.com" oninput="pushLiveText('back-web')">
+            </div>
+        </div>
+
+        <div class="action-container">
+            <button class="export-btn" onclick="triggerCardCapture()">
+                <svg style="width:20px;height:20px" viewBox="0 0 24 24"><path fill="currentColor" d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" /></svg>
+                Export Active Canvas View
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let selectedSide = 'front';
+
+        // Handles switching between front and back views smoothly
+        function toggleActiveSide(side) {
+            selectedSide = side;
+            const paneFront = document.getElementById('pane-front');
+            const paneBack = document.getElementById('pane-back');
+            const btnFront = document.getElementById('btn-front');
+            const btnBack = document.getElementById('btn-back');
+
+            if (side === 'front') {
+                paneFront.classList.remove('hidden-pane');
+                paneBack.classList.add('hidden-pane');
+                btnFront.classList.add('active');
+                btnBack.classList.remove('active');
+            } else {
+                paneFront.classList.add('hidden-pane');
+                paneBack.classList.remove('hidden-pane');
+                btnFront.classList.remove('active');
+                btnBack.classList.add('active');
+            }
+        }
+
+        // Live text renderer linking text inputs directly to layout text strings
+        function pushLiveText(elementKey) {
+            const rawValue = document.getElementById(`input-${elementKey}`).value;
+            document.getElementById(`node-${elementKey}`).innerText = rawValue;
+        }
+
+        // Processing high-density card screenshot capture execution
+        function triggerCardCapture() {
+            const targetContainer = document.getElementById('render-target');
+            
+            // Render at high-density pixel layout scaling (3x) for crystal-clear preservation
+            html2canvas(targetContainer, {
+                scale: 3,
+                backgroundColor: null,
+                logging: false,
+                useCORS: true
+            }).then(canvasElement => {
+                const imgUrlData = canvasElement.toDataURL('image/png');
+                const triggerLink = document.createElement('a');
+                triggerLink.download = `FluidCard_${selectedSide}_${Date.now()}.png`;
+                triggerLink.href = imgUrlData;
+                triggerLink.click();
+            }).catch(errorLog => {
+                console.error("Canvas export calculation routine crashed:", errorLog);
+            });
+        }
+    </script>
+</body>
+</html>

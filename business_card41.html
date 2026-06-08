@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Business Card Maker</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        :root {
+            --primary-green: #008037;
+            --primary-yellow: #f4a900;
+            --dark-bg-1: #0b0c10;
+            --dark-bg-2: #1f2833;
+            --dark-panel: rgba(31, 40, 51, 0.7);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        input {
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--dark-bg-1), var(--dark-bg-2));
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px; /* Locked mobile view portrait aspect */
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        /* --- TOP PREVIEW CONTAINER --- */
+        .preview-section {
+            padding: 20px 15px;
+            background: var(--dark-panel);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            z-index: 10;
+        }
+
+        /* Modern Segmented Pill Switcher */
+        .switch-container {
+            display: flex;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 4px;
+            border-radius: 30px;
+            width: 85%;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .switch-btn {
+            flex: 1;
+            padding: 10px 0;
+            background: transparent;
+            border: none;
+            color: #888;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            z-index: 2;
+            transition: color 0.3s ease;
+            text-align: center;
+        }
+
+        .switch-btn.active {
+            color: #fff;
+        }
+
+        .switch-slider {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: calc(50% - 4px);
+            height: calc(100% - 8px);
+            background: var(--primary-green);
+            border-radius: 25px;
+            z-index: 1;
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            box-shadow: 0 2px 10px rgba(0, 128, 55, 0.4);
+        }
+
+        .card-wrapper {
+            width: 100%;
+            aspect-ratio: 1.75 / 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Card Master Canvas Frame (Rendered at 700x400 crisp bounds) */
+        .card-container {
+            width: 700px;
+            height: 400px;
+            background: #fff;
+            border-radius: 20px;
+            position: absolute;
+            transform-origin: center center;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .card-container.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .save-btn {
+            width: 90%;
+            padding: 14px;
+            background: linear-gradient(90deg, #f4a900, #ff8c00);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-weight: bold;
+            font-size: 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(244, 169, 0, 0.3);
+        }
+
+        /* --- BOTTOM EDITOR PANEL --- */
+        .editor-section {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .editor-header {
+            font-size: 13px;
+            color: var(--primary-yellow);
+            margin: 15px 0 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+        }
+
+        .input-group {
+            margin-bottom: 12px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 11px;
+            color: #a4b0be;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary-green);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .input-group input[type="file"] {
+            padding: 8px;
+            font-size: 11px;
+        }
+
+        /* --- CARD STYLING RULES (Identical Replication) --- */
+        .brand-name {
+            font-family: 'Dancing Script', cursive;
+            color: var(--primary-green);
+            font-size: 60px;
+            line-height: 1;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .tagline {
+            font-family: 'Dancing Script', cursive;
+            color: var(--primary-green);
+            font-size: 28px;
+            font-weight: 700;
+            position: relative;
+            z-index: 2;
+        }
+
+        .contact-info {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #333;
+            font-weight: 600;
+            position: relative;
+            z-index: 2;
+        }
+
+        .contact-info i {
+            color: var(--primary-green);
+            margin-right: 5px;
+        }
+
+        .logo-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 5px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .logo-circle {
+            position: relative;
+            width: 100px;
+            height: 100px;
+        }
+        
+        .logo-svg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .logo-text-inner {
+            font-family: 'Dancing Script', cursive;
+            color: var(--primary-green);
+            font-size: 36px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* FRONT PAGE STYLES */
+        #front-card {
+            background-color: #fff;
+            background-image: radial-gradient(circle at 80% 50%, #fcfcfc 20%, transparent 21%),
+                              radial-gradient(circle at 90% 100%, #f5f5f5 30%, transparent 31%);
+        }
+
+        .front-layout {
+            display: flex;
+            height: 100%;
+            width: 100%;
+        }
+
+        .front-left {
+            width: 45%;
+            height: 100%;
+            position: relative;
+        }
+
+        .front-right {
+            width: 55%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding-right: 20px;
+        }
+
+        .shape-top-left {
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            width: 300px;
+            height: 150px;
+            background: var(--primary-green);
+            border-bottom-right-radius: 150px;
+            border-top-right-radius: 20px;
+        }
+
+        .shape-bottom-left {
+            position: absolute;
+            bottom: -50px;
+            left: -20px;
+            width: 380px;
+            height: 180px;
+            background: var(--primary-green);
+            border-top-right-radius: 200px;
+        }
+
+        .food-circle {
+            position: absolute;
+            border-radius: 50%;
+            border: 6px solid var(--primary-yellow);
+            background-size: cover;
+            background-position: center;
+            background-color: #ddd;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 5;
+        }
+
+        .food-1 { width: 170px; height: 170px; top: 20px; left: 50px; }
+        .food-2 { width: 160px; height: 160px; top: 180px; left: 20px; z-index: 6; }
+        .food-3 { width: 110px; height: 110px; top: 250px; left: 170px; z-index: 4; }
+
+        /* BACK PAGE STYLES */
+        #back-card {
+            background-color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .back-shape-tl {
+            position: absolute;
+            top: -60px;
+            left: -20px;
+            width: 300px;
+            height: 150px;
+            background: var(--primary-green);
+            border-bottom-right-radius: 100%;
+            transform: rotate(-10deg);
+        }
+        
+        .back-shape-tl::after {
+            content: ''; position: absolute; top: 10px; left: 10px; right: -20px; bottom: -20px;
+            border-bottom-right-radius: 100%; border: 15px solid rgba(0, 128, 55, 0.15);
+        }
+
+        .back-shape-br {
+            position: absolute;
+            bottom: -60px;
+            right: -20px;
+            width: 300px;
+            height: 150px;
+            background: var(--primary-green);
+            border-top-left-radius: 100%;
+            transform: rotate(-10deg);
+        }
+
+        .back-shape-br::after {
+            content: ''; position: absolute; top: -20px; left: -20px; right: 10px; bottom: 10px;
+            border-top-left-radius: 100%; border: 15px solid rgba(0, 128, 55, 0.15);
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    
+    <div class="preview-section">
+        
+        <div class="switch-container">
+            <div class="switch-slider" id="toggle-slider"></div>
+            <button class="switch-btn active" id="btn-front" onclick="setSide('front')">First Page</button>
+            <button class="switch-btn" id="btn-back" onclick="setSide('back')">Second Page</button>
+        </div>
+        
+        <div class="card-wrapper" id="card-wrapper">
+            
+            <div class="card-container active" id="front-card">
+                <div class="shape-top-left"></div>
+                <div class="shape-bottom-left"></div>
+                
+                <div class="front-layout">
+                    <div class="front-left">
+                        <div class="food-circle food-1 img-target-1" style="background-image: url('https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=300&q=80')"></div>
+                        <div class="food-circle food-2 img-target-2" style="background-image: url('https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=300&q=80')"></div>
+                        <div class="food-circle food-3 img-target-3" style="background-image: url('https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=300&q=80')"></div>
+                    </div>
+                    <div class="front-right">
+                        <div class="logo-wrap">
+                            <div class="logo-circle">
+                                <svg class="logo-svg" viewBox="0 0 100 100">
+                                    <path d="M 20 80 Q 50 100 80 80" fill="none" stroke="#008037" stroke-width="4" stroke-linecap="round"/>
+                                    <path d="M 20 80 Q 50 100 80 80" fill="none" stroke="#f4a900" stroke-width="4" stroke-linecap="round" transform="translate(0, 5)"/>
+                                    <path d="M 30 30 Q 35 15 50 15 Q 65 15 70 30" fill="none" stroke="#008037" stroke-width="3"/>
+                                    <circle cx="30" cy="30" r="5" fill="#008037"/> <circle cx="50" cy="15" r="5" fill="#008037"/> <circle cx="70" cy="30" r="5" fill="#008037"/>
+                                </svg>
+                                <span class="logo-text-inner dyn-brand">Jaysan</span>
+                            </div>
+                        </div>
+                        <div class="brand-name dyn-brand">Jaysan</div>
+                        <div class="tagline dyn-tagline">Esquisite Kitchen</div>
+                        
+                        <div class="contact-info">
+                            <div><i class="fab fa-whatsapp"></i><span class="dyn-phone">07003425256</span></div>
+                            <div><i class="fab fa-tiktok"></i><span class="dyn-tiktok">jaysan_kitchen</span></div>
+                            <div style="width: 100%; text-align: center;"><i class="fab fa-facebook"></i><span class="dyn-fb">jaysan Esquisite</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-container" id="back-card">
+                <div class="back-shape-tl"></div>
+                <div class="back-shape-br"></div>
+                
+                <div class="logo-wrap">
+                    <div class="logo-circle">
+                        <svg class="logo-svg" viewBox="0 0 100 100">
+                            <path d="M 20 80 Q 50 100 80 80" fill="none" stroke="#008037" stroke-width="4" stroke-linecap="round"/>
+                            <path d="M 20 80 Q 50 100 80 80" fill="none" stroke="#f4a900" stroke-width="4" stroke-linecap="round" transform="translate(0, 5)"/>
+                            <path d="M 30 30 Q 35 15 50 15 Q 65 15 70 30" fill="none" stroke="#008037" stroke-width="3"/>
+                            <circle cx="30" cy="30" r="5" fill="#008037"/> <circle cx="50" cy="15" r="5" fill="#008037"/> <circle cx="70" cy="30" r="5" fill="#008037"/>
+                        </svg>
+                        <span class="logo-text-inner dyn-brand">Jaysan</span>
+                    </div>
+                </div>
+                <div class="brand-name dyn-brand">Jaysan</div>
+                <div class="tagline dyn-tagline">Esquisite Kitchen</div>
+                
+                <div class="contact-info">
+                    <div><i class="fab fa-whatsapp"></i><span class="dyn-phone">07003425256</span></div>
+                    <div><i class="fab fa-tiktok"></i><span class="dyn-tiktok">jaysan_kitchen</span></div>
+                    <div style="width: 100%; text-align: center; margin-top: 5px;"><i class="fab fa-facebook"></i><span class="dyn-fb">jaysan Esquisite</span></div>
+                </div>
+            </div>
+
+        </div>
+
+        <button class="save-btn" id="master-save-btn" onclick="executeExport()">
+            <i class="fas fa-download"></i> Save First Page
+        </button>
+    </div>
+
+    <div class="editor-section">
+        <div class="editor-header">Identity Settings</div>
+        <div class="input-group">
+            <label>Brand Name</label>
+            <input type="text" value="Jaysan" onkeyup="updateText('dyn-brand', this.value)">
+        </div>
+        <div class="input-group">
+            <label>Tagline</label>
+            <input type="text" value="Esquisite Kitchen" onkeyup="updateText('dyn-tagline', this.value)">
+        </div>
+        
+        <div class="editor-header">Contact Information</div>
+        <div class="input-group">
+            <label>WhatsApp</label>
+            <input type="text" value="07003425256" onkeyup="updateText('dyn-phone', this.value)">
+        </div>
+        <div class="input-group">
+            <label>TikTok</label>
+            <input type="text" value="jaysan_kitchen" onkeyup="updateText('dyn-tiktok', this.value)">
+        </div>
+        <div class="input-group">
+            <label>Facebook</label>
+            <input type="text" value="jaysan Esquisite" onkeyup="updateText('dyn-fb', this.value)">
+        </div>
+
+        <div class="editor-header">Front Page Images</div>
+        <div class="input-group">
+            <label>Top Circular Image</label>
+            <input type="file" accept="image/*" onchange="processImage(this, 'img-target-1')">
+        </div>
+        <div class="input-group">
+            <label>Main Large Image</label>
+            <input type="file" accept="image/*" onchange="processImage(this, 'img-target-2')">
+        </div>
+        <div class="input-group">
+            <label>Small Bottom Image</label>
+            <input type="file" accept="image/*" onchange="processImage(this, 'img-target-3')">
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let activeSide = 'front';
+
+    // Auto-scale vector bounds to seamlessly match screen width
+    function refreshLayoutScaling() {
+        const frame = document.getElementById('card-wrapper');
+        const containers = document.querySelectorAll('.card-container');
+        const scale = frame.clientWidth / 700;
+        containers.forEach(c => c.style.transform = `scale(${scale})`);
+    }
+
+    window.addEventListener('resize', refreshLayoutScaling);
+    window.addEventListener('load', refreshLayoutScaling);
+
+    // Switch Mode Logic
+    function setSide(side) {
+        activeSide = side;
+        const slider = document.getElementById('toggle-slider');
+        const btnFront = document.getElementById('btn-front');
+        const btnBack = document.getElementById('btn-back');
+        const cardFront = document.getElementById('front-card');
+        const cardBack = document.getElementById('back-card');
+        const saveBtn = document.getElementById('master-save-btn');
+
+        if(side === 'front') {
+            slider.style.transform = 'translateX(0%)';
+            btnFront.classList.add('active');
+            btnBack.classList.remove('active');
+            cardFront.classList.add('active');
+            cardBack.classList.remove('active');
+            saveBtn.innerHTML = '<i class="fas fa-download"></i> Save First Page';
+        } else {
+            slider.style.transform = 'translateX(100%)';
+            btnFront.classList.remove('active');
+            btnBack.classList.add('active');
+            cardFront.classList.remove('active');
+            cardBack.classList.add('active');
+            saveBtn.innerHTML = '<i class="fas fa-download"></i> Save Second Page';
+        }
+    }
+
+    // Two-way Text Sync Layer
+    function updateText(className, textString) {
+        document.querySelectorAll('.' + className).forEach(element => {
+            element.textContent = textString;
+        });
+    }
+
+    // Binary Image Parser
+    function processImage(inputSource, selectorClass) {
+        if (inputSource.files && inputSource.files[0]) {
+            const streamReader = new FileReader();
+            streamReader.onload = function(event) {
+                document.querySelectorAll('.' + selectorClass).forEach(el => {
+                    el.style.backgroundImage = `url(${event.target.result})`;
+                });
+            }
+            streamReader.readAsDataURL(inputSource.files[0]);
+        }
+    }
+
+    // Export Handler
+    function executeExport() {
+        const targetElement = document.getElementById(activeSide === 'front' ? 'front-card' : 'back-card');
+        const saveBtn = document.getElementById('master-save-btn');
+        const fallbackText = saveBtn.innerHTML;
+
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing Assets...';
+
+        // Temporary scale reset for crisp snapshot calculations
+        const cacheScale = targetElement.style.transform;
+        targetElement.style.transform = 'scale(1)';
+
+        html2canvas(targetElement, {
+            scale: 3, 
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: null
+        }).then(canvasImage => {
+            targetElement.style.transform = cacheScale; // Revert layout rendering
+
+            const triggerLink = document.createElement('a');
+            triggerLink.download = `Card_${activeSide === 'front' ? 'First_Page' : 'Second_Page'}_${Date.now()}.png`;
+            triggerLink.href = canvasImage.toDataURL('image/png');
+            triggerLink.click();
+
+            saveBtn.innerHTML = fallbackText;
+            saveBtn.disabled = false;
+        }).catch(error => {
+            console.error(error);
+            targetElement.style.transform = cacheScale;
+            saveBtn.innerHTML = fallbackText;
+            saveBtn.disabled = false;
+        });
+    }
+</script>
+
+</body>
+</html>

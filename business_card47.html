@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Business Card Editor Tool</title>
+    <!-- html2canvas for high quality image export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --bg-gradient-start: #1a1c24;
+            --bg-gradient-end: #0f1015;
+            --panel-bg: rgba(30, 33, 45, 0.75);
+            --input-bg: #282b36;
+            --accent-color: #26bfa5;
+            --text-main: #ffffff;
+            --text-muted: #8e94a6;
+            
+            /* Card Design Constants */
+            --card-dark-blue: #225673;
+            --card-teal: #26bfa5;
+            --card-mint: #9ce4d5;
+            --card-text-dark: #2d3436;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* --- Tool Layout Layout --- */
+        #preview-container {
+            width: 100%;
+            padding: 20px 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: linear-gradient(180deg, rgba(26,28,36,1) 80%, rgba(26,28,36,0) 100%);
+        }
+
+        #editor-container {
+            flex: 1;
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top-left-radius: 30px;
+            border-top-right-radius: 30px;
+            padding: 25px 20px 40px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.3);
+        }
+
+        /* --- Toggle Switch Styling --- */
+        .toggle-wrapper {
+            display: flex;
+            background: var(--input-bg);
+            padding: 4px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+            width: 200px;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px 0;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 9px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: var(--accent-color);
+            color: #000;
+        }
+
+        /* --- Business Card Target Render Area --- */
+        .viewport-card-wrapper {
+            width: 100%;
+            max-width: 350px;
+            aspect-ratio: 1.75 / 1;
+            perspective: 1000px;
+        }
+
+        .card-perspective-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .viewport-card-wrapper.flipped .card-perspective-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-canvas {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+            border-radius: 14px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+
+        .card-canvas.back {
+            transform: rotateY(180deg);
+        }
+
+        /* --- Card Core Pattern Elements (Front) --- */
+        .pattern-dot-top-left {
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            background-color: var(--card-mint);
+            border-radius: 50%;
+            top: 22px;
+            left: 28px;
+        }
+        .pattern-circle-top-mid {
+            position: absolute;
+            width: 160px;
+            height: 160px;
+            background-color: var(--card-mint);
+            border-radius: 50%;
+            top: -70px;
+            left: 78px;
+        }
+        .pattern-circle-top-right {
+            position: absolute;
+            width: 165px;
+            height: 165px;
+            background-color: var(--card-dark-blue);
+            border-radius: 50%;
+            top: -55px;
+            right: 15px;
+        }
+        .pattern-line-circle-top-right {
+            position: absolute;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            top: 30px;
+            right: 25px;
+            background: repeating-linear-gradient(45deg, transparent, transparent 2px, #e8edf2 2px, #e8edf2 4px);
+        }
+        .pattern-line-circle-bottom-left {
+            position: absolute;
+            width: 75px;
+            height: 75px;
+            border-radius: 50%;
+            bottom: 20px;
+            left: 20px;
+            background: repeating-linear-gradient(45deg, transparent, transparent 2px, #e8edf2 2px, #e8edf2 4px);
+        }
+        .pattern-circle-bottom-mid-left {
+            position: absolute;
+            width: 130px;
+            height: 130px;
+            background-color: var(--card-dark-blue);
+            border-radius: 50%;
+            bottom: -55px;
+            left: 95px;
+        }
+        .pattern-circle-bottom-mid-right {
+            position: absolute;
+            width: 155px;
+            height: 155px;
+            background-color: var(--card-teal);
+            border-radius: 50%;
+            bottom: -65px;
+            right: 65px;
+        }
+        .pattern-dot-bottom-right {
+            position: absolute;
+            width: 42px;
+            height: 42px;
+            background-color: var(--card-teal);
+            border-radius: 50%;
+            bottom: 30px;
+            right: 25px;
+        }
+        .front-ribbon {
+            position: absolute;
+            top: 41%;
+            left: 0;
+            width: 100%;
+            height: 25%;
+            background: #ffffff;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.07);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+
+        /* --- Card Core Pattern Elements (Back) --- */
+        .back-left-cluster {
+            position: absolute;
+            width: 60%;
+            height: 140%;
+            top: -20%;
+            left: -15%;
+        }
+        .cluster-teal {
+            position: absolute;
+            width: 140px;
+            height: 140px;
+            background-color: var(--card-teal);
+            border-radius: 50%;
+            top: 20px;
+            left: 40px;
+        }
+        .cluster-blue {
+            position: absolute;
+            width: 140px;
+            height: 140px;
+            background-color: var(--card-dark-blue);
+            border-radius: 50%;
+            bottom: 20px;
+            left: 30px;
+        }
+        .cluster-mint {
+            position: absolute;
+            width: 110px;
+            height: 110px;
+            background-color: var(--card-mint);
+            border-radius: 50%;
+            bottom: 10px;
+            right: -10px;
+        }
+        .cluster-lines-bottom {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            bottom: 15px;
+            left: 10px;
+            background: repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.25) 2px, rgba(255,255,255,0.25) 4px);
+        }
+        .cluster-lines-top-right {
+            position: absolute;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            top: 45px;
+            right: 20px;
+            background: repeating-linear-gradient(45deg, transparent, transparent 2px, #e8edf2 2px, #e8edf2 4px);
+        }
+        .back-logo-badge {
+            position: absolute;
+            width: 115px;
+            height: 115px;
+            background: #ffffff;
+            border-radius: 50%;
+            top: 50%;
+            left: 32%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* --- Brand Asset Elements --- */
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .logo-mark {
+            width: 0;
+            height: 0;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            border-left: 16px solid var(--card-teal);
+            position: relative;
+        }
+        .logo-mark::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            border-left: 16px solid var(--card-dark-blue);
+            top: -10px;
+            left: -20px;
+            opacity: 0.6;
+        }
+        .logo-text {
+            font-size: 19px;
+            font-weight: 800;
+            color: var(--card-dark-blue);
+            letter-spacing: 0.5px;
+        }
+        
+        /* Stacked Logo Configuration for Badge Placement */
+        .logo-container.stacked {
+            flex-direction: column;
+            gap: 4px;
+        }
+        .logo-container.stacked .logo-text {
+            font-size: 11px;
+            letter-spacing: 0.2px;
+        }
+        .logo-container.stacked .logo-mark {
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-left: 13px solid var(--card-teal);
+        }
+        .logo-container.stacked .logo-mark::after {
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-left: 13px solid var(--card-dark-blue);
+            top: -8px;
+            left: -16px;
+        }
+
+        /* --- Text Fields & Layout Structure (Back View) --- */
+        .back-content-right {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 58%;
+            height: 100%;
+            /* Increased padding-left to 35px to shift ALL texts and icons uniformly */
+            padding: 30px 15px 20px 35px; 
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .id-block {
+            margin-bottom: 18px;
+        }
+        .dynamic-name-wrapper {
+            font-size: 22px;
+            font-weight: 500;
+            color: #4a4a4a;
+            line-height: 1.1;
+            text-transform: uppercase;
+        }
+        .dynamic-name-wrapper span {
+            color: var(--card-teal);
+            font-weight: 700;
+        }
+        .dynamic-title {
+            font-size: 11px;
+            color: #95a5a6;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-top: 4px;
+            font-weight: 600;
+        }
+        .metadata-list {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+        .metadata-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 11px;
+            color: #7f8c8d;
+        }
+        .meta-icon-container {
+            width: 18px;
+            height: 18px;
+            background: var(--card-teal);
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .meta-icon-container.blue-variant {
+            background: var(--card-dark-blue);
+        }
+        .meta-icon-container svg {
+            width: 10px;
+            height: 10px;
+            fill: #ffffff;
+        }
+
+        /* --- Control Panel Components --- */
+        .input-group {
+            margin-bottom: 16px;
+        }
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+        .input-group input {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 12px 14px;
+            border-radius: 10px;
+            color: var(--text-main);
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(38, 191, 165, 0.15);
+        }
+        .action-button {
+            width: 100%;
+            background: linear-gradient(135deg, #26bfa5, #1da38c);
+            color: #000000;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            margin-top: 10px;
+            box-shadow: 0 4px 15px rgba(38, 191, 165, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        .action-button:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Sticky Preview Section -->
+    <div id="preview-container">
+        <div class="toggle-wrapper">
+            <button class="toggle-btn active" id="btn-front" onclick="setView('front')">Front Side</button>
+            <button class="toggle-btn" id="btn-back" onclick="setView('back')">Back Side</button>
+        </div>
+
+        <div class="viewport-card-wrapper" id="card-viewport">
+            <div class="card-perspective-inner">
+                
+                <!-- Front Side Canvas -->
+                <div class="card-canvas front" id="render-target-front">
+                    <div class="pattern-dot-top-left"></div>
+                    <div class="pattern-circle-top-mid"></div>
+                    <div class="pattern-circle-top-right"></div>
+                    <div class="pattern-line-circle-top-right"></div>
+                    <div class="pattern-line-circle-bottom-left"></div>
+                    <div class="pattern-circle-bottom-mid-left"></div>
+                    <div class="pattern-circle-bottom-mid-right"></div>
+                    <div class="pattern-dot-bottom-right"></div>
+                    
+                    <div class="front-ribbon">
+                        <div class="logo-container">
+                            <div class="logo-mark"></div>
+                            <div class="logo-text UI-bind-company">SOUNDPLAY</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Back Side Canvas -->
+                <div class="card-canvas back" id="render-target-back">
+                    <div class="back-left-cluster">
+                        <div class="cluster-teal"></div>
+                        <div class="cluster-blue"></div>
+                        <div class="cluster-mint"></div>
+                        <div class="cluster-lines-bottom"></div>
+                    </div>
+                    <div class="cluster-lines-top-right"></div>
+                    
+                    <div class="back-logo-badge">
+                        <div class="logo-container stacked">
+                            <div class="logo-mark"></div>
+                            <div class="logo-text UI-bind-company">SOUNDPLAY</div>
+                        </div>
+                    </div>
+
+                    <div class="back-content-right">
+                        <div class="id-block">
+                            <div class="dynamic-name-wrapper" id="UI-bind-fullname">JOHN <span>SMITH</span></div>
+                            <div class="dynamic-title" id="UI-bind-title">MANAGER</div>
+                        </div>
+                        <div class="metadata-list">
+                            <div class="metadata-item">
+                                <div class="meta-icon-container">
+                                    <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                                </div>
+                                <span id="UI-bind-phone">123-456-78910</span>
+                            </div>
+                            <div class="metadata-item">
+                                <div class="meta-icon-container blue-variant">
+                                    <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                                </div>
+                                <span id="UI-bind-address">Loremipsum</span>
+                            </div>
+                            <div class="metadata-item">
+                                <div class="meta-icon-container">
+                                    <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                                </div>
+                                <span id="UI-bind-email">Email@email.com</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Scrollable Editor Section -->
+    <div id="editor-container">
+        <div class="input-group">
+            <label for="input-company">Company Name</label>
+            <input type="text" id="input-company" value="SOUNDPLAY" oninput="updateFields()">
+        </div>
+        <div class="input-group">
+            <label for="input-firstname">First Name</label>
+            <input type="text" id="input-firstname" value="JOHN" oninput="updateFields()">
+        </div>
+        <div class="input-group">
+            <label for="input-lastname">Last Name</label>
+            <input type="text" id="input-lastname" value="SMITH" oninput="updateFields()">
+        </div>
+        <div class="input-group">
+            <label for="input-title">Job Title</label>
+            <input type="text" id="input-title" value="MANAGER" oninput="updateFields()">
+        </div>
+        <div class="input-group">
+            <label for="input-phone">Phone Number</label>
+            <input type="text" id="input-phone" value="123-456-78910" oninput="updateFields()">
+        </div>
+        <div class="input-group">
+            <label for="input-address">Address Location</label>
+            <input type="text" id="input-address" value="Loremipsum" oninput="updateFields()">
+        </div>
+        <div class="input-group">
+            <label for="input-email">Email Address</label>
+            <input type="text" id="input-email" value="Email@email.com" oninput="updateFields()">
+        </div>
+
+        <button class="action-button" onclick="exportCardImage()">
+            <svg style="width:20px;height:20px" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" />
+            </svg>
+            Save High-Res Image
+        </button>
+    </div>
+
+    <!-- Dynamic Live Processing Logic -->
+    <script>
+        let currentView = 'front';
+
+        function setView(side) {
+            currentView = side;
+            const viewport = document.getElementById('card-viewport');
+            const btnFront = document.getElementById('btn-front');
+            const btnBack = document.getElementById('btn-back');
+
+            if (side === 'back') {
+                viewport.classList.add('flipped');
+                btnBack.classList.add('active');
+                btnFront.classList.remove('active');
+            } else {
+                viewport.classList.remove('flipped');
+                btnFront.classList.add('active');
+                btnBack.classList.remove('active');
+            }
+        }
+
+        function updateFields() {
+            // Fetch raw element values
+            const company = document.getElementById('input-company').value;
+            const firstName = document.getElementById('input-firstname').value;
+            const lastName = document.getElementById('input-lastname').value;
+            const title = document.getElementById('input-title').value;
+            const phone = document.getElementById('input-phone').value;
+            const address = document.getElementById('input-address').value;
+            const email = document.getElementById('input-email').value;
+
+            // Sync structural bindings to Front and Back canvases instantly
+            const companyElements = document.querySelectorAll('.UI-bind-company');
+            companyElements.forEach(el => el.innerText = company);
+
+            document.getElementById('UI-bind-fullname').innerHTML = `${firstName} <span>${lastName}</span>`;
+            document.getElementById('UI-bind-title').innerText = title;
+            document.getElementById('UI-bind-phone').innerText = phone;
+            document.getElementById('UI-bind-address').innerText = address;
+            document.getElementById('UI-bind-email').innerText = email;
+        }
+
+        function exportCardImage() {
+            // Target the canvas element currently active in viewport view
+            const activeTargetId = currentView === 'front' ? 'render-target-front' : 'render-target-back';
+            const element = document.getElementById(activeTargetId);
+
+            // Execute export logic using optimal rendering specs for device screens
+            html2canvas(element, {
+                scale: 3, // Multiplies resolution scale for crisp print outputs
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: null,
+                logging: false
+            }).then(canvas => {
+                const base64Image = canvas.toDataURL('image/png');
+                
+                // Native mobile storage fallback trigger via simple HTML virtual anchor anchor link injection
+                const downloadLink = document.createElement('a');
+                downloadLink.href = base64Image;
+                downloadLink.download = `${currentView}_business_card.png`;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+            }).catch(err => {
+                console.error("Canvas raster generation failed: ", err);
+            });
+        }
+    </script>
+</body>
+</html>

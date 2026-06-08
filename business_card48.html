@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Business Card Maker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(135deg, #12131C 0%, #1A1C29 100%);
+            color: #E2E8F0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Top Preview Sticky Header */
+        .preview-container {
+            position: sticky;
+            top: 0;
+            background: rgba(18, 19, 28, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 15px;
+            z-index: 100;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Toggle Switch Button */
+        .toggle-switch {
+            display: flex;
+            background: rgba(255, 255, 255, 0.06);
+            padding: 4px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 320px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .toggle-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #94A3B8;
+            padding: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(135deg, #3ea6e9 0%, #2575fc 100%);
+            color: #FFFFFF;
+            box-shadow: 0 4px 12px rgba(62, 166, 233, 0.3);
+        }
+
+        /* Business Card Viewport Window */
+        .card-viewport {
+            width: 100%;
+            max-width: 350px;
+            aspect-ratio: 3.5 / 2;
+            perspective: 1000px;
+        }
+
+        .card-wrapper {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .card-viewport.flip .card-wrapper {
+            transform: rotateY(180deg);
+        }
+
+        /* Business Card Base Layouts */
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            background: #1a1e21;
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+        }
+
+        /* FRONT SIDE STYLES */
+        .card-front-grid {
+            display: grid;
+            grid-template-columns: 54% 46%;
+            grid-template-rows: 52% 48%;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Front Q1: Dark Info Panel */
+        .q1-dark {
+            background: #1a1e21;
+            padding: 10px 8px 6px 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .q1-name {
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+            line-height: 1.2;
+        }
+        .name-yellow { color: #f4d014; }
+        .name-white { color: #ffffff; }
+        .name-blue { color: #3ea6e9; }
+        
+        .q1-title-container {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 6px;
+        }
+        .q1-title {
+            color: #ffffff;
+            font-size: 8px;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+        }
+        .q1-line {
+            flex-grow: 1;
+            height: 1px;
+            background: #e61a81;
+        }
+        .q1-address {
+            color: #ffffff;
+            font-size: 7px;
+            line-height: 1.3;
+            font-weight: 300;
+        }
+
+        /* Front Q2: Blue Logo Panel */
+        .q2-blue {
+            background: #3ea6e9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        /* Shared Creative Geometric Logo Markup */
+        .logo-box {
+            position: relative;
+            width: 26px;
+            height: 26px;
+            margin-bottom: 4px;
+        }
+        .square-pink {
+            position: absolute;
+            top: 0; right: 0;
+            width: 18px; height: 18px;
+            border: 1.5px solid #e61a81;
+        }
+        .square-blue {
+            position: absolute;
+            bottom: 0; left: 0;
+            width: 18px; height: 18px;
+            border: 1.5px solid #3ea6e9;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .card-back .square-blue {
+            border-color: #3ea6e9;
+        }
+        .logo-l {
+            color: #f4d014;
+            font-size: 11px;
+            font-weight: 900;
+            transform: translate(-1px, -1px);
+        }
+        .logo-title {
+            color: #ffffff;
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+        .logo-slogan {
+            font-size: 5px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        .q2-blue .logo-slogan { color: #bde0fe; }
+        .card-back .logo-slogan { color: #e61a81; }
+
+        /* Front Q3: Pink Contacts Panel */
+        .q3-pink {
+            background: #e61a81;
+            padding-left: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 5px;
+        }
+        .contact-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #ffffff;
+            font-size: 7px;
+            font-weight: 400;
+        }
+        .contact-icon {
+            width: 10px;
+            height: 10px;
+            fill: #f4d014;
+        }
+
+        /* Front Q4: Yellow QR Panel */
+        .q4-yellow {
+            background: #f4d014;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+        }
+        .qr-mock {
+            width: 42px;
+            height: 42px;
+            background: #1a1e21;
+            padding: 3px;
+            border-radius: 2px;
+        }
+        .qr-mock svg {
+            width: 100%;
+            height: 100%;
+            fill: #f4d014;
+        }
+
+        /* BACK SIDE STYLES */
+        .card-back-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: #1a1e21;
+        }
+        /* Geometric Block Accents */
+        .accent-top-right {
+            position: absolute;
+            top: 0; right: 0;
+            display: grid;
+            grid-template-columns: repeat(2, 22px);
+            grid-template-rows: repeat(2, 22px);
+        }
+        .accent-bottom-left {
+            position: absolute;
+            bottom: 0; left: 0;
+            display: grid;
+            grid-template-columns: repeat(2, 22px);
+            grid-template-rows: repeat(2, 22px);
+        }
+        .block-yellow { background: #f4d014; }
+        .block-white { background: #ffffff; }
+        .block-blue { background: #3ea6e9; }
+        .block-pink { background: #e61a81; }
+
+        /* Bottom Editor Fields Container */
+        .editor-container {
+            flex-grow: 1;
+            padding: 20px 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding-bottom: 40px;
+        }
+
+        .editor-section {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 16px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #3ea6e9;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-row-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 11px;
+            color: #94A3B8;
+            font-weight: 500;
+        }
+
+        input {
+            background: rgba(15, 17, 26, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 12px;
+            color: #FFFFFF;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #3ea6e9;
+            background: rgba(15, 17, 26, 0.9);
+            box-shadow: 0 0 0 3px rgba(62, 166, 233, 0.15);
+        }
+
+        /* Modern Floating Call To Action Button */
+        .action-container {
+            padding: 0 15px 20px 15px;
+        }
+
+        .save-btn {
+            background: linear-gradient(135deg, #e61a81 0%, #a8105c 100%);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 15px;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            box-shadow: 0 6px 20px rgba(230, 26, 129, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+
+        .save-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="preview-container">
+        <div class="toggle-switch">
+            <button class="toggle-btn active" id="btn-front" onclick="switchSide('front')">Front Side</button>
+            <button class="toggle-btn" id="btn-back" onclick="switchSide('back')">Back Side</button>
+        </div>
+
+        <div class="card-viewport" id="cardViewport">
+            <div class="card-wrapper">
+                
+                <div class="card-face card-front" id="render-front">
+                    <div class="card-front-grid">
+                        <div class="q1-dark">
+                            <div class="q1-name">
+                                <span class="name-yellow" id="view-n1">Zachary</span> 
+                                <span class="name-white" id="view-n2">P.</span> 
+                                <span class="name-blue" id="view-n3">Dimick</span>
+                            </div>
+                            <div class="q1-title-container">
+                                <div class="q1-title" id="view-title">Owner</div>
+                                <div class="q1-line"></div>
+                            </div>
+                            <div class="q1-address" id="view-address">
+                                3050 Windy Ridge Road<br>Fort Wayne, IN 46805
+                            </div>
+                        </div>
+                        <div class="q2-blue">
+                            <div class="logo-box">
+                                <div class="square-pink"></div>
+                                <div class="square-blue"><div class="logo-l">L</div></div>
+                            </div>
+                            <div class="logo-title" id="view-logo1">LOGO HERE</div>
+                            <div class="logo-slogan" id="view-slogan1">YOUR SLOGAN HERE</div>
+                        </div>
+                        <div class="q3-pink">
+                            <div class="contact-row">
+                                <svg class="contact-icon" viewBox="0 0 24 24"><path d="M20 15.5c-1.2 0-2.4-.2-3.6-.6-.3-.1-.7 0-1 .2l-2.2 2.2c-2.8-1.4-5.1-3.8-6.6-6.6l2.2-2.2c.3-.3.4-.7.2-1-.3-1.1-.5-2.3-.5-3.5 0-.6-.4-1-1-1H4c-.6 0-1 .4-1 1 0 9.4 7.6 17 17 17 .6 0 1-.4 1-1v-3.5c0-.6-.4-1-1-1z"/></svg>
+                                <span id="view-phone">000 000 0000</span>
+                            </div>
+                            <div class="contact-row">
+                                <svg class="contact-icon" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                                <span id="view-email">your mail info here</span>
+                            </div>
+                            <div class="contact-row">
+                                <svg class="contact-icon" viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95c-.32-1.25-.78-2.45-1.38-3.56 1.84.42 3.43 1.4 4.33 3.56zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14c-.17-.64-.26-1.31-.26-2s.09-1.36.26-2h3.38c-.09.66-.14 1.34-.14 2 0 .66.05 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56-1.84-.42-3.43-1.4-4.33-3.56zm2.95-8H5.08c.91-2.16 2.5-3.14 4.33-3.56-.6 1.11-1.06 2.31-1.38 3.56zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.34-.16-2 0-.66.07-1.34.16-2h4.68c.09.66.16 1.34.16 2 0 .66-.07 1.34-.16 2zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95c-.9 2.16-2.49 3.14-4.33 3.56zM16.36 14c.09-.66.14-1.34.14-2 0-.66-.05-1.34-.14-2h3.38c.17.64.26 1.31.26 2s-.09 1.36-.26 2h-3.38z"/></svg>
+                                <span id="view-web">your website here</span>
+                            </div>
+                        </div>
+                        <div class="q4-yellow">
+                            <div class="qr-mock">
+                                <svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zm2 2v4h4V5zm8-2h8v8h-8zm2 2v4h4V5M3 13h8v8H3zm2 2v4h4v-4zm13-1h3v2h-3zm-2-2h2v2h-2zm4 4h1v3h-1zm-2 1h2v2h-2zm-2-3h2v2h-2zm4-2h1v1h-1zm-2 7h1v1h-1zm5-4h1v4h-1z"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-face card-back" id="render-back">
+                    <div class="card-back-container">
+                        <div class="accent-top-right">
+                            <div class="block-yellow"></div>
+                            <div class="block-white"></div>
+                            <div></div>
+                            <div class="block-blue"></div>
+                        </div>
+
+                        <div class="logo-box">
+                            <div class="square-pink"></div>
+                            <div class="square-blue"><div class="logo-l">L</div></div>
+                        </div>
+                        <div class="logo-title" id="view-logo2">LOGO HERE</div>
+                        <div class="logo-slogan" id="view-slogan2">YOUR SLOGAN HERE</div>
+
+                        <div class="accent-bottom-left">
+                            <div class="block-pink"></div>
+                            <div></div>
+                            <div class="block-white"></div>
+                            <div class="block-yellow"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="editor-container">
+        
+        <div class="editor-section">
+            <div class="section-title">Identity Config</div>
+            <div class="form-group">
+                <label>Split Name Fields (Yellow / White / Blue Style)</label>
+                <div class="form-row-3">
+                    <input type="text" id="inp-n1" value="Zachary" placeholder="First">
+                    <input type="text" id="inp-n2" value="P." placeholder="Mid">
+                    <input type="text" id="inp-n3" value="Dimick" placeholder="Last">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Job Title</label>
+                <input type="text" id="inp-title" value="Owner">
+            </div>
+            <div class="form-group">
+                <label>Address Info</label>
+                <input type="text" id="inp-address" value="3050 Windy Ridge Road, Fort Wayne, IN 46805">
+            </div>
+        </div>
+
+        <div class="editor-section">
+            <div class="section-title">Branding Sync</div>
+            <div class="form-group">
+                <label>Main Logo Text</label>
+                <input type="text" id="inp-logo" value="LOGO HERE">
+            </div>
+            <div class="form-group">
+                <label>Brand Slogan</label>
+                <input type="text" id="inp-slogan" value="YOUR SOLOGAN HERE">
+            </div>
+        </div>
+
+        <div class="editor-section">
+            <div class="section-title">Contact Links</div>
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="text" id="inp-phone" value="000 000 0000">
+            </div>
+            <div class="form-group">
+                <label>Email ID</label>
+                <input type="text" id="inp-email" value="your mail info here">
+            </div>
+            <div class="form-group">
+                <label>Website URL</label>
+                <input type="text" id="inp-web" value="your website here">
+            </div>
+        </div>
+
+    </div>
+
+    <div class="action-container">
+        <button class="save-btn" onclick="exportCard()">
+            <svg style="width:20px;height:20px;fill:currentColor" viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+            Save Card Image
+        </button>
+    </div>
+
+    <script>
+        let currentSide = 'front';
+
+        // Interface side toggle mechanics
+        function switchSide(side) {
+            currentSide = side;
+            const viewport = document.getElementById('cardViewport');
+            const btnFront = document.getElementById('btn-front');
+            const btnBack = document.getElementById('btn-back');
+
+            if (side === 'front') {
+                viewport.classList.remove('flip');
+                btnFront.classList.add('active');
+                btnBack.classList.remove('active');
+            } else {
+                viewport.classList.add('flip');
+                btnBack.classList.add('active');
+                btnFront.classList.remove('active');
+            }
+        }
+
+        // Real-time two-way data architecture 
+        const bindings = [
+            { input: 'inp-n1', output: 'view-n1', type: 'text' },
+            { input: 'inp-n2', output: 'view-n2', type: 'text' },
+            { input: 'inp-n3', output: 'view-n3', type: 'text' },
+            { input: 'inp-title', output: 'view-title', type: 'text' },
+            { input: 'inp-phone', output: 'view-phone', type: 'text' },
+            { input: 'inp-email', output: 'view-email', type: 'text' },
+            { input: 'inp-web', output: 'view-web', type: 'text' }
+        ];
+
+        bindings.forEach(binding => {
+            document.getElementById(binding.input).addEventListener('input', (e) => {
+                document.getElementById(binding.output).innerText = e.target.value;
+            });
+        });
+
+        // Special handlers for matching multi-face values and line breaks
+        document.getElementById('inp-address').addEventListener('input', (e) => {
+            // Converts commas dynamically into elegant card linebreaks
+            let formatted = e.target.value.replace(',', '<br>');
+            document.getElementById('view-address').innerHTML = formatted;
+        });
+
+        document.getElementById('inp-logo').addEventListener('input', (e) => {
+            document.getElementById('view-logo1').innerText = e.target.value;
+            document.getElementById('view-logo2').innerText = e.target.value;
+        });
+
+        document.getElementById('inp-slogan').addEventListener('input', (e) => {
+            document.getElementById('view-slogan1').innerText = e.target.value;
+            document.getElementById('view-slogan2').innerText = e.target.value;
+        });
+
+        // High-fidelity rendering module via canvas transformation
+        function exportCard() {
+            // Target currently viewed face element
+            const targetId = currentSide === 'front' ? 'render-front' : 'render-back';
+            const element = document.getElementById(targetId);
+
+            // Execute html2canvas rendering calculations with specific scaling for clean output
+            html2canvas(element, {
+                scale: 3, // Upscales resolution perfectly for crisp mobile sharing
+                useCORS: true,
+                logging: false,
+                backgroundColor: null
+            }).then(canvas => {
+                const dataUrl = canvas.toDataURL('image/png');
+                
+                // Native Mobile App Integration Handler:
+                // If running inside a custom WebView, you can intercept this base64 image data directly
+                if (window.WebKit && window.WebKit.messageHandlers && window.WebKit.messageHandlers.imageSaved) {
+                    window.WebKit.messageHandlers.imageSaved.postMessage(dataUrl);
+                } else if (window.AndroidBridge && window.AndroidBridge.saveImage) {
+                    window.AndroidBridge.saveImage(dataUrl);
+                } else {
+                    // Standard fallback web architecture download hook
+                    const link = document.createElement('a');
+                    link.download = `BusinessCard_${currentSide}_${Date.now()}.png`;
+                    link.href = dataUrl;
+                    link.click();
+                }
+            }).catch(err => {
+                console.error("Rendering error encountered:", err);
+            });
+        }
+    </script>
+</body>
+</html>

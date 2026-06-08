@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Business Card Maker Mobile Tool</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            /* Tool Palette */
+            --bg-color-1: #101217;
+            --bg-color-2: #1e2129;
+            --panel-bg: rgba(255, 255, 255, 0.05);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --input-bg: #2b303b;
+            --text-color: #f3f4f6;
+            --text-muted: #9ca3af;
+            --accent-color: #4CAF50;
+            
+            /* Card Palette (Sampled from image) */
+            --card-green: #48b832;
+            --card-tan: #e08b26;
+            --card-text-light: #ffffff;
+            --card-text-dark: #71717a;
+            --card-gradient-start: #FFD200;
+            --card-gradient-end: #63C324;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-color-1) 0%, var(--bg-color-2) 100%);
+            color: var(--text-color);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- PREVIEW ZONE (TOP, FIXED) --- */
+        #preview-zone {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Mode Switch Styling */
+        #switch-panel {
+            display: flex;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 3px;
+            margin-bottom: 16px;
+            width: 80%;
+            max-width: 300px;
+        }
+
+        .switch-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 18px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .switch-btn.active {
+            background: var(--accent-color);
+            color: #ffffff;
+            box-shadow: 0 4px 10px rgba(76, 175, 80, 0.4);
+        }
+
+        /* Card Stage (Handles Scaling for standard mobile view) */
+        #card-stage {
+            width: 100%;
+            max-width: 350px; /* Base card width */
+            aspect-ratio: 3.5 / 2;
+            perspective: 1000px;
+            display: grid;
+            place-items: center;
+        }
+
+        #card-container {
+            width: 350px;
+            height: 200px;
+            transform-origin: top left;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Handling Overlap: Keep both in DOM, manage visibility with classes */
+        .business-card {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: none;
+            overflow: hidden;
+            background: #ffffff;
+            z-index: 1;
+        }
+
+        .business-card.active-page {
+            display: block;
+            z-index: 2;
+        }
+
+        /* --- CARD DESIGN CSS (EXACT REPLICA) --- */
+        
+        /* Simulating Poly Pattern + Gradient */
+        .card-bg-poly {
+            background-color: #ffffff;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='a' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23FFD200'/%3E%3Cstop offset='1' stop-color='%2363C324'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23a)' width='100' height='100'/%3E%3Cpath d='M0 0l50 15L100 0zM0 0l20 70L0 100zM0 100l80-20L100 100zM100 100l-30-60L100 0z' fill-opacity='0.1' fill='%23fff'/%3E%3C/svg%3E");
+            background-size: cover;
+        }
+
+        .custom-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px; height: 40px;
+            position: relative;
+        }
+        .logo-circle-1 { width: 14px; height: 14px; background: var(--card-green); border-radius: 50%; position: absolute; top: 8px; left: 6px; }
+        .logo-circle-2 { width: 16px; height: 16px; background: var(--card-green); border-radius: 50%; position: absolute; top: 12px; left: 16px; }
+        .logo-ring { width: 20px; height: 10px; border: 3px solid var(--card-green); border-radius: 10px 10px 0 0; border-bottom: none; position: absolute; top: 20px; left: 8px; }
+        
+        /* Front Card Details */
+        #front-card { display: grid; grid-template-columns: 58% 42%; }
+        #front-card .card-left-section {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding-right: 35px; color: #fff;
+            position: relative; z-index: 1;
+        }
+        #front-card .poly-slant-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            clip-path: polygon(0 0, 100% 0, 80% 100%, 0 100%);
+            box-shadow: -10px 0 20px rgba(0,0,0,0.3);
+            z-index: -1;
+        }
+        .front-logo-icons { width: 38px; height: 38px; background: #fff; border-radius: 50%; padding: 4px; display: flex; justify-content: center; }
+        .front-comp-name { font-size: 15px; font-weight: 700; color: #fff; letter-spacing: 0.5px; margin-top: 6px; }
+        .front-comp-web { font-size: 8px; color: rgba(255,255,255,0.8); margin-top: 2px; }
+
+        #front-card .card-right-section {
+            padding: 20px 15px 15px 10px; display: flex; flex-direction: column; justify-content: space-around;
+        }
+        .front-name { font-size: 16px; font-weight: 700; color: var(--card-green); line-height: 1.1; }
+        .front-title { font-size: 8px; font-weight: 600; color: var(--card-tan); text-transform: uppercase; margin-top: 2px; }
+        .divider { width: 100%; height: 1px; background: #eaeaea; margin: 6px 0 10px 0; }
+        .contact-list { display: flex; flex-direction: column; gap: 6px; }
+        .contact-item { display: flex; align-items: center; gap: 8px; font-size: 7px; color: var(--card-text-dark); }
+        .icon-box { width: 16px; height: 16px; background: var(--card-green); border-radius: 3px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .icon-box img { width: 10px; height: 10px; filter: invert(1); }
+
+        /* Back Card Details */
+        #back-card {
+            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+        }
+        #back-card .card-main-content {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; padding-top: 30px;
+        }
+        .back-comp-name { font-size: 18px; font-weight: 700; color: var(--card-green); margin-top: 6px; }
+        .back-comp-web { font-size: 10px; font-weight: 600; color: var(--card-tan); margin-top: 2px; }
+        .back-bottom-strip { width: 100%; height: 40px; }
+
+        /* --- EDITOR ZONE (BOTTOM, SCROLLABLE) --- */
+        #editor-zone {
+            flex: 1;
+            overflow-y: scroll;
+            -webkit-overflow-scrolling: touch;
+            padding: 20px 16px;
+            padding-bottom: 100px;
+        }
+
+        .input-group {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .panel-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent-color);
+            margin-bottom: 12px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .field:last-child { margin-bottom: 0; }
+
+        label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--accent-color);
+        }
+
+        /* Pin Save Button Panel */
+        #action-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 16px;
+            background: rgba(16, 18, 23, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-top: 1px solid var(--border-color);
+            z-index: 100;
+        }
+
+        #save-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent-color);
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="preview-zone">
+        <div id="switch-panel">
+            <button class="switch-btn active" id="btn-front" onclick="switchPage(1)">First Page</button>
+            <button class="switch-btn" id="btn-back" onclick="switchPage(2)">Second Page</button>
+        </div>
+
+        <div id="card-stage">
+            <div id="card-container">
+                
+                <div class="business-card active-page" id="front-card">
+                    <div class="card-left-section">
+                        <div class="poly-slant-bg card-bg-poly"></div>
+                        <div class="front-logo-icons">
+                            <svg class="custom-logo-svg" width="30" height="30" viewBox="0 0 30 30" fill="none">
+                                <circle cx="11" cy="11" r="5" fill="#48b832"/>
+                                <circle cx="19" cy="11" r="5" fill="#48b832"/>
+                                <path d="M15 17L15 26M10 21L20 21" stroke="#48b832" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div class="front-comp-name card-sync-company">COMPANY NAME</div>
+                        <div class="front-comp-web card-sync-website">www.YourWebsite.com</div>
+                    </div>
+                    <div class="card-right-section">
+                        <div>
+                            <div class="front-name card-sync-name">YOUR NAME</div>
+                            <div class="front-title card-sync-title">GRAPHIC DESIGNER</div>
+                        </div>
+                        <div class="divider"></div>
+                        <div class="contact-list">
+                            <div class="contact-item">
+                                <div class="icon-box"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13C19 5.13 15.87 2 12 2zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z'/%3E%3C/svg%3E" alt="location"/></div>
+                                <div class="card-sync-address">Your City Address, Street, House Num.</div>
+                            </div>
+                            <div class="contact-item">
+                                <div class="icon-box"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath d='M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2a.996.996 0 011.02-.24c1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C10.1 21 3 13.9 3 4c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z'/%3E%3C/svg%3E" alt="phone"/></div>
+                                <div class="card-sync-phone">+18 XXX XXX XXX XXX</div>
+                            </div>
+                            <div class="contact-item">
+                                <div class="icon-box"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath d='M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.89 2 1.99 2H20c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z'/%3E%3C/svg%3E" alt="email"/></div>
+                                <div class="card-sync-email">Youremail@mail.com</div>
+                            </div>
+                            <div class="contact-item">
+                                <div class="icon-box"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath d='M11 18H13V16H11V18M12 2C6.48 2 2 6.48 2 12S6.48 22 12 22 22 17.52 22 12 17.52 2 12 2M12 20C7.59 20 4 16.41 4 12S7.59 4 12 4 20 7.59 20 12 16.41 20 12 20M11 14H13V10H11V14M11 8H13V6H11V8'/%3E%3C/svg%3E" alt="website"/></div>
+                                <div class="card-sync-website">www.YourWebsite.com</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="business-card" id="back-card">
+                    <div class="card-main-content">
+                        <div class="front-logo-icons" style="background: transparent;">
+                             <svg class="custom-logo-svg" width="40" height="40" viewBox="0 0 30 30" fill="none">
+                                <circle cx="11" cy="11" r="5" fill="#48b832"/>
+                                <circle cx="19" cy="11" r="5" fill="#48b832"/>
+                                <path d="M15 17L15 26M10 21L20 21" stroke="#48b832" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div class="back-comp-name card-sync-company">COMPANY NAME</div>
+                        <div class="back-comp-web card-sync-website">www.YourWebsite.com</div>
+                    </div>
+                    <div class="back-bottom-strip card-bg-poly"></div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div id="editor-zone">
+        
+        <div class="input-group">
+            <div class="panel-title">Personal Information</div>
+            <div class="field">
+                <label>Name</label>
+                <input type="text" id="input-name" placeholder="John Doe" value="YOUR NAME" oninput="syncText(this, '.card-sync-name')">
+            </div>
+            <div class="field">
+                <label>Job Title</label>
+                <input type="text" id="input-title" placeholder="Lead Designer" value="GRAPHIC DESIGNER" oninput="syncText(this, '.card-sync-title')">
+            </div>
+        </div>
+
+        <div class="input-group">
+            <div class="panel-title">Branding</div>
+            <div class="field">
+                <label>Company Name</label>
+                <input type="text" id="input-company" placeholder="My Business" value="COMPANY NAME" oninput="syncText(this, '.card-sync-company')">
+            </div>
+            <div class="field">
+                <label>Website URL</label>
+                <input type="text" id="input-website" placeholder="www.business.com" value="www.YourWebsite.com" oninput="syncText(this, '.card-sync-website')">
+            </div>
+        </div>
+
+        <div class="input-group">
+            <div class="panel-title">Contact Details</div>
+            <div class="field">
+                <label>Phone Number</label>
+                <input type="text" id="input-phone" placeholder="+12 345 678 90" value="+18 XXX XXX XXX XXX" oninput="syncText(this, '.card-sync-phone')">
+            </div>
+            <div class="field">
+                <label>Email Address</label>
+                <input type="text" id="input-email" placeholder="email@mail.com" value="Youremail@mail.com" oninput="syncText(this, '.card-sync-email')">
+            </div>
+            <div class="field">
+                <label>City Address</label>
+                <input type="text" id="input-address" placeholder="12 Broadway St." value="Your City Address, Street, House Num." oninput="syncText(this, '.card-sync-address')">
+            </div>
+        </div>
+
+    </div>
+
+    <div id="action-bar">
+        <button id="save-btn" onclick="saveCard()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+            Save Card Image
+        </button>
+    </div>
+
+    <script>
+        const cardStage = document.getElementById('card-stage');
+        const cardContainer = document.getElementById('card-container');
+        const editorZone = document.getElementById('editor-zone');
+        
+        let currentPage = 1;
+
+        // Mobile scaling function: maintain aspect ratio while fitting the mobile width.
+        function scaleCard() {
+            const viewportWidth = window.innerWidth - 32; // Allow for padding
+            const baseWidth = 350;
+            let scaleFactor = viewportWidth / baseWidth;
+            
+            if (scaleFactor > 1) scaleFactor = 1; // Don't scale up past full size
+
+            cardContainer.style.transform = `scale(${scaleFactor})`;
+            
+            // Adjust stage height based on scaled card to prevent editor overlapping top
+            cardStage.style.height = (200 * scaleFactor) + 'px';
+        }
+
+        window.addEventListener('resize', scaleCard);
+        window.addEventListener('load', scaleCard);
+        scaleCard(); // Run once on init
+
+        // Switching Logic: prevents overlapping by toggling the active class
+        function switchPage(page) {
+            const btnFront = document.getElementById('btn-front');
+            const btnBack = document.getElementById('btn-back');
+            const cardFront = document.getElementById('front-card');
+            const cardBack = document.getElementById('back-card');
+
+            currentPage = page;
+
+            if (page === 1) {
+                btnFront.classList.add('active');
+                btnBack.classList.remove('active');
+                cardFront.classList.add('active-page');
+                cardBack.classList.remove('active-page');
+            } else {
+                btnBack.classList.add('active');
+                btnFront.classList.remove('active');
+                cardBack.classList.add('active-page');
+                cardFront.classList.remove('active-page');
+            }
+        }
+
+        // Real-time synchronization function
+        function syncText(inputEl, targetClass) {
+            const targets = document.querySelectorAll(targetClass);
+            targets.forEach(target => target.innerText = inputEl.value);
+        }
+
+        // Save Functionality using html2canvas
+        function saveCard() {
+            const saveButton = document.getElementById('save-btn');
+            const activeCardId = (currentPage === 1) ? 'front-card' : 'back-card';
+            const elementToCapture = document.getElementById(activeCardId);
+
+            // Temporarily update UI to show processing
+            saveButton.innerText = "Processing...";
+            saveButton.style.background = "#aaaaaa";
+            saveButton.disabled = true;
+
+            // Use html2canvas to render the specific active card div.
+            // We use standard options that work in typical WebViews.
+            html2canvas(elementToCapture, {
+                scale: 3, // Upscale for high resolution (print ready)
+                useCORS: true, // Attempt to load cross-origin SVGs if used
+                allowTaint: true,
+                backgroundColor: null // Maintain transparency outside the card if desired
+            }).then(canvas => {
+                // Generate a data URL and create a download link.
+                // In an Android WebView, this might require permission handling or bridge code
+                // to open the standard download dialogue.
+                const dataUrl = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = `BusinessCard_Page${currentPage}_${Date.now()}.png`;
+                link.href = dataUrl;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                // Reset Button
+                saveButton.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>Save Card Image`;
+                saveButton.style.background = "var(--accent-color)";
+                saveButton.disabled = false;
+            }).catch(err => {
+                console.error("Rendering failed:", err);
+                alert("Could not generate image. Standard WebView security may be blocking capture.");
+                // Reset Button
+                saveButton.innerText = "Retry Save";
+                saveButton.style.background = "#f44336";
+                saveButton.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>

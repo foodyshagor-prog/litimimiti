@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Business Card Maker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        :root {
+            --ui-bg-top: #0f172a;
+            --ui-bg-bottom: #000000;
+            --primary-red: #ff0033;
+            --dark-red: #8b0000;
+            --input-bg: rgba(255, 255, 255, 0.05);
+            --input-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--ui-bg-top), var(--ui-bg-bottom));
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* --- STICKY PREVIEW SECTION --- */
+        .preview-section {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* Toggle Switch */
+        .toggle-container {
+            display: flex;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 30px;
+            padding: 4px;
+            border: 1px solid rgba(255,255,255,0.1);
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            background: transparent;
+            color: #aaa;
+            border: none;
+            padding: 8px 0;
+            border-radius: 26px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(135deg, var(--primary-red), var(--dark-red));
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(255, 0, 51, 0.3);
+        }
+
+        /* --- BUSINESS CARD DESIGN --- */
+        .card-wrapper {
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 1.75;
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+            background: #0a0a0a;
+            display: block; /* Default block, toggled via JS */
+        }
+
+        .card-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Shared Logo Styles */
+        .logo-container {
+            position: absolute;
+            z-index: 3;
+            width: 32%;
+            aspect-ratio: 1;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-red), var(--dark-red));
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 5px 5px 20px rgba(0,0,0,0.5);
+        }
+
+        .logo-inner {
+            width: 75%;
+            height: 75%;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ffffff, #f0f0f0);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: inset 0 3px 8px rgba(0,0,0,0.2);
+            color: #111;
+        }
+
+        .logo-icon {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 2px;
+        }
+
+        .logo-text-display {
+            font-size: 0.5rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        /* Front Specific Layout */
+        .front-logo {
+            top: 50%;
+            left: 28%;
+            transform: translate(-50%, -50%);
+        }
+
+        .card-content {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 55%;
+            height: 100%;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-right: 20px;
+            box-sizing: border-box;
+        }
+
+        .name-wrapper { margin-bottom: 2px; }
+        .first-name { font-size: 1.1rem; font-weight: 700; color: #ffffff; }
+        .last-name { font-size: 1.1rem; font-weight: 300; color: #ffffff; }
+        
+        .job-title {
+            font-size: 0.55rem;
+            color: #cccccc;
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            position: relative;
+        }
+        .job-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 30px;
+            height: 2px;
+            background: var(--primary-red);
+        }
+
+        .contact-list { display: flex; flex-direction: column; gap: 6px; }
+        .contact-item { display: flex; align-items: center; gap: 8px; font-size: 0.45rem; color: #dddddd; font-weight: 300; }
+        .contact-icon { width: 10px; height: 10px; fill: none; stroke: #ffffff; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+        /* Back Specific Layout */
+        .back-logo {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 35%; /* Slightly larger on the back */
+        }
+
+        .back-tagline {
+            position: absolute;
+            bottom: 15%;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            z-index: 3;
+            font-size: 0.6rem;
+            color: #ffffff;
+            font-weight: 300;
+            letter-spacing: 2px;
+            opacity: 0.8;
+        }
+
+        /* --- EDITOR SECTION --- */
+        .editor-section {
+            padding: 20px 15px 40px 15px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .editor-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .input-group { margin-bottom: 12px; }
+        .input-group label { display: block; font-size: 0.8rem; color: #aaaaaa; margin-bottom: 5px; padding-left: 2px; }
+        .input-group input {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            padding: 12px 15px;
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 0.95rem;
+            font-family: 'Poppins', sans-serif;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+        .input-group input:focus { outline: none; border-color: var(--primary-red); background: rgba(255, 255, 255, 0.08); }
+
+        .row { display: flex; gap: 10px; }
+        .row .input-group { flex: 1; }
+
+        /* Save Button */
+        .save-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary-red), var(--dark-red));
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            margin-top: 20px;
+            cursor: pointer;
+            box-shadow: 0 6px 15px rgba(255, 0, 51, 0.3);
+            transition: transform 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        .save-btn:active { transform: scale(0.98); }
+        .save-icon { width: 20px; height: 20px; fill: white; }
+
+        /* Display utilities */
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div class="preview-section">
+        <div class="toggle-container">
+            <button class="toggle-btn active" id="btn-front" onclick="switchSide('front')">Front Side</button>
+            <button class="toggle-btn" id="btn-back" onclick="switchSide('back')">Back Side</button>
+        </div>
+
+        <div class="card-wrapper" id="capture-card-front">
+            <svg class="card-bg" viewBox="0 0 1000 571" preserveAspectRatio="none">
+                <defs>
+                    <linearGradient id="bgBlack" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#222222"/>
+                        <stop offset="100%" stop-color="#050505"/>
+                    </linearGradient>
+                    <linearGradient id="bgRed" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#ff002b"/>
+                        <stop offset="100%" stop-color="#7a0000"/>
+                    </linearGradient>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#bgBlack)" />
+                <path d="M100,0 L1000,571 L1000,0 Z" fill="#111111" opacity="0.5"/>
+                <path d="M0,0 L350,0 C480,180 480,391 350,571 L0,571 Z" fill="url(#bgRed)" />
+                <path d="M350,0 C480,180 480,391 350,571 L370,571 C500,391 500,180 370,0 Z" fill="#000000" opacity="0.5" />
+                <path d="M0,0 L200,0 C100,100 0,150 0,250 Z" fill="url(#bgBlack)" opacity="0.8"/>
+            </svg>
+
+            <div class="logo-container front-logo">
+                <div class="logo-inner">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                    <span class="logo-text-display" id="out-front-logotext">LOGO</span>
+                </div>
+            </div>
+
+            <div class="card-content">
+                <div class="name-wrapper">
+                    <span class="first-name" id="out-fname">Eddie</span>
+                    <span class="last-name" id="out-lname">Jones</span>
+                </div>
+                <div class="job-title" id="out-title">Graphic Designer</div>
+                
+                <div class="contact-list">
+                    <div class="contact-item">
+                        <svg class="contact-icon" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                        <span id="out-phone">+000 123 456 - 789</span>
+                    </div>
+                    <div class="contact-item">
+                        <svg class="contact-icon" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                        <span id="out-email">loremipsum@ipsum.com</span>
+                    </div>
+                    <div class="contact-item">
+                        <svg class="contact-icon" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                        <span id="out-address">Lorem ipsum street</span>
+                    </div>
+                    <div class="contact-item">
+                        <svg class="contact-icon" viewBox="0 0 24 24"><path d="M15 3h6v6"></path><path d="M10 14L21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg>
+                        <span id="out-web">www.loremipsum.com</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-wrapper hidden" id="capture-card-back">
+            <svg class="card-bg" viewBox="0 0 1000 571" preserveAspectRatio="none">
+                <rect width="100%" height="100%" fill="url(#bgRed)" />
+                <path d="M1000,0 C650,0 550,571 0,571 L0,650 L1000,650 Z" fill="#000000" opacity="0.4" />
+                <path d="M1000,0 C700,0 600,571 0,571 L1000,571 Z" fill="url(#bgBlack)" />
+                <path d="M1000,0 L850,0 C900,100 1000,150 1000,250 Z" fill="#ff002b" opacity="0.6"/>
+            </svg>
+
+            <div class="logo-container back-logo">
+                <div class="logo-inner">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                    <span class="logo-text-display" id="out-back-logotext">LOGO</span>
+                </div>
+            </div>
+
+            <div class="back-tagline" id="out-back-tagline">WWW.LOREMIPSUM.COM</div>
+        </div>
+    </div>
+
+    <div class="editor-section">
+        
+        <div id="inputs-front">
+            <div class="editor-title">Front Details</div>
+            
+            <div class="row">
+                <div class="input-group">
+                    <label>First Name</label>
+                    <input type="text" id="in-fname" value="Eddie" oninput="updateField('fname', 'out-fname')">
+                </div>
+                <div class="input-group">
+                    <label>Last Name</label>
+                    <input type="text" id="in-lname" value="Jones" oninput="updateField('lname', 'out-lname')">
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Job Title</label>
+                <input type="text" id="in-title" value="Graphic Designer" oninput="updateField('title', 'out-title')">
+            </div>
+
+            <div class="row">
+                <div class="input-group">
+                    <label>Phone Number</label>
+                    <input type="tel" id="in-phone" value="+000 123 456 - 789" oninput="updateField('phone', 'out-phone')">
+                </div>
+                <div class="input-group">
+                    <label>Email Address</label>
+                    <input type="email" id="in-email" value="loremipsum@ipsum.com" oninput="updateField('email', 'out-email')">
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Street Address</label>
+                <input type="text" id="in-address" value="Lorem ipsum street" oninput="updateField('address', 'out-address')">
+            </div>
+
+            <div class="row">
+                <div class="input-group">
+                    <label>Website</label>
+                    <input type="text" id="in-web" value="www.loremipsum.com" oninput="updateField('web', 'out-web'); syncWebsites()">
+                </div>
+                <div class="input-group">
+                    <label>Front Logo Text</label>
+                    <input type="text" id="in-front-logotext" value="LOGO" oninput="updateField('front-logotext', 'out-front-logotext')" maxlength="6">
+                </div>
+            </div>
+        </div>
+
+        <div id="inputs-back" class="hidden">
+            <div class="editor-title">Back Details</div>
+            
+            <div class="input-group">
+                <label>Back Logo Text</label>
+                <input type="text" id="in-back-logotext" value="LOGO" oninput="updateField('back-logotext', 'out-back-logotext')" maxlength="6">
+            </div>
+
+            <div class="input-group">
+                <label>Company Website / Tagline</label>
+                <input type="text" id="in-back-tagline" value="WWW.LOREMIPSUM.COM" oninput="updateField('back-tagline', 'out-back-tagline')">
+            </div>
+        </div>
+
+        <button class="save-btn" onclick="saveImage()">
+            <svg class="save-icon" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+            <span id="save-btn-text">Save Front Side</span>
+        </button>
+    </div>
+
+    <script>
+        let currentSide = 'front';
+
+        // Toggle between Front and Back
+        function switchSide(side) {
+            currentSide = side;
+            
+            // Update Buttons
+            document.getElementById('btn-front').classList.toggle('active', side === 'front');
+            document.getElementById('btn-back').classList.toggle('active', side === 'back');
+
+            // Update Cards
+            document.getElementById('capture-card-front').classList.toggle('hidden', side === 'back');
+            document.getElementById('capture-card-back').classList.toggle('hidden', side === 'front');
+
+            // Update Input Forms
+            document.getElementById('inputs-front').classList.toggle('hidden', side === 'back');
+            document.getElementById('inputs-back').classList.toggle('hidden', side === 'front');
+
+            // Update Save Button Text
+            document.getElementById('save-btn-text').innerText = side === 'front' ? 'Save Front Side' : 'Save Back Side';
+        }
+
+        // Real-time update function
+        function updateField(inputId, outputId) {
+            const inputVal = document.getElementById('in-' + inputId).value;
+            document.getElementById(outputId).innerText = inputVal;
+        }
+
+        // Helper to sync the front website to the back tagline by default to save user time
+        function syncWebsites() {
+            const frontWeb = document.getElementById('in-web').value;
+            const backTaglineInput = document.getElementById('in-back-tagline');
+            if (backTaglineInput.value.toLowerCase() === 'www.loremipsum.com' || backTaglineInput.value === '') {
+                 backTaglineInput.value = frontWeb.toUpperCase();
+                 document.getElementById('out-back-tagline').innerText = frontWeb.toUpperCase();
+            }
+        }
+
+        // Save Image logic via html2canvas
+        function saveImage() {
+            // Determine which card is currently active to save
+            const targetId = currentSide === 'front' ? 'capture-card-front' : 'capture-card-back';
+            const cardElement = document.getElementById(targetId);
+            const saveBtn = document.querySelector('.save-btn');
+            const saveBtnText = document.getElementById('save-btn-text');
+            
+            // Visual feedback
+            const originalText = saveBtnText.innerText;
+            saveBtnText.innerText = "Processing...";
+            saveBtn.style.opacity = "0.7";
+
+            html2canvas(cardElement, {
+                scale: 3, // High res
+                useCORS: true,
+                backgroundColor: null,
+                logging: false
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `business_card_${currentSide}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                // Reset
+                saveBtnText.innerText = originalText;
+                saveBtn.style.opacity = "1";
+            }).catch(err => {
+                console.error("Error saving image: ", err);
+                alert("Failed to save image. Please ensure your WebView supports Canvas rendering.");
+                saveBtnText.innerText = originalText;
+                saveBtn.style.opacity = "1";
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Business Card Studio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #131722;
+            --bg-panel: #1a1f2c;
+            --bg-input: #252b3a;
+            --accent-orange: #ff9d22;
+            --accent-orange-dark: #e67e22;
+            --text-main: #ffffff;
+            --text-muted: #8a94a6;
+            --card-width: 350px;
+            --card-height: 200px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- PREVIEW VIEWPORT (TOP) --- */
+        .preview-section {
+            flex-shrink: 0;
+            background: var(--bg-dark);
+            padding: 20px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+
+        .card-wrapper {
+            width: var(--card-width);
+            height: var(--card-height);
+            perspective: 1000px;
+        }
+
+        .business-card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            border-radius: 14px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #252c3d 0%, #151924 100%);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        /* --- DESIGN ACCENTS --- */
+        .orange-ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 20px solid var(--accent-orange);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5), inset 0 4px 12px rgba(255,255,255,0.25);
+            background: transparent;
+        }
+
+        .ring-top-left {
+            width: 130px;
+            height: 130px;
+            top: -45px;
+            left: -45px;
+        }
+
+        .ring-bottom-right {
+            width: 130px;
+            height: 130px;
+            bottom: -45px;
+            right: -45px;
+        }
+
+        /* --- CARD VIEW CONTENT --- */
+        .card-view {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: none;
+            box-sizing: border-box;
+        }
+
+        .card-view.active {
+            display: block;
+        }
+
+        /* Front Side Styles */
+        .front-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .logo-frame {
+            border-top: 1px solid rgba(255,255,255,0.12);
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+            padding: 8px 45px;
+            text-align: center;
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            color: #ffffff;
+        }
+
+        .logo-text span {
+            color: var(--accent-orange);
+            font-weight: 600;
+        }
+
+        /* Back Side Styles */
+        .mini-logo {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 11px;
+            font-weight: 400;
+            letter-spacing: 1px;
+        }
+
+        .mini-logo span {
+            color: var(--accent-orange);
+            font-weight: 600;
+        }
+
+        /* Infographic Ring Layout */
+        .info-graphics {
+            position: absolute;
+            left: 20px;
+            top: 40px;
+            width: 120px;
+            height: 120px;
+            background: var(--accent-orange);
+            border-radius: 50%;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4), inset 0 4px 10px rgba(255,255,255,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .inner-dark-circle {
+            width: 82px;
+            height: 82px;
+            background: #191e2b;
+            border-radius: 50%;
+            box-shadow: inset 0 4px 10px rgba(0,0,0,0.7);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 5px;
+        }
+
+        .card-name {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--accent-orange);
+            letter-spacing: 0.5px;
+            line-height: 1.2;
+            text-transform: uppercase;
+        }
+
+        .card-title {
+            font-size: 6px;
+            font-weight: 400;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Core Node Points */
+        .node {
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: #1e2433;
+            border-radius: 50%;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+        }
+
+        .node svg {
+            width: 10px;
+            height: 10px;
+            fill: var(--text-muted);
+        }
+
+        .node-text {
+            position: absolute;
+            font-size: 7.5px;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        /* Corrected Node & Text Alignments */
+        .node-phone { top: -11px; left: 49px; }
+        .text-phone { 
+            top: 14px; 
+            left: 80px; /* Aligns perfectly with the center of the ring */
+            transform: translateX(-50%); 
+            font-size: 7px; 
+            color: rgba(255,255,255,0.4); 
+        }
+
+        .node-web { top: 49px; right: -11px; }
+        .text-web { left: 152px; top: 96px; }
+
+        .node-email { bottom: 2px; right: 10px; }
+        .text-email { left: 142px; top: 138px; }
+
+        .node-loc { bottom: -11px; left: 49px; }
+        .text-loc { 
+            top: 172px; 
+            left: 20px; 
+            width: 120px; 
+            text-align: center; 
+            font-size: 6.5px; 
+            line-height: 1.2; 
+            color: rgba(255,255,255,0.3); 
+        }
+
+        /* --- UI CONTROL TOGGLES --- */
+        .toggle-container {
+            display: flex;
+            background: var(--bg-panel);
+            padding: 4px;
+            border-radius: 30px;
+            width: 220px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 8px 0;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-btn.active {
+            background: var(--accent-orange);
+            color: var(--bg-dark);
+            box-shadow: 0 4px 10px rgba(255,157,34,0.3);
+        }
+
+        /* --- EDITOR PANEL (BOTTOM) --- */
+        .editor-section {
+            flex-grow: 1;
+            background: var(--bg-panel);
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            padding: 24px 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .input-group label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+        }
+
+        .input-group input {
+            background: var(--bg-input);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 12px 16px;
+            border-radius: 12px;
+            color: var(--text-main);
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .input-group input:focus {
+            border-color: var(--accent-orange);
+        }
+
+        .save-btn {
+            background: linear-gradient(135deg, var(--accent-orange) 0%, var(--accent-orange-dark) 100%);
+            color: var(--bg-dark);
+            border: none;
+            padding: 15px;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px;
+            box-shadow: 0 6px 15px rgba(255,157,34,0.3);
+        }
+
+        .save-btn:active {
+            transform: scale(0.98);
+        }
+
+        .editor-section::-webkit-scrollbar {
+            width: 4px;
+        }
+        .editor-section::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="preview-section">
+        <div class="card-wrapper">
+            <div class="business-card" id="capture-target">
+                
+                <div class="card-view active" id="view-front">
+                    <div class="orange-ring ring-top-left"></div>
+                    <div class="orange-ring ring-bottom-right"></div>
+                    <div class="front-content">
+                        <div class="logo-frame">
+                            <div class="logo-text id-display-logo">LOGO<span>NAME</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-view" id="view-back">
+                    <div class="mini-logo id-display-logo">LOGO<span>NAME</span></div>
+                    
+                    <div class="info-graphics">
+                        <div class="inner-dark-circle">
+                            <div class="card-name id-display-name">Alex David</div>
+                            <div class="card-title id-display-title">Art Director</div>
+                        </div>
+                        
+                        <div class="node node-phone">
+                            <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                        </div>
+                        
+                        <div class="node node-web">
+                            <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95c-.32-1.25-.78-2.45-1.38-3.56 1.84.63 3.37 1.91 4.33 3.56zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2 0 .68.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56-1.84-.63-3.37-1.91-4.33-3.56zm2.95-8H5.08c.96-1.65 2.49-2.93 4.33-3.56-.6 1.11-1.06 2.31-1.38 3.56zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2 0-.68.07-1.35.16-2h4.68c.09.65.16 1.32.16 2 0 .68-.07 1.34-.16 2zm.24 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95c-.96 1.65-2.49 2.93-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2 0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg>
+                        </div>
+                        
+                        <div class="node node-email">
+                            <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                        </div>
+                        
+                        <div class="node node-loc">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                        </div>
+                    </div>
+
+                    <div class="node-text text-phone id-display-phone">+1234-56789</div>
+                    <div class="node-text text-web id-display-web">loremipsum.com</div>
+                    <div class="node-text text-email id-display-email">lorem@ipsum.com</div>
+                    <div class="node-text text-loc id-display-address">Country, City, Area Street,<br>Building, Zip code</div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="toggle-container">
+            <button class="toggle-btn active" id="btn-front" onclick="switchSide('front')">Front Side</button>
+            <button class="toggle-btn" id="btn-back" onclick="switchSide('back')">Back Side</button>
+        </div>
+    </div>
+
+    <div class="editor-section">
+        
+        <div class="input-group">
+            <label>Brand/Logo Name</label>
+            <input type="text" id="input-logo" value="logoname" placeholder="e.g., brandname">
+        </div>
+
+        <div class="input-group">
+            <label>Full Name</label>
+            <input type="text" id="input-name" value="ALEX DAVID" placeholder="e.g., JOHN DOE">
+        </div>
+
+        <div class="input-group">
+            <label>Job Title / Designation</label>
+            <input type="text" id="input-title" value="ART DIRECTOR" placeholder="e.g., DEVELOPER">
+        </div>
+
+        <div class="input-group">
+            <label>Phone Number</label>
+            <input type="text" id="input-phone" value="+1234-56789" placeholder="e.g., +123 456 789">
+        </div>
+
+        <div class="input-group">
+            <label>Website URL</label>
+            <input type="text" id="input-web" value="loremipsum.com" placeholder="e.g., website.com">
+        </div>
+
+        <div class="input-group">
+            <label>Email Address</label>
+            <input type="text" id="input-email" value="lorem@ipsum.com" placeholder="e.g., name@mail.com">
+        </div>
+
+        <div class="input-group">
+            <label>Physical Address</label>
+            <input type="text" id="input-address" value="Country, City, Area Street, Building, Zip code" placeholder="Address">
+        </div>
+
+        <button class="save-btn" onclick="exportCardImage()">
+            <svg style="width:20px;height:20px;fill:currentColor" viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+            Save Card Image
+        </button>
+        
+    </div>
+
+    <script>
+        const views = {
+            front: document.getElementById('view-front'),
+            back: document.getElementById('view-back')
+        };
+        const buttons = {
+            front: document.getElementById('btn-front'),
+            back: document.getElementById('btn-back')
+        };
+
+        function switchSide(side) {
+            Object.keys(views).forEach(k => {
+                views[k].classList.remove('active');
+                buttons[k].classList.remove('active');
+            });
+            views[side].classList.add('active');
+            buttons[side].classList.add('active');
+        }
+
+        function setupLiveSync(inputId, targetClassOrSelector, isLogo = false) {
+            const inputEl = document.getElementById(inputId);
+            
+            inputEl.addEventListener('input', (e) => {
+                let value = e.target.value.trim() === "" ? " " : e.target.value;
+                const targets = document.querySelectorAll(targetClassOrSelector);
+                
+                targets.forEach(target => {
+                    if (isLogo) {
+                        let cleanText = value.replace(/\s+/g, '');
+                        if(cleanText.length <= 4) {
+                            target.innerHTML = `${cleanText}<span></span>`;
+                        } else {
+                            target.innerHTML = `${cleanText.substring(0, 4)}<span>${cleanText.substring(4)}</span>`;
+                        }
+                    } else {
+                        if (inputId === 'input-address') {
+                            target.innerHTML = value.replace(/,/g, ',<br>');
+                        } else {
+                            target.textContent = value;
+                        }
+                    }
+                });
+            });
+        }
+
+        // Live Binding initializations
+        setupLiveSync('input-logo', '.id-display-logo', true);
+        setupLiveSync('input-name', '.id-display-name');
+        setupLiveSync('input-title', '.id-display-title');
+        setupLiveSync('input-phone', '.id-display-phone');
+        setupLiveSync('input-web', '.id-display-web');
+        setupLiveSync('input-email', '.id-display-email');
+        setupLiveSync('input-address', '.id-display-address');
+
+        function exportCardImage() {
+            const element = document.getElementById('capture-target');
+            const activeSide = document.getElementById('btn-front').classList.contains('active') ? 'front' : 'back';
+            
+            const options = {
+                scale: 3, 
+                backgroundColor: null,
+                useCORS: true,
+                allowTaint: true,
+                logging: false
+            };
+
+            html2canvas(element, options).then(canvas => {
+                const imageURI = canvas.toDataURL("image/png");
+                const downloadLink = document.createElement('a');
+                downloadLink.download = `business_card_${activeSide}_${Date.now()}.png`;
+                downloadLink.href = imageURI;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+            }).catch(err => {
+                console.error("Capture runtime error:", err);
+            });
+        }
+    </script>
+</body>
+</html>

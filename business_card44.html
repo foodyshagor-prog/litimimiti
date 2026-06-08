@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Business Card Designer</title>
+    <style>
+        /* Modern Dark Gradient UI Wrapper */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(180deg, #141419 0%, #08080a 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* App Layout Structure */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        header {
+            padding: 16px;
+            text-align: center;
+            background: rgba(20, 20, 25, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        /* Top Preview Area */
+        .preview-area {
+            padding: 20px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(10, 10, 12, 0.4);
+            position: relative;
+        }
+
+        /* Toggle Switch Styling */
+        .view-toggle {
+            display: flex;
+            background: rgba(255, 255, 255, 0.06);
+            padding: 4px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            width: 200px;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 8px 0;
+            border: none;
+            background: transparent;
+            color: #a0aec0;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+        }
+
+        /* Card Scale Container to preserve precise ratio on mobile layouts */
+        .card-container {
+            width: 100%;
+            max-width: 350px;
+            aspect-ratio: 1.75;
+            perspective: 1000px;
+        }
+
+        /* Accurate Business Card Styling */
+        .business-card {
+            width: 100%;
+            height: 100%;
+            border-radius: 14px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            display: none;
+            background: #fff;
+        }
+
+        .business-card.active {
+            display: block;
+        }
+
+        /* FRONT PAGE VECTOR STYLING */
+        .card-front {
+            background: #ffffff;
+            color: #333;
+        }
+
+        .front-svg-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .front-content {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            height: 100%;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .front-meta {
+            align-self: flex-end;
+            text-align: right;
+            margin-top: 4px;
+            margin-right: 12%;
+        }
+
+        .card-name {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #1a3020;
+            line-height: 1.2;
+        }
+
+        .card-title {
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #555;
+            letter-spacing: 0.5px;
+        }
+
+        /* Stylized Brand Logo Graphic */
+        .logo-group {
+            margin-left: 10px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .logo-icon-wrap {
+            border: 1.5px solid #e67e22;
+            border-radius: 6px;
+            padding: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+        }
+
+        .logo-icon-wrap svg {
+            width: 18px;
+            height: 18px;
+            fill: #e67e22;
+        }
+
+        .logo-text-wrap {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo-top {
+            font-family: 'Georgia', cursive, serif;
+            font-size: 1.3rem;
+            font-style: italic;
+            color: #27853c;
+            line-height: 1;
+            font-weight: bold;
+        }
+
+        .logo-bottom {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #34495e;
+            letter-spacing: -0.5px;
+            line-height: 0.9;
+            margin-left: 8px;
+        }
+
+        /* BACK PAGE VECTOR STYLING */
+        .card-back {
+            background: #e2f3e5;
+            color: #2c3e50;
+        }
+
+        .back-svg-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .back-content {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            height: 100%;
+            padding: 16px 20px;
+            display: grid;
+            grid-template-columns: 1fr 1.1fr;
+            align-items: end;
+        }
+
+        .back-left {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            height: 100%;
+            justify-content: space-between;
+            padding-bottom: 4px;
+        }
+
+        .back-right {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding-bottom: 20px;
+            align-items: flex-start;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.62rem;
+            font-weight: 600;
+            color: #2d4030;
+        }
+
+        .contact-item svg {
+            width: 10px;
+            height: 10px;
+            fill: #3b8853;
+            flex-shrink: 0;
+        }
+
+        .address-box {
+            margin-top: auto;
+        }
+
+        .qr-code-wrapper {
+            background: white;
+            padding: 4px;
+            border-radius: 6px;
+            width: 52px;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        .qr-code-wrapper svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .web-link {
+            position: absolute;
+            bottom: 8px;
+            right: 16px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.58rem;
+            color: #d5ebd9;
+            font-weight: 500;
+        }
+
+        .web-link svg {
+            width: 9px;
+            height: 9px;
+            fill: #d5ebd9;
+        }
+
+        /* Bottom Editor Controls Panel */
+        .editor-panel {
+            flex: 1;
+            background: #121216;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            padding: 20px 16px;
+            overflow-y: auto;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .editor-section-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #718096;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .editor-section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.75rem;
+            color: #a0aec0;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            background: #1a1a22;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 12px;
+            color: #fff;
+            font-size: 0.85rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #2ecc71;
+            background: #1e1e27;
+        }
+
+        /* Action Buttons Area */
+        .action-area {
+            padding: 12px 16px 24px 16px;
+            background: #121216;
+        }
+
+        .btn-save {
+            width: 100%;
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 6px 20px rgba(46, 204, 113, 0.25);
+            cursor: pointer;
+        }
+
+        .btn-save:active {
+            transform: scale(0.98);
+        }
+
+        /* Hidden standard canvas for rendering export image offline */
+        #export-canvas {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>Card Template Editor</header>
+
+        <div class="preview-area">
+            <div class="view-toggle">
+                <button class="toggle-btn active" id="btn-view-front" onclick="switchView('front')">Front Side</button>
+                <button class="toggle-btn" id="btn-view-back" onclick="switchView('back')">Back Side</button>
+            </div>
+
+            <div class="card-container">
+                <div class="business-card card-front active" id="card-front-element">
+                    <svg class="front-svg-bg" viewBox="0 0 350 200" preserveAspectRatio="none">
+                        <defs>
+                            <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#6be37b" />
+                                <stop offset="100%" stop-color="#227034" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M 0,0 L 350,0 L 350,200 L 0,200 Z" fill="#ffffff"/>
+                        <path d="M 160,200 C 230,170 200,60 350,45 L 350,200 Z" fill="url(#greenGrad)"/>
+                        <path d="M 145,200 C 215,168 185,58 350,40" fill="none" stroke="#ffffff" stroke-width="3"/>
+                        <path d="M 135,200 C 205,165 175,55 350,34" fill="none" stroke="#a9f3b5" stroke-width="1.5" opacity="0.6"/>
+                        <g transform="translate(290, 45) scale(0.5)" opacity="0.25">
+                            <path d="M0,0 Q15,-15 30,0 Q15,15 0,0 Z" fill="#ffffff"/>
+                            <path d="M0,0 Q-15,-15 -30,0 Q-15,15 0,0 Z" fill="#ffffff"/>
+                            <path d="M0,0 Q15,15 0,30 Q-15,15 0,0 Z" fill="#ffffff"/>
+                            <path d="M0,0 Q15,-15 0,-30 Q-15,-15 0,0 Z" fill="#ffffff"/>
+                        </g>
+                        <g transform="translate(40, 165) scale(0.4)" opacity="0.7">
+                            <path d="M0,0 Q15,-15 30,0 Q15,15 0,0 Z" fill="#52be6d"/>
+                            <path d="M0,0 Q-15,-15 -30,0 Q-15,15 0,0 Z" fill="#52be6d"/>
+                            <path d="M0,0 Q15,15 0,30 Q-15,15 0,0 Z" fill="#52be6d"/>
+                            <path d="M0,0 Q15,-15 0,-30 Q-15,-15 0,0 Z" fill="#52be6d"/>
+                        </g>
+                    </svg>
+                    
+                    <div class="front-content">
+                        <div class="front-meta">
+                            <div class="card-name" id="preview-name">David P Burns</div>
+                            <div class="card-title" id="preview-title">Director</div>
+                        </div>
+                        
+                        <div class="front-logo-container">
+                            <div class="logo-group">
+                                <div class="logo-icon-wrap">
+                                    <svg viewBox="0 0 24 24">
+                                        <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4M12,18A2,2 0 0,1 10,16A2,2 0 0,1 12,14A2,2 0 0,1 14,16A2,2 0 0,1 12,18M17,14A2,2 0 0,1 15,12A2,2 0 0,1 17,10A2,2 0 0,1 19,12A2,2 0 0,1 17,14M7,14A2,2 0 0,1 5,12A2,2 0 0,1 7,10A2,2 0 0,1 9,12A2,2 0 0,1 7,14Z" />
+                                    </svg>
+                                </div>
+                                <div class="logo-text-wrap">
+                                    <span class="logo-top" id="preview-logo-1">Hotel</span>
+                                    <span class="logo-bottom" id="preview-logo-2">sattian</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="business-card card-back" id="card-back-element">
+                    <svg class="back-svg-bg" viewBox="0 0 350 200" preserveAspectRatio="none">
+                        <defs>
+                            <linearGradient id="backGreenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#3d8c55" />
+                                <stop offset="100%" stop-color="#1d4d2b" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M 0,110 C 120,160 220,90 350,135 L 350,200 L 0,200 Z" fill="url(#backGreenGrad)"/>
+                        <path d="M 0,125 C 130,170 210,105 350,147 L 350,200 L 0,200 Z" fill="#225933"/>
+                        <line x1="150" y1="185" x2="200" y2="185" stroke="rgba(255,255,255,0.2)" stroke-width="12" stroke-dasharray="2 3" />
+                    </svg>
+
+                    <div class="back-content">
+                        <div class="back-left">
+                            <div class="address-box">
+                                <div class="contact-item" style="margin-bottom: 2px;">
+                                    <svg viewBox="0 0 24 24"><path d="M12,2C15.31,2 18,4.66 18,7.95C18,12.41 12,19 12,19C12,19 6,12.41 6,7.95C6,4.66 8.69,2 12,2M12,6A2,2 0 0,0 10,8A2,2 0 0,0 12,10A2,2 0 0,0 14,8A2,2 0 0,0 12,6Z"/></svg>
+                                    <span id="preview-address-1">3226 Joes Road</span>
+                                </div>
+                                <div class="contact-item" style="padding-left: 16px;">
+                                    <span id="preview-address-2">Westerlo, NY 12193</span>
+                                </div>
+                            </div>
+
+                            <div class="qr-code-wrapper">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M2,2H10V10H2V2M4,4V8H8V4H4M14,2H22V10H14V2M16,4V8H20V4H16M2,14H10V22H2V14M4,16V20H8V16H4M14,14H17V17H14V14M17,17H20V20H17V17M20,14H22V17H20V14M14,20H17V22H14V20M20,20H22V22H20V20M17,14H19V16H17V14M19,16H21V18H19 TriM18,19H20V21H18V19" fill="#225933"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="back-right">
+                            <div class="contact-item">
+                                <svg viewBox="0 0 24 24"><path d="M6.62,10.79C8.06,13.62 10.38,15.94 13.21,17.38L15.41,15.18C15.69,14.9 16.08,14.82 16.43,14.93C17.55,15.3 18.75,15.5 20,15.5A1,1 0 0,1 21,16.5V20A1,1 0 0,1 20,21A17,17 0 0,1 3,4A1,1 0 0,1 4,3H7.5A1,1 0 0,1 8.5,4C8.5,5.25 8.7,6.45 9.07,7.57C9.18,7.92 9.1,8.31 8.82,8.59L6.62,10.79Z"/></svg>
+                                <span id="preview-phone">+001 518-797-6754</span>
+                            </div>
+                            <div class="contact-item">
+                                <svg viewBox="0 0 24 24"><path d="M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C22,4.89 21.1,4 20,4M20,8L12,13L4,8V6L12,11L20,6V8Z"/></svg>
+                                <span id="preview-email">davidpburns@hsattian.com</span>
+                            </div>
+                        </div>
+
+                        <div class="web-link">
+                            <svg viewBox="0 0 24 24"><path d="M17.9,17.39C17.64,16.59 16.89,16 16,16H15V13A1,1 0 0,0 14,12H8V10H10A1,1 0 0,0 11,9V7H13A2,2 0 0,0 15,5V4.59C18.4,5.76 20.8,9 20.8,12.8C20.8,14.53 20.25,16.14 19.31,17.46L17.9,17.39M11,17V18H9V15H13A1,1 0 0,1 14,16V17H11M5.64,9.2C6.1,9.7 6.8,10 7.5,10H8V12H7A2,2 0 0,0 5,14V15.54C4.15,14.07 3.63,12.35 3.63,10.5C3.63,10.05 3.68,9.62 3.76,9.2H5.64M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/></svg>
+                            <span id="preview-web">www.hsattian.com</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="editor-panel">
+            
+            <div id="editor-front-fields">
+                <div class="editor-section-title">Front Page Elements</div>
+                <div class="form-group">
+                    <label for="input-name">Full Name</label>
+                    <input type="text" id="input-name" value="David P Burns" oninput="updateText('name', this.value)">
+                </div>
+                <div class="form-group">
+                    <label for="input-title">Job Title</label>
+                    <input type="text" id="input-title" value="Director" oninput="updateText('title', this.value)">
+                </div>
+                <div class="form-group">
+                    <label for="input-logo-1">Brand Main Title</label>
+                    <input type="text" id="input-logo-1" value="Hotel" oninput="updateText('logo-1', this.value)">
+                </div>
+                <div class="form-group">
+                    <label for="input-logo-2">Brand Subtitle Accent</label>
+                    <input type="text" id="input-logo-2" value="sattian" oninput="updateText('logo-2', this.value)">
+                </div>
+            </div>
+
+            <div id="editor-back-fields" style="display: none;">
+                <div class="editor-section-title">Back Page Elements</div>
+                <div class="form-group">
+                    <label for="input-address-1">Address Line 1</label>
+                    <input type="text" id="input-address-1" value="3226 Joes Road" oninput="updateText('address-1', this.value)">
+                </div>
+                <div class="form-group">
+                    <label for="input-address-2">Address Line 2</label>
+                    <input type="text" id="input-address-2" value="Westerlo, NY 12193" oninput="updateText('address-2', this.value)">
+                </div>
+                <div class="form-group">
+                    <label for="input-phone">Phone Number</label>
+                    <input type="text" id="input-phone" value="+001 518-797-6754" oninput="updateText('phone', this.value)">
+                </div>
+                <div class="form-group">
+                    <label for="input-email">Email Address</label>
+                    <input type="text" id="input-email" value="davidpburns@hsattian.com" oninput="updateText('email', this.value)">
+                </div>
+                <div class="form-group">
+                    <label for="input-web">Website Domain</label>
+                    <input type="text" id="input-web" value="www.hsattian.com" oninput="updateText('web', this.value)">
+                </div>
+            </div>
+
+        </div>
+
+        <div class="action-area">
+            <button class="btn-save" onclick="exportCardToImage()">
+                <svg style="width:20px;height:20px;fill:currentColor" viewBox="0 0 24 24">
+                    <path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" />
+                </svg>
+                Save Card Image
+            </button>
+        </div>
+    </div>
+
+    <canvas id="export-canvas" width="1050" height="600"></canvas>
+
+    <script>
+        let currentActiveSide = 'front';
+
+        // Control Panel Switch View Engine Logic
+        function switchView(side) {
+            currentActiveSide = side;
+            
+            // Toggle Display Controls
+            document.getElementById('btn-view-front').classList.toggle('active', side === 'front');
+            document.getElementById('btn-view-back').classList.toggle('active', side === 'back');
+            
+            document.getElementById('card-front-element').classList.toggle('active', side === 'front');
+            document.getElementById('card-back-element').classList.toggle('active', side === 'back');
+
+            // Handle Input panels cross fading
+            document.getElementById('editor-front-fields').style.display = side === 'front' ? 'block' : 'none';
+            document.getElementById('editor-back-fields').style.display = side === 'back' ? 'block' : 'none';
+        }
+
+        // Fast DOM Field Synchronization Handler
+        function updateText(elementId, value) {
+            document.getElementById(`preview-${elementId}`).innerText = value;
+        }
+
+        /**
+         * Independent High Fidelity Canvas Export Engine
+         * Built explicitly using native canvas drawing routines to ensure instant 
+         * offline execution in standard Android/iOS WebViews without external library assets.
+         */
+        function exportCardToImage() {
+            const canvas = document.getElementById('export-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Clear current canvas space state
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.textBaseline = 'top';
+
+            if (currentActiveSide === 'front') {
+                // Draw Card Base Surface
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(0, 0, 1050, 600);
+
+                // Setup Green Linear Wave Gradient Accent
+                let gradient = ctx.createLinearGradient(0, 0, 1050, 600);
+                gradient.addColorStop(0, '#6be37b');
+                gradient.addColorStop(1, '#227034');
+
+                // Draw Wave Vector
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.moveTo(480, 600);
+                ctx.bezierCurveTo(690, 510, 600, 180, 1050, 135);
+                ctx.lineTo(1050, 600);
+                ctx.closePath();
+                ctx.fill();
+
+                // Structural Wave Stroke Layout Layer 1
+                ctx.strokeStyle = "#ffffff";
+                ctx.lineWidth = 9;
+                ctx.beginPath();
+                ctx.moveTo(435, 600);
+                ctx.bezierCurveTo(645, 504, 555, 174, 1050, 120);
+                ctx.stroke();
+
+                // Structural Wave Stroke Layout Layer 2
+                ctx.strokeStyle = "rgba(169, 243, 181, 0.6)";
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(405, 600);
+                ctx.bezierCurveTo(615, 495, 525, 165, 1050, 102);
+                ctx.stroke();
+
+                // Pull Data Safely from User Interface Bindings
+                const nameText = document.getElementById('preview-name').innerText;
+                const titleText = document.getElementById('preview-title').innerText;
+                const brandTop = document.getElementById('preview-logo-1').innerText;
+                const brandBottom = document.getElementById('preview-logo-2').innerText;
+
+                // Render Name Text Block
+                ctx.fillStyle = "#1a3020";
+                ctx.font = "bold 38px sans-serif";
+                ctx.fillText(nameText, 480, 50);
+
+                // Render Title Text Block
+                ctx.fillStyle = "#555555";
+                ctx.font = "500 24px sans-serif";
+                ctx.fillText(titleText, 480, 100);
+
+                // Drawing Orange Logo Accent Outlines
+                ctx.strokeStyle = "#e67e22";
+                ctx.lineWidth = 4;
+                ctx.strokeRect(50, 430, 65, 65);
+
+                // Draw Nested Graphic Placeholder
+                ctx.fillStyle = "#e67e22";
+                ctx.beginPath();
+                ctx.arc(82, 462, 14, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Logo Brand Labeling
+                ctx.fillStyle = "#27853c";
+                ctx.font = "italic bold 48px Georgia, serif";
+                ctx.fillText(brandTop, 135, 415);
+
+                ctx.fillStyle = "#34495e";
+                ctx.font = "800 40px sans-serif";
+                ctx.fillText(brandBottom, 155, 465);
+
+            } else {
+                // BACK SIDE HIGH RES GENERATION
+                ctx.fillStyle = "#e2f3e5";
+                ctx.fillRect(0, 0, 1050, 600);
+
+                // Lower Dark Shape Gradient
+                let backGradient = ctx.createLinearGradient(0, 0, 1050, 600);
+                backGradient.addColorStop(0, '#3d8c55');
+                backGradient.addColorStop(1, '#1d4d2b');
+
+                ctx.fillStyle = backGradient;
+                ctx.beginPath();
+                ctx.moveTo(0, 330);
+                ctx.bezierCurveTo(360, 480, 660, 270, 1050, 405);
+                ctx.lineTo(1050, 600);
+                ctx.lineTo(0, 600);
+                ctx.closePath();
+                ctx.fill();
+
+                // Secondary Accent Layer
+                ctx.fillStyle = "#225933";
+                ctx.beginPath();
+                ctx.moveTo(0, 375);
+                ctx.bezierCurveTo(390, 510, 630, 315, 1050, 441);
+                ctx.lineTo(1050, 600);
+                ctx.lineTo(0, 600);
+                ctx.closePath();
+                ctx.fill();
+
+                // Pull Values
+                const addr1 = document.getElementById('preview-address-1').innerText;
+                const addr2 = document.getElementById('preview-address-2').innerText;
+                const phone = document.getElementById('preview-phone').innerText;
+                const email = document.getElementById('preview-email').innerText;
+                const web = document.getElementById('preview-web').innerText;
+
+                // Render Contact Block
+                ctx.fillStyle = "#2d4030";
+                ctx.font = "bold 22px sans-serif";
+
+                // Address info text blocks
+                ctx.fillText("📍 " + addr1, 60, 180);
+                ctx.fillText("   " + addr2, 60, 215);
+
+                // Phone & Mail Text Info Block
+                ctx.fillText("📞 " + phone, 520, 430);
+                ctx.fillText("✉️ " + email, 520, 475);
+
+                // Lower Layout Website Address Label Rendering
+                ctx.fillStyle = "#d5ebd9";
+                ctx.font = "500 20px sans-serif";
+                ctx.fillText("🌐 " + web, 750, 550);
+
+                // Generate Clean Isolated Mock QR Shape Blocks
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(60, 410, 140, 140);
+                
+                ctx.fillStyle = "#225933";
+                // Outer anchoring square structures
+                ctx.fillRect(75, 425, 45, 45);
+                ctx.fillStyle = "#ffffff"; ctx.fillRect(85, 435, 25, 25);
+                ctx.fillStyle = "#225933"; ctx.fillRect(92, 442, 11, 11);
+
+                ctx.fillRect(140, 425, 45, 45);
+                ctx.fillStyle = "#ffffff"; ctx.fillRect(150, 435, 25, 25);
+                ctx.fillStyle = "#225933"; ctx.fillRect(157, 442, 11, 11);
+
+                ctx.fillRect(75, 490, 45, 45);
+                ctx.fillStyle = "#ffffff"; ctx.fillRect(85, 500, 25, 25);
+                ctx.fillStyle = "#225933"; ctx.fillRect(92, 507, 11, 11);
+                
+                // Add scattered noise blocks to simulate modern nested QR profiles
+                ctx.fillRect(140, 490, 15, 15);
+                ctx.fillRect(165, 510, 20, 25);
+                ctx.fillRect(145, 530, 15, 10);
+            }
+
+            // Extract canvas stream data URL directly out to runtime native download triggers
+            const dataUrl = canvas.toDataURL("image/png");
+            
+            // Trigger local device system file downloading routines cleanly
+            const linkDownload = document.createElement('a');
+            linkDownload.download = `BusinessCard_${currentActiveSide}.png`;
+            linkDownload.href = dataUrl;
+            linkDownload.click();
+        }
+    </script>
+</body>
+</html>

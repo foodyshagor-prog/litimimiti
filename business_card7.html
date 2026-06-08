@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Business Card Maker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --card-dark: #06101e;
+            --electric-blue: #0099ff;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --input-bg: #1e293b;
+            --input-border: #334155;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg-gradient); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
+
+        /* Preview Section */
+        .preview-container { position: sticky; top: 0; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px); z-index: 10; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 15px; border-bottom: 1px solid var(--input-border); }
+        .toggle-group { display: flex; gap: 10px; }
+        .toggle-btn { background: var(--input-bg); border: 1px solid var(--electric-blue); color: white; padding: 6px 15px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; }
+        .toggle-btn.active { background: var(--electric-blue); }
+
+        .card-wrapper { width: 100%; max-width: 350px; aspect-ratio: 1.75 / 1; perspective: 1000px; }
+        .biz-card { width: 100%; height: 100%; background-color: var(--card-dark); border-radius: 16px; position: relative; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+
+        .card-stripe { position: absolute; top: 0; width: 70px; height: 100%; background: linear-gradient(180deg, #0052d4 0%, #4364f7 50%, #6fb1fc 100%); opacity: 0.8; }
+        .front-view .card-stripe { left: 45px; }
+        .back-view .card-stripe { right: 45px; }
+
+        .circle-frame { position: absolute; top: 50%; transform: translateY(-50%); width: 125px; height: 125px; border-radius: 50%; border: 3px solid #ffffff; overflow: hidden; box-shadow: 0 0 0 6px rgba(67, 100, 247, 0.4); background: #111; }
+        .front-view .circle-frame { left: 18px; }
+        .back-view .circle-frame { right: 18px; }
+        .circle-frame img { width: 100%; height: 100%; object-fit: cover; }
+
+        .front-content { display: none; height: 100%; padding-left: 160px; flex-direction: column; justify-content: center; }
+        .back-content { display: none; height: 100%; padding: 20px; flex-direction: column; justify-content: center; }
+
+        .logo-text { font-size: 0.9rem; font-weight: 800; letter-spacing: 1px; }
+        .logo-text span { color: var(--electric-blue); }
+        .logo-tagline { font-size: 0.45rem; letter-spacing: 2px; color: var(--text-muted); text-transform: uppercase; }
+
+        .front-website { position: absolute; bottom: 20px; right: 20px; background: var(--electric-blue); padding: 3px 12px; border-radius: 12px; font-size: 0.5rem; }
+        .p-name { font-size: 1.1rem; font-weight: 700; }
+        .p-name span { color: var(--electric-blue); }
+        .p-role { font-size: 0.65rem; color: var(--text-muted); }
+        .contact-item { display: flex; align-items: center; gap: 8px; font-size: 0.45rem; margin-top: 6px; }
+        .icon-wrap { width: 14px; height: 14px; border: 1px solid var(--electric-blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 7px; }
+
+        .front-view .front-content { display: flex; }
+        .back-view .back-content { display: flex; }
+
+        /* Editor Section */
+        .editor-container { flex-grow: 1; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .input-section-header { font-size: 0.8rem; color: var(--electric-blue); font-weight: bold; border-bottom: 1px solid var(--input-border); padding-bottom: 5px; margin-top: 10px; }
+        .input-group { display: flex; flex-direction: column; gap: 4px; }
+        .input-group label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
+        .input-group input { background: var(--input-bg); border: 1px solid var(--input-border); color: white; padding: 10px; border-radius: 8px; }
+        .save-btn { background: var(--electric-blue); color: white; border: none; padding: 15px; border-radius: 10px; font-weight: bold; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="preview-container">
+        <div class="toggle-group">
+            <button class="toggle-btn active" id="btnFront" onclick="switchView('front')">Front</button>
+            <button class="toggle-btn" id="btnBack" onclick="switchView('back')">Back</button>
+        </div>
+        <div class="card-wrapper">
+            <div class="biz-card front-view" id="businessCard">
+                <div class="card-stripe"></div>
+                <div class="circle-frame"><img id="cardImage" src="https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=600&auto=format&fit=cover"></div>
+                
+                <div class="front-content">
+                    <div class="logo-text" id="lblLogo">YOUR <span>LOGO</span></div>
+                    <div class="logo-tagline" id="lblTagline">TAGLINE HERE</div>
+                    <div class="front-website" id="lblWebFront">yourwebsite.com</div>
+                </div>
+
+                <div class="back-content">
+                    <div class="p-name" id="lblName">Dicky <span>Prayuda</span></div>
+                    <div class="p-role" id="lblRole">Graphic Designer</div>
+                    <div class="contact-item"><div class="icon-wrap">📞</div><div id="lblPhone">+00 1234 56789</div></div>
+                    <div class="contact-item"><div class="icon-wrap">✉️</div><div id="lblEmail">info@example.com</div></div>
+                    <div class="contact-item"><div class="icon-wrap">📍</div><div id="lblLoc">Address here, City, 1234</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="editor-container">
+        <div class="input-group">
+            <label>Upload Image</label>
+            <input type="file" id="imageInput" accept="image/*" onchange="handleImage(event)">
+        </div>
+
+        <div class="input-section-header">FRONT SIDE</div>
+        <div class="input-group"><label>Logo Text</label><input type="text" id="inLogo" oninput="updateCard()" value="YOUR LOGO"></div>
+        <div class="input-group"><label>Tagline</label><input type="text" id="inTagline" oninput="updateCard()" value="TAGLINE HERE"></div>
+        <div class="input-group"><label>Website</label><input type="text" id="inWebsite" oninput="updateCard()" value="yourwebsite.com"></div>
+
+        <div class="input-section-header">BACK SIDE</div>
+        <div class="input-group"><label>Full Name</label><input type="text" id="inName" oninput="updateCard()" value="Dicky Prayuda"></div>
+        <div class="input-group"><label>Role</label><input type="text" id="inRole" oninput="updateCard()" value="Graphic Designer"></div>
+        <div class="input-group"><label>Phone</label><input type="text" id="inPhone" oninput="updateCard()" value="+00 1234 56789"></div>
+        <div class="input-group"><label>Email</label><input type="text" id="inEmail" oninput="updateCard()" value="info@example.com"></div>
+        <div class="input-group"><label>Address</label><input type="text" id="inLoc" oninput="updateCard()" value="Address here, City, 1234"></div>
+
+        <button class="save-btn" onclick="saveImage()">Save Business Card</button>
+    </div>
+
+    <script>
+        const card = document.getElementById('businessCard');
+        
+        function switchView(side) {
+            document.getElementById('btnFront').className = side === 'front' ? 'toggle-btn active' : 'toggle-btn';
+            document.getElementById('btnBack').className = side === 'back' ? 'toggle-btn active' : 'toggle-btn';
+            card.className = "biz-card " + side + "-view";
+        }
+
+        function updateCard() {
+            // Front Sync
+            document.getElementById('lblLogo').innerText = document.getElementById('inLogo').value;
+            document.getElementById('lblTagline').innerText = document.getElementById('inTagline').value;
+            document.getElementById('lblWebFront').innerText = document.getElementById('inWebsite').value;
+
+            // Back Sync
+            const nameParts = document.getElementById('inName').value.split(' ');
+            document.getElementById('lblName').innerHTML = (nameParts[0] || '') + ' <span>' + (nameParts[1] || '') + '</span>';
+            document.getElementById('lblRole').innerText = document.getElementById('inRole').value;
+            document.getElementById('lblPhone').innerText = document.getElementById('inPhone').value;
+            document.getElementById('lblEmail').innerText = document.getElementById('inEmail').value;
+            document.getElementById('lblLoc').innerText = document.getElementById('inLoc').value;
+        }
+
+        function handleImage(e) {
+            const reader = new FileReader();
+            reader.onload = (event) => { document.getElementById('cardImage').src = event.target.result; };
+            reader.readAsDataURL(e.target.files[0]);
+        }
+
+        function saveImage() {
+            html2canvas(card, {scale: 3}).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'business-card.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
+    </script>
+</body>
+</html>

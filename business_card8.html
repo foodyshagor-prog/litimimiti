@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Business Card Maker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #ff2a2a;
+            --bg-dark: #111111;
+            --text-light: #ffffff;
+            --text-gray: #a0a0a0;
+            --ui-bg: linear-gradient(145deg, #1e2024, #121315);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        body {
+            background: var(--ui-bg);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- PREVIEW SECTION (TOP) --- */
+        #preview-section {
+            width: 100%;
+            padding: 20px 10px;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 10;
+            position: sticky;
+            top: 0;
+        }
+
+        /* * The cards are rendered at exactly 1050x600 (3.5x2 inch at 300dpi approximation).
+         * We use CSS transform to scale them down to fit the mobile screen.
+         * This ensures html2canvas exports a high-quality, crisp image.
+         */
+        .card-scaler {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            transform-origin: top center;
+        }
+
+        .card {
+            width: 1050px;
+            height: 600px;
+            background-color: var(--bg-dark);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            flex-shrink: 0;
+        }
+
+        .pattern-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Front Card Specifics */
+        .front-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            height: 100%;
+            padding-left: 150px;
+        }
+
+        .logo-box {
+            width: 90px;
+            height: 90px;
+            border: 12px solid var(--primary-color);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            transform: rotate(45deg);
+        }
+
+        .logo-inner {
+            width: 30px;
+            height: 30px;
+            border-top: 10px solid var(--primary-color);
+            border-right: 10px solid var(--primary-color);
+            border-radius: 3px;
+            transform: rotate(-45deg) translate(-5px, 5px);
+        }
+
+        .brand-name-front {
+            font-size: 42px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            margin-bottom: 5px;
+        }
+
+        .tagline-front {
+            font-size: 16px;
+            font-weight: 400;
+            letter-spacing: 6px;
+            color: var(--text-gray);
+            text-transform: uppercase;
+        }
+
+        /* Back Card Specifics */
+        .back-content {
+            position: relative;
+            z-index: 2;
+            height: 100%;
+            padding: 100px 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .person-name {
+            font-size: 46px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        .person-title {
+            font-size: 20px;
+            color: var(--text-gray);
+            margin-top: 8px;
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+
+        .divider {
+            width: 250px;
+            height: 4px;
+            background: linear-gradient(to right, var(--primary-color) 30%, #fff 30%);
+            margin-bottom: 50px;
+        }
+
+        .info-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .info-icon {
+            width: 45px;
+            height: 45px;
+            background: var(--primary-color);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            border-radius: 5px;
+            /* Pointy left arrow effect on icon block like in image */
+            clip-path: polygon(20% 0%, 100% 0%, 100% 100%, 20% 100%, 0% 50%);
+            padding-left: 5px;
+        }
+
+        .info-text {
+            font-size: 20px;
+            color: #ddd;
+            font-weight: 600;
+        }
+
+        /* --- EDITOR SECTION (BOTTOM) --- */
+        #editor-section {
+            flex: 1;
+            padding: 25px 20px;
+            overflow-y: auto;
+            padding-bottom: 100px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-gray);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .input-group input {
+            width: 100%;
+            background: #23272a;
+            border: 1px solid #333;
+            color: #fff;
+            padding: 14px 15px;
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 10px rgba(255, 42, 42, 0.2);
+        }
+
+        /* Color Picker */
+        .color-picker-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            cursor: pointer;
+            padding: 0;
+            background: transparent;
+        }
+        
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        
+        input[type="color"]::-webkit-color-swatch {
+            border: none;
+            border-radius: 8px;
+        }
+
+        /* Fixed Action Button */
+        .btn-save {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            background: linear-gradient(90deg, #ff0f47, var(--primary-color));
+            color: #fff;
+            border: none;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            border-radius: 30px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 8px 20px rgba(255, 42, 42, 0.4);
+            cursor: pointer;
+            z-index: 100;
+        }
+
+        .btn-save:active {
+            transform: translateX(-50%) scale(0.96);
+        }
+        
+        /* Hidden container for final rendering */
+        #render-container {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="preview-section">
+        <div class="card-scaler" id="scaler-front">
+            <div class="card" id="card-front">
+                <div class="pattern-overlay" id="pattern-front"></div>
+                <div class="front-content">
+                    <div class="logo-box"><div class="logo-inner"></div></div>
+                    <div class="brand-name-front" id="out-brand">DESIGN</div>
+                    <div class="tagline-front" id="out-tagline">TAGLINE SPACE</div>
+                </div>
+            </div>
+        </div>
+        <div class="card-scaler" id="scaler-back">
+            <div class="card" id="card-back">
+                <div class="pattern-overlay" id="pattern-back"></div>
+                <div class="back-content">
+                    <div class="person-name" id="out-name">MARK SMITH</div>
+                    <div class="person-title" id="out-title">Co-Founder Brand Name</div>
+                    <div class="divider"></div>
+                    <div class="info-list">
+                        <div class="info-item">
+                            <div class="info-icon"><i class="fa-solid fa-location-dot"></i></div>
+                            <div class="info-text" id="out-address">123 Dummy, Lorem Ipsum</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-icon"><i class="fa-solid fa-phone"></i></div>
+                            <div class="info-text" id="out-phone">+00 1234 5XXX 9012</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-icon"><i class="fa-solid fa-envelope"></i></div>
+                            <div class="info-text" id="out-email">info@emailspace</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-icon"><i class="fa-solid fa-globe"></i></div>
+                            <div class="info-text" id="out-web">www websiteaddress</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="editor-section">
+        <div class="input-group">
+            <label>Brand Color</label>
+            <div class="color-picker-wrapper">
+                <input type="color" id="in-color" value="#ff2a2a">
+                <span id="color-hex">#FF2A2A</span>
+            </div>
+        </div>
+        <div class="input-group">
+            <label>Brand Name (Front)</label>
+            <input type="text" id="in-brand" value="SHAGOR">
+        </div>
+        <div class="input-group">
+            <label>Tagline (Front)</label>
+            <input type="text" id="in-tagline" value="PHOTO EDITOR">
+        </div>
+        <div class="input-group">
+            <label>Your Name</label>
+            <input type="text" id="in-name" value="MARK SMITH">
+        </div>
+        <div class="input-group">
+            <label>Job Title & Company</label>
+            <input type="text" id="in-title" value="Developer | Shagor Photo Editor">
+        </div>
+        <div class="input-group">
+            <label>Address</label>
+            <input type="text" id="in-address" value="Savar, Dhaka Division">
+        </div>
+        <div class="input-group">
+            <label>Phone Number</label>
+            <input type="text" id="in-phone" value="+880 1234 567890">
+        </div>
+        <div class="input-group">
+            <label>Email Address</label>
+            <input type="text" id="in-email" value="contact@shagor-app.com">
+        </div>
+        <div class="input-group">
+            <label>Website</label>
+            <input type="text" id="in-web" value="www.shagor-app.com">
+        </div>
+    </div>
+
+    <button class="btn-save" id="btn-save">Save HD Image</button>
+
+    <script>
+        // --- 1. RESPONSIVE SCALING FOR MOBILE WEBVIEW ---
+        function resizeCards() {
+            const screenWidth = document.body.clientWidth;
+            const targetWidth = screenWidth - 20; // 10px padding on sides
+            const cardNativeWidth = 1050;
+            const scale = targetWidth / cardNativeWidth;
+            
+            document.getElementById('scaler-front').style.transform = `scale(${scale})`;
+            document.getElementById('scaler-front').style.height = `${600 * scale}px`;
+            
+            document.getElementById('scaler-back').style.transform = `scale(${scale})`;
+            document.getElementById('scaler-back').style.height = `${600 * scale}px`;
+        }
+        window.addEventListener('resize', resizeCards);
+        resizeCards();
+
+        // --- 2. DYNAMIC GEOMETRIC HALFTONE GENERATOR ---
+        // Generates the scattering triangle effect accurately
+        function generateTrianglePattern(color) {
+            const width = 1050;
+            const height = 600;
+            const size = 35; // Triangle side length
+            const h = size * Math.sqrt(3) / 2; // Triangle height
+            
+            let svg = `<svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">`;
+            
+            // Loop creating a hexagonal lattice
+            for (let row = -2; row < (height / h) + 2; row++) {
+                for (let col = 10; col < (width / (size/2)) + 2; col++) {
+                    let isUp = (row + col) % 2 === 0;
+                    let cx = col * (size / 2);
+                    let cy = row * h;
+
+                    // Fade algorithm: Solid on right, dissolving towards left
+                    let fadeStart = width * 0.45; // Start fading at 45% of width
+                    let scale = 0;
+                    
+                    if (cx > fadeStart) {
+                        let distance = cx - fadeStart;
+                        let maxDistance = width - fadeStart;
+                        scale = Math.min(1, distance / maxDistance);
+                        
+                        // Introduce controlled randomness for the scattered edge effect
+                        if (scale < 0.9) {
+                            scale = scale * (0.2 + Math.random() * 0.8);
+                        }
+                    }
+
+                    if (scale > 0.05) {
+                        // Calculate vertex coordinates relative to center, applying scale
+                        let pts = isUp ?
+                            `${cx},${cy - (h/2)*scale} ${cx - (size/2)*scale},${cy + (h/2)*scale} ${cx + (size/2)*scale},${cy + (h/2)*scale}` :
+                            `${cx - (size/2)*scale},${cy - (h/2)*scale} ${cx + (size/2)*scale},${cy - (h/2)*scale} ${cx},${cy + (h/2)*scale}`;
+
+                        svg += `<polygon points="${pts}" fill="${color}" />`;
+                    }
+                }
+            }
+            svg += `</svg>`;
+            return svg;
+        }
+
+        function updatePattern() {
+            const color = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
+            const patternSVG = generateTrianglePattern(color);
+            const encodedSVG = "data:image/svg+xml;base64," + btoa(patternSVG);
+            
+            document.getElementById('pattern-front').style.backgroundImage = `url(${encodedSVG})`;
+            document.getElementById('pattern-back').style.backgroundImage = `url(${encodedSVG})`;
+        }
+
+        // --- 3. INPUT DATA BINDING ---
+        const inputs = ['brand', 'tagline', 'name', 'title', 'address', 'phone', 'email', 'web'];
+        
+        inputs.forEach(id => {
+            const inputEl = document.getElementById(`in-${id}`);
+            const outEl = document.getElementById(`out-${id}`);
+            
+            // Fire initial setup
+            outEl.innerText = inputEl.value;
+            
+            // Listen for user typing
+            inputEl.addEventListener('input', (e) => {
+                outEl.innerText = e.target.value;
+            });
+        });
+
+        // Color binding
+        document.getElementById('in-color').addEventListener('input', (e) => {
+            const color = e.target.value;
+            document.documentElement.style.setProperty('--primary-color', color);
+            document.getElementById('color-hex').innerText = color.toUpperCase();
+            updatePattern();
+        });
+
+        // Initialize pattern on load
+        updatePattern();
+
+        // --- 4. EXPORT TO IMAGE (For WebView Integration) ---
+        document.getElementById('btn-save').addEventListener('click', async () => {
+            const btn = document.getElementById('btn-save');
+            btn.innerText = "GENERATING...";
+            
+            try {
+                // Create a temporary container off-screen to render cards at full 1050x600 resolution 
+                // regardless of mobile screen scale.
+                const renderContainer = document.createElement('div');
+                renderContainer.style.position = 'absolute';
+                renderContainer.style.top = '-9999px';
+                renderContainer.style.background = '#000';
+                renderContainer.style.padding = '20px';
+                renderContainer.style.display = 'flex';
+                renderContainer.style.flexDirection = 'column';
+                renderContainer.style.gap = '20px';
+                renderContainer.style.width = '1090px'; // 1050 + 40 padding
+                
+                // Clone the cards without the CSS scaling
+                const frontClone = document.getElementById('card-front').cloneNode(true);
+                const backClone = document.getElementById('card-back').cloneNode(true);
+                
+                renderContainer.appendChild(frontClone);
+                renderContainer.appendChild(backClone);
+                document.body.appendChild(renderContainer);
+
+                // Render via html2canvas
+                const canvas = await html2canvas(renderContainer, {
+                    scale: 2, // 2x resolution for HD export
+                    backgroundColor: '#111111',
+                    useCORS: true
+                });
+
+                document.body.removeChild(renderContainer);
+                const base64Image = canvas.toDataURL('image/png');
+
+                // --- ANDROID WEBVIEW HOOK ---
+                // If you add a JavascriptInterface named "Android" in your Photo Editor App:
+                // webView.addJavascriptInterface(new WebAppInterface(this), "Android");
+                if (window.Android && window.Android.saveBase64Image) {
+                    window.Android.saveBase64Image(base64Image);
+                } else {
+                    // Standard Web Browser Fallback
+                    const link = document.createElement('a');
+                    link.download = `Business_Card_${Date.now()}.png`;
+                    link.href = base64Image;
+                    link.click();
+                }
+            } catch (err) {
+                alert("Error generating image.");
+                console.error(err);
+            } finally {
+                btn.innerText = "Save HD Image";
+            }
+        });
+    </script>
+</body>
+</html>

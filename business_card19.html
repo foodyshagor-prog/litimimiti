@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Business Card Maker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --bg-panel: #1e2128;
+            --accent-green: #8cc63f;
+            --card-dark: #1c1f26;
+            --card-light: #f4f5f7;
+            --text-light: #ffffff;
+            --text-gray: #a0aab2;
+            --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: linear-gradient(135deg, #0f1115, #1e222a);
+            color: var(--text-light);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- UI LAYOUT --- */
+        .header {
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .view-switch {
+            display: flex;
+            background: #000;
+            border-radius: 25px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .view-switch button {
+            background: transparent;
+            border: none;
+            color: var(--text-gray);
+            padding: 8px 25px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .view-switch button.active {
+            background: var(--accent-green);
+            color: #000;
+        }
+
+        .preview-container {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+        }
+
+        .editor-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            padding-bottom: 100px; /* Space for FAB */
+        }
+
+        /* --- FORM CONTROLS --- */
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            color: var(--accent-green);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.2);
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        .form-group input:focus {
+            border-color: var(--accent-green);
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .file-upload {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-upload input[type="file"] {
+            display: none;
+        }
+
+        .file-btn {
+            background: rgba(255,255,255,0.1);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: white;
+            display: inline-block;
+        }
+
+        /* --- FLOATING ACTION BUTTON --- */
+        .fab-save {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 40px);
+            max-width: 400px;
+            background: var(--accent-green);
+            color: #000;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 0 8px 20px rgba(140, 198, 63, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* --- CARD DESIGN (EXACT MATCH) --- */
+        .card-wrapper {
+            width: 100%;
+            max-width: 450px;
+            aspect-ratio: 1.75 / 1;
+            position: relative;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0; left: 0;
+            background: var(--card-dark);
+            overflow: hidden;
+            display: none;
+        }
+
+        .card.active {
+            display: block;
+        }
+
+        .card-svg-bg {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+        }
+
+        .card-content {
+            position: relative;
+            z-index: 5;
+            width: 100%; height: 100%;
+        }
+
+        /* Front Specifics */
+        .qr-code {
+            position: absolute;
+            top: 15%; left: 10%;
+            width: 22%; aspect-ratio: 1;
+            background: white;
+            padding: 3%;
+            border-radius: 3px;
+        }
+        
+        .qr-code img { width: 100%; height: 100%; object-fit: cover; }
+
+        .front-banner {
+            position: absolute;
+            top: 58%; left: 0;
+            width: 55%; height: 18%;
+            background: var(--accent-green);
+            clip-path: polygon(0 0, 100% 0, 92% 100%, 0 100%);
+            display: flex;
+            align-items: center;
+            padding-left: 10%;
+        }
+
+        .front-banner-shadow {
+            position: absolute;
+            top: 76%; left: 45%;
+            width: 0; height: 0;
+            border-top: 10px solid #065421;
+            border-right: 12px solid transparent;
+        }
+
+        .front-website {
+            color: white;
+            font-size: 2.2vw;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .logo-container {
+            position: absolute;
+            top: 30%; right: 10%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 30%;
+        }
+
+        .logo-icon { width: 45%; margin-bottom: 8px; }
+        .logo-icon img { width: 100%; height: auto; }
+        
+        .company-name {
+            color: white;
+            font-size: 4vw;
+            font-weight: 800;
+            margin-bottom: 2px;
+        }
+        
+        .company-slogan {
+            color: var(--accent-green);
+            font-size: 1.2vw;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Back Specifics */
+        .back-contact-list {
+            position: absolute;
+            top: 25%; left: 6%;
+            display: flex;
+            flex-direction: column;
+            gap: 6%;
+            height: 50%;
+            width: 45%;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .contact-icon-box {
+            width: 18px; height: 18px;
+            background: #2a2e37;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .contact-icon-box.green-box { background: var(--accent-green); }
+        .contact-icon-box svg { width: 10px; height: 10px; fill: white; }
+        
+        .contact-text {
+            color: white;
+            font-size: 1.6vw;
+            line-height: 1.2;
+            font-weight: 500;
+            white-space: pre-wrap;
+        }
+
+        .back-banner {
+            position: absolute;
+            top: 30%; right: 0;
+            width: 53%; height: 22%;
+            background: var(--accent-green);
+            clip-path: polygon(10% 0, 100% 0, 100% 100%, 0 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-left: 12%;
+        }
+        
+        .back-banner-shadow {
+            position: absolute;
+            top: 52%; left: 45%;
+            width: 0; height: 0;
+            border-top: 10px solid #065421;
+            border-left: 12px solid transparent;
+        }
+
+        .person-name { color: white; font-size: 3.5vw; font-weight: 700; margin-bottom: 2px; }
+        .person-name span { font-weight: 300; }
+        .person-title { color: #1c1f26; font-size: 2vw; font-weight: 600; }
+
+        .back-logo-container {
+            position: absolute;
+            bottom: 8%; right: 15%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 25%;
+        }
+        
+        .back-logo-container .company-name { font-size: 3.5vw; color: #1c1f26; }
+        .back-logo-container .company-slogan { font-size: 1vw; }
+
+        /* Hide logic for editor sections */
+        .editor-section { display: none; }
+        .editor-section.active { display: block; }
+        
+        @media (min-width: 500px) {
+            .front-website { font-size: 10px; }
+            .company-name, .back-logo-container .company-name { font-size: 18px; }
+            .company-slogan, .back-logo-container .company-slogan { font-size: 6px; }
+            .contact-text { font-size: 7px; }
+            .person-name { font-size: 16px; }
+            .person-title { font-size: 9px; }
+            .contact-icon-box { width: 22px; height: 22px; }
+            .contact-icon-box svg { width: 12px; height: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="view-switch">
+            <button id="btn-front" class="active" onclick="switchView('front')">Front</button>
+            <button id="btn-back" onclick="switchView('back')">Back</button>
+        </div>
+    </div>
+
+    <div class="preview-container">
+        <div class="card-wrapper" id="capture-area">
+            
+            <div class="card active" id="card-front">
+                <svg class="card-svg-bg" preserveAspectRatio="none" viewBox="0 0 100 100">
+                    <path d="M 0 0 L 40 0 C 60 40, 20 60, 45 100 L 0 100 Z" fill="#f4f5f7"/>
+                    <path d="M 40 0 C 60 40, 20 60, 45 100" fill="none" stroke="#1c1f26" stroke-width="4"/>
+                    <path d="M 43 0 C 63 40, 23 60, 48 100" fill="none" stroke="#f4f5f7" stroke-width="1.5"/>
+                </svg>
+                
+                <div class="card-content">
+                    <div class="qr-code">
+                        <img id="render-qr" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSIjMTAxMTE0IiBkPSJNMCAwaDQwdjQwaC00MHptNTAgMGg1MHY0MGgtNTB6TTAgNTBoNDB2NTBoLTQwem01MCAwaDUwdjUwaC01MHoiLz48cGF0aCBmaWxsPSIjOGNjNjNmIiBkPSJNMTUgMTVoMTB2MTBoLTEwem02NSAwdjEwaC0xMHYtMTB6TTE1IDY1aDEwdjEwaC0xMHoiLz48L3N2Zz4=" alt="QR">
+                    </div>
+                    
+                    <div class="front-banner">
+                        <span class="front-website" id="render-website-front">www.companyname.com</span>
+                    </div>
+                    <div class="front-banner-shadow"></div>
+
+                    <div class="logo-container">
+                        <div class="logo-icon">
+                            <img id="render-logo-front" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iOCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBkPSJNMzAsNzAgTDUwLDMwIEw3MCw3MCBNNDAsNjUgTDYwLDY1Ii8+PHBhdGggZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOGNjNjNmIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgZD0iTTIwLDUwIEEgMzUsMzUgMCAxLDEgODAsNTAiLz48L3N2Zz4=" alt="Logo">
+                        </div>
+                        <div class="company-name" id="render-company-front">Media</div>
+                        <div class="company-slogan" id="render-slogan-front">SLOGANHERE</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" id="card-back">
+                <svg class="card-svg-bg" preserveAspectRatio="none" viewBox="0 0 100 100">
+                    <path d="M 100 0 L 55 0 C 45 30, 65 70, 50 100 L 100 100 Z" fill="#f4f5f7"/>
+                    <path d="M 55 0 C 45 30, 65 70, 50 100" fill="none" stroke="#f4f5f7" stroke-width="4"/>
+                    <path d="M 51 0 C 41 30, 61 70, 46 100" fill="none" stroke="#1c1f26" stroke-width="1.5"/>
+                </svg>
+
+                <div class="card-content">
+                    <div class="back-contact-list">
+                        <div class="contact-item">
+                            <div class="contact-icon-box green-box">
+                                <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                            </div>
+                            <div class="contact-text" id="render-address">YOUR CITY ADDRESS<br>STREET LOCATION, CITY</div>
+                        </div>
+                        <div class="contact-item">
+                            <div class="contact-icon-box">
+                                <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                            </div>
+                            <div class="contact-text" id="render-phone">+18 2766 9770 1888<br>+18 9113 0900 0000</div>
+                        </div>
+                        <div class="contact-item">
+                            <div class="contact-icon-box green-box">
+                                <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                            </div>
+                            <div class="contact-text" id="render-email">EMAIL_INFO@SAMPLE.COM</div>
+                        </div>
+                        <div class="contact-item">
+                            <div class="contact-icon-box">
+                                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                            </div>
+                            <div class="contact-text" id="render-website-back">WWW.YOURWEBSITE.COM</div>
+                        </div>
+                    </div>
+
+                    <div class="back-banner">
+                        <div class="person-name" id="render-name">Mark <span>Harrison</span></div>
+                        <div class="person-title" id="render-title">Graphic Designer</div>
+                    </div>
+                    <div class="back-banner-shadow"></div>
+
+                    <div class="back-logo-container">
+                        <div class="logo-icon">
+                             <img id="render-logo-back" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iOCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBkPSJNMzAsNzAgTDUwLDMwIEw3MCw3MCBNNDAsNjUgTDYwLDY1Ii8+PHBhdGggZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOGNjNjNmIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgZD0iTTIwLDUwIEEgMzUsMzUgMCAxLDEgODAsNTAiLz48L3N2Zz4=" style="filter: invert(1) brightness(0.2) sepia(1) hue-rotate(50deg) saturate(5);" alt="Logo">
+                        </div>
+                        <div class="company-name" id="render-company-back">Media</div>
+                        <div class="company-slogan" id="render-slogan-back">SLOGANHERE</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="editor-container">
+        
+        <div id="editor-front" class="editor-section active">
+            <div class="form-group">
+                <label>Company Name</label>
+                <input type="text" id="in-company" value="Media" onkeyup="updateField(this.value, ['render-company-front', 'render-company-back'])">
+            </div>
+            <div class="form-group">
+                <label>Company Slogan</label>
+                <input type="text" id="in-slogan" value="SLOGANHERE" onkeyup="updateField(this.value, ['render-slogan-front', 'render-slogan-back'])">
+            </div>
+            <div class="form-group">
+                <label>Website URL</label>
+                <input type="text" id="in-website" value="www.companyname.com" onkeyup="updateField(this.value, ['render-website-front', 'render-website-back'])">
+            </div>
+            
+            <div class="form-group file-upload">
+                <label class="file-btn" for="in-logo">Upload Custom Logo</label>
+                <input type="file" id="in-logo" accept="image/*" onchange="handleImageUpload(this, ['render-logo-front', 'render-logo-back'])">
+            </div>
+            <div class="form-group file-upload">
+                <label class="file-btn" for="in-qr">Upload QR Code</label>
+                <input type="file" id="in-qr" accept="image/*" onchange="handleImageUpload(this, ['render-qr'])">
+            </div>
+        </div>
+
+        <div id="editor-back" class="editor-section">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="in-name" value="Mark Harrison" onkeyup="updateName(this.value)">
+            </div>
+            <div class="form-group">
+                <label>Job Title</label>
+                <input type="text" id="in-title" value="Graphic Designer" onkeyup="updateField(this.value, ['render-title'])">
+            </div>
+            <div class="form-group">
+                <label>Address (Line 1)</label>
+                <input type="text" id="in-address1" value="YOUR CITY ADDRESS" onkeyup="updateAddress()">
+            </div>
+            <div class="form-group">
+                <label>Address (Line 2)</label>
+                <input type="text" id="in-address2" value="STREET LOCATION, CITY" onkeyup="updateAddress()">
+            </div>
+            <div class="form-group">
+                <label>Phone Numbers</label>
+                <input type="text" id="in-phone" value="+18 2766 9770 1888&#10;+18 9113 0900 0000" onkeyup="updateField(this.value.replace(/\n/g, '<br>'), ['render-phone'], true)">
+            </div>
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="text" id="in-email" value="EMAIL_INFO@SAMPLE.COM" onkeyup="updateField(this.value, ['render-email'])">
+            </div>
+        </div>
+
+    </div>
+
+    <button class="fab-save" onclick="saveCardImage()">
+        <svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="currentColor" d="M19,12V7L15,3H5C3.89,3 3,3.9 3,5V19C3,20.1 3.9,21 5,21H19C20.1,21 21,20.1 21,19V12M19,19H5V5H14.17L19,9.83V19M12,12A3,3 0 0,0 9,15A3,3 0 0,0 12,18A3,3 0 0,0 15,15A3,3 0 0,0 12,12M15,10H5V6H15V10Z" /></svg>
+        Save Current View
+    </button>
+
+    <script>
+        // --- View Switching Logic ---
+        function switchView(view) {
+            // Update Buttons
+            document.getElementById('btn-front').classList.remove('active');
+            document.getElementById('btn-back').classList.remove('active');
+            document.getElementById('btn-' + view).classList.add('active');
+
+            // Update Preview Cards
+            document.getElementById('card-front').classList.remove('active');
+            document.getElementById('card-back').classList.remove('active');
+            document.getElementById('card-' + view).classList.add('active');
+
+            // Update Editor Panels
+            document.getElementById('editor-front').classList.remove('active');
+            document.getElementById('editor-back').classList.remove('active');
+            document.getElementById('editor-' + view).classList.add('active');
+        }
+
+        // --- Data Binding Logic ---
+        function updateField(value, targetIds, isHtml = false) {
+            targetIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (isHtml) el.innerHTML = value;
+                    else el.textContent = value;
+                }
+            });
+        }
+
+        function updateName(val) {
+            const parts = val.trim().split(' ');
+            const first = parts.shift() || '';
+            const rest = parts.join(' ');
+            document.getElementById('render-name').innerHTML = `${first} <span>${rest}</span>`;
+        }
+
+        function updateAddress() {
+            const line1 = document.getElementById('in-address1').value;
+            const line2 = document.getElementById('in-address2').value;
+            document.getElementById('render-address').innerHTML = `${line1}<br>${line2}`;
+        }
+
+        function handleImageUpload(input, targetImgIds) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    targetImgIds.forEach(id => {
+                        const img = document.getElementById(id);
+                        if (img) img.src = e.target.result;
+                    });
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // --- Saving & WebView Bridge Logic ---
+        function saveCardImage() {
+            // Find which card is currently visible
+            const activeCard = document.querySelector('.card.active');
+            const originalTransform = activeCard.style.transform;
+            
+            // html2canvas rendering
+            html2canvas(activeCard, {
+                scale: 3, // High quality render
+                backgroundColor: null,
+                useCORS: true
+            }).then(canvas => {
+                const base64Image = canvas.toDataURL("image/png");
+
+                // Check for Android WebView Javascript Interface
+                if (window.Android && window.Android.saveImage) {
+                    // Call native Android method
+                    window.Android.saveImage(base64Image);
+                } else {
+                    // Fallback: Browser Download
+                    const link = document.createElement('a');
+                    link.download = `business_card_${document.getElementById('btn-front').classList.contains('active') ? 'front' : 'back'}.png`;
+                    link.href = base64Image;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+            }).catch(err => {
+                console.error("Error saving image:", err);
+                alert("Could not render image. Ensure html2canvas is loaded correctly.");
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Business Card Creator</title>
+    <style>
+        :root {
+            --bg-dark: #090d16;
+            --bg-card: #111827;
+            --accent-gold: #dfac1c;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --input-bg: #1f2937;
+            --input-border: #374151;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(180deg, var(--bg-dark) 0%, #030712 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* App Header Layout */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--input-border);
+            z-index: 10;
+        }
+
+        header h1 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, #b8870b 100%);
+            color: #0b252e;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            box-shadow: 0 4px 12px rgba(223, 172, 28, 0.3);
+            transition: transform 0.1s ease;
+        }
+
+        .btn-save:active {
+            transform: scale(0.95);
+        }
+
+        /* Top Preview Area */
+        .preview-container {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            background: rgba(17, 24, 39, 0.3);
+        }
+
+        .card-viewport {
+            width: 100%;
+            max-width: 360px;
+            aspect-ratio: 1050 / 600;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        /* Custom Sliding Toggle */
+        .toggle-wrapper {
+            display: flex;
+            background: var(--input-bg);
+            padding: 4px;
+            border-radius: 25px;
+            width: 220px;
+            border: 1px solid var(--input-border);
+        }
+
+        .toggle-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px 0;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-btn.active {
+            background: var(--accent-gold);
+            color: #0b252e;
+        }
+
+        /* Bottom Editor Scroll Area */
+        .editor-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 16px;
+            background: rgba(17, 24, 39, 0.5);
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .form-panel {
+            display: none;
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        .form-panel.active {
+            display: block;
+        }
+
+        .panel-title {
+            font-size: 0.9rem;
+            color: var(--accent-gold);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .input-group input {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-main);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 0 1px rgba(223, 172, 28, 0.2);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Studio Designer</h1>
+        <button class="btn-save" onclick="exportCardImage()">Save Image</button>
+    </header>
+
+    <div class="preview-container">
+        <div class="card-viewport">
+            <svg id="card-front" viewBox="0 0 1050 600" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                <rect width="1050" height="600" fill="#0B252E"/>
+                
+                <rect x="0" y="0" width="65" height="600" fill="#DFAC1C"/>
+                <rect x="0" y="70" width="65" height="45" fill="#0B252E"/>
+                <circle cx="32.5" cy="220" r="9" fill="#0B252E"/>
+                <circle cx="32.5" cy="275" r="9" fill="#0B252E"/>
+                <circle cx="32.5" cy="330" r="9" fill="#0B252E"/>
+                <circle cx="32.5" cy="385" r="9" fill="#0B252E"/>
+                
+                <path d="M 760 0 L 1050 0 L 1050 440 Q 900 340 760 0 Z" fill="#FFFCEB"/>
+                <path d="M 470 600 L 1050 600 L 1050 430 L 720 270 Q 640 270 590 350 Z" fill="#DFAC1C"/>
+                
+                <text id="svg-name" x="130" y="135" font-family="sans-serif" font-size="52" font-weight="700" fill="#FFFFFF">Name Here</text>
+                <text id="svg-title" x="130" y="180" font-family="sans-serif" font-size="22" font-weight="600" fill="#DFAC1C" letter-spacing="3">Graphic Designer</text>
+                
+                <g transform="translate(130, 250)">
+                    <circle cx="20" cy="20" r="20" fill="#DFAC1C"/>
+                    <path d="M14 11.5c.6 1.2 1.5 2.1 2.7 2.7l1.2-1.2c.2-.2.5-.2.7-.1.8.3 1.7.4 2.5.4.5 0 .9.4.9.9v2.5c0 .5-.4.9-.9.9-6.6 0-12-5.4-12-12 0-.5.4-.9.9-.9h2.5c.5 0 .9.4.9.9 0 .8.1 1.7.4 2.5.1.2.1.5-.1.7l-1.2 1.2z" fill="#0B252E" transform="translate(4,4) scale(1.2)"/>
+                    <text id="svg-phone1" x="60" y="15" font-family="sans-serif" font-size="22" font-weight="600" fill="#FFFFFF">000 123 456 7890</text>
+                    <text id="svg-phone2" x="60" y="40" font-family="sans-serif" font-size="22" font-weight="600" fill="#FFFFFF">000 123 456 7890</text>
+                </g>
+                
+                <g transform="translate(130, 340)">
+                    <circle cx="20" cy="20" r="20" fill="#DFAC1C"/>
+                    <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" fill="#0B252E" transform="translate(8,8) scale(1)"/>
+                    <text id="svg-email1" x="60" y="15" font-family="sans-serif" font-size="22" font-weight="600" fill="#FFFFFF">your mail name here</text>
+                    <text id="svg-email2" x="60" y="40" font-family="sans-serif" font-size="22" font-weight="600" fill="#FFFFFF">your mail name here</text>
+                </g>
+                
+                <g transform="translate(130, 430)">
+                    <circle cx="20" cy="20" r="20" fill="#DFAC1C"/>
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#0B252E" transform="translate(8,6) scale(1)"/>
+                    <text id="svg-address1" x="60" y="15" font-family="sans-serif" font-size="22" font-weight="600" fill="#FFFFFF">Street Address Here</text>
+                    <text id="svg-address2" x="60" y="40" font-family="sans-serif" font-size="22" font-weight="600" fill="#FFFFFF">Street Address Here</text>
+                </g>
+                
+                <g transform="translate(715, 395)">
+                    <circle cx="-10" cy="18" r="14" fill="none" stroke="#0B252E" stroke-width="2.5"/>
+                    <ellipse cx="-10" cy="18" rx="5" ry="14" fill="none" stroke="#0B252E" stroke-width="2"/>
+                    <line x1="-24" y1="18" x2="4" y2="18" stroke="#0B252E" stroke-width="2"/>
+                    <text id="svg-web" x="15" y="25" font-family="sans-serif" font-size="23" font-weight="700" fill="#0B252E" text-anchor="start">your web address here</text>
+                </g>
+            </svg>
+
+            <svg id="card-back" viewBox="0 0 1050 600" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="display: none;">
+                <rect width="1050" height="600" fill="#0B252E"/>
+                
+                <path d="M 760 0 L 1050 0 L 1050 440 Q 900 340 760 0 Z" fill="#FFFCEB"/>
+                <path d="M 470 600 L 1050 600 L 1050 430 L 720 270 Q 640 270 590 350 Z" fill="#DFAC1C"/>
+                
+                <g transform="translate(360, 220)">
+                    <g transform="translate(0, -35) rotate(45)">
+                        <path d="M -35 -35 L 0 -35 L 0 -15 L -15 -15 L -15 0 L -35 0 Z" fill="#FFFFFF"/>
+                        <path d="M 0 -35 L 35 -35 L 35 0 L 15 0 L 15 -15 L 0 -15 Z" fill="#DFAC1C"/>
+                        <path d="M -35 0 L -15 0 L -15 15 L 0 15 L 0 35 L -35 35 Z" fill="#DFAC1C"/>
+                        <path d="M 15 0 L 35 0 L 35 35 L 0 35 L 0 15 L 15 15 Z" fill="#FFFFFF"/>
+                    </g>
+                    
+                    <text id="svg-company" x="0" y="90" font-family="sans-serif" font-size="48" font-weight="700" fill="#FFFFFF" text-anchor="middle">Company Name</text>
+                    <text id="svg-tagline" x="0" y="135" font-family="sans-serif" font-size="22" font-weight="600" fill="#DFAC1C" letter-spacing="4" text-anchor="middle">Tagline Goes Here</text>
+                </g>
+            </svg>
+        </div>
+
+        <div class="toggle-wrapper">
+            <button id="toggle-front" class="toggle-btn active" onclick="setView('front')">Front Side</button>
+            <button id="toggle-back" class="toggle-btn" onclick="setView('back')">Back Side</button>
+        </div>
+    </div>
+
+    <div class="editor-container">
+        
+        <div id="panel-front" class="form-panel active">
+            <div class="panel-title">Front Side Configuration</div>
+            <div class="input-group">
+                <label>Full Name</label>
+                <input type="text" id="input-name" value="Name Here" oninput="updateText('svg-name', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Job Title / Designation</label>
+                <input type="text" id="input-title" value="Graphic Designer" oninput="updateText('svg-title', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Primary Phone Number</label>
+                <input type="text" id="input-phone1" value="000 123 456 7890" oninput="updateText('svg-phone1', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Secondary Phone Number</label>
+                <input type="text" id="input-phone2" value="000 123 456 7890" oninput="updateText('svg-phone2', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Primary Email Address</label>
+                <input type="text" id="input-email1" value="your mail name here" oninput="updateText('svg-email1', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Secondary Email Address</label>
+                <input type="text" id="input-email2" value="your mail name here" oninput="updateText('svg-email2', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Address Row 1</label>
+                <input type="text" id="input-address1" value="Street Address Here" oninput="updateText('svg-address1', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Address Row 2</label>
+                <input type="text" id="input-address2" value="Street Address Here" oninput="updateText('svg-address2', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Website Address</label>
+                <input type="text" id="input-web" value="your web address here" oninput="updateText('svg-web', this.value)">
+            </div>
+        </div>
+
+        <div id="panel-back" class="form-panel">
+            <div class="panel-title">Back Side Configuration</div>
+            <div class="input-group">
+                <label>Company Name</label>
+                <input type="text" id="input-company" value="Company Name" oninput="updateText('svg-company', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Corporate Tagline</label>
+                <input type="text" id="input-tagline" value="Tagline Goes Here" oninput="updateText('svg-tagline', this.value)">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentView = 'front';
+
+        // Synchronize changes instantaneously
+        function updateText(elementId, textValue) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = textValue;
+            }
+        }
+
+        // Handle page layout display swaps
+        function setView(viewMode) {
+            currentView = viewMode;
+            
+            const frontSvg = document.getElementById('card-front');
+            const backSvg = document.getElementById('card-back');
+            const frontPanel = document.getElementById('panel-front');
+            const backPanel = document.getElementById('panel-back');
+            const frontBtn = document.getElementById('toggle-front');
+            const backBtn = document.getElementById('toggle-back');
+
+            if (viewMode === 'front') {
+                frontSvg.style.display = 'block';
+                backSvg.style.display = 'none';
+                frontPanel.classList.add('active');
+                backPanel.classList.remove('active');
+                frontBtn.classList.add('active');
+                backBtn.classList.remove('active');
+            } else {
+                frontSvg.style.display = 'none';
+                backSvg.style.display = 'block';
+                frontPanel.classList.remove('active');
+                backPanel.classList.add('active');
+                frontBtn.classList.remove('active');
+                backBtn.classList.add('active');
+            }
+        }
+
+        // Native High-Resolution Image Compilation Core (100% Offline Compatible)
+        function exportCardImage() {
+            const activeSvg = currentView === 'front' ? document.getElementById('card-front') : document.getElementById('card-back');
+            
+            // Serialize SVG structure safely
+            const svgString = new XMLSerializer().serializeToString(activeSvg);
+            const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+            const URL = window.URL || window.webkitURL || window;
+            const blobUrl = URL.createObjectURL(svgBlob);
+            
+            // Construct offscreen render canvas
+            const imageContainer = new Image();
+            imageContainer.onload = function () {
+                const compileCanvas = document.createElement('canvas');
+                compileCanvas.width = 1050;
+                compileCanvas.height = 600;
+                const context = compileCanvas.getContext('2d');
+                
+                // Rasterize clean vector paths directly onto canvas context
+                context.drawImage(imageContainer, 0, 0, 1050, 600);
+                
+                // Compress canvas matrix safely down to high res download stream
+                const outputUrl = compileCanvas.toDataURL('image/png');
+                
+                const triggerLink = document.createElement('a');
+                triggerLink.download = `BusinessCard_${currentView}_Side.png`;
+                triggerLink.href = outputUrl;
+                document.body.appendChild(triggerLink);
+                triggerLink.click();
+                document.body.removeChild(triggerLink);
+                
+                URL.revokeObjectURL(blobUrl);
+            };
+            
+            imageContainer.src = blobUrl;
+        }
+    </script>
+</body>
+</html>

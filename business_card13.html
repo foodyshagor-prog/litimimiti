@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Business Card Editor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #222222;
+            --bg-darker: #1a1a1a;
+            --accent-red: #FF3B3B;
+            --text-light: #ffffff;
+            --text-gray: #a0a0a0;
+            --shadow-color: rgba(0, 0, 0, 0.6);
+            --app-bg: linear-gradient(145deg, #1e1e24, #0b0b0d);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background: var(--app-bg);
+            color: var(--text-light);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- PREVIEW SECTION (TOP) --- */
+        .preview-section {
+            flex: 0 0 auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .toggle-btn {
+            background: #333;
+            color: white;
+            border: 1px solid #444;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+            max-width: 120px;
+        }
+
+        .toggle-btn.active {
+            background: var(--accent-red);
+            border-color: var(--accent-red);
+        }
+
+        .card-container {
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 1.75 / 1; /* Standard business card ratio */
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            background: var(--bg-dark);
+            position: absolute;
+            top: 0;
+            left: 0;
+            overflow: hidden;
+            display: none; /* Toggled via JS */
+        }
+
+        .card.active {
+            display: block;
+        }
+
+        /* --- CSS ART: FRONT CARD --- */
+        /* Right Red Triangle */
+        .f-shape-1 {
+            position: absolute;
+            right: 0; top: 0;
+            width: 40%; height: 100%;
+            background: var(--accent-red);
+            clip-path: polygon(100% 0, 100% 100%, 0 0);
+            z-index: 1;
+        }
+        
+        /* Top Left Red Bar */
+        .f-shape-2 {
+            position: absolute;
+            left: -15%; top: -10%;
+            width: 50%; height: 25%;
+            background: var(--accent-red);
+            transform: rotate(-45deg);
+            z-index: 1;
+        }
+
+        /* Bottom Left Red Triangle */
+        .f-shape-3 {
+            position: absolute;
+            left: -10%; bottom: -10%;
+            width: 30%; height: 50%;
+            background: var(--accent-red);
+            transform: rotate(-45deg);
+            z-index: 1;
+        }
+
+        /* Center Layered Dark Diamond */
+        .f-center-diamond {
+            position: absolute;
+            left: 15%; top: 10%;
+            width: 55%; aspect-ratio: 1;
+            background: var(--bg-dark);
+            transform: rotate(45deg);
+            box-shadow: 15px 15px 25px var(--shadow-color);
+            z-index: 2;
+        }
+
+        .f-content {
+            position: absolute;
+            z-index: 3;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding-right: 20%; /* Offset for design */
+        }
+
+        .f-logo-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .f-logo-icon .top-diamond {
+            width: 8px; height: 8px; background: var(--accent-red); transform: rotate(45deg); margin-bottom: 2px;
+        }
+        .f-logo-icon .mid-diamonds {
+            display: flex; gap: 4px;
+        }
+        .f-logo-icon .mid-diamonds div {
+            width: 12px; height: 12px; background: var(--accent-red); transform: rotate(45deg);
+        }
+
+        .f-logo-name { font-size: 16px; font-weight: 700; letter-spacing: 1px; margin-top: 5px;}
+        .f-slogan { font-size: 8px; color: var(--text-gray); }
+        
+        .f-brand {
+            position: absolute;
+            bottom: 15px; right: 20px;
+            font-size: 10px; font-weight: 600; letter-spacing: 1px;
+            z-index: 3;
+        }
+
+        /* --- CSS ART: BACK CARD --- */
+        /* Large Left Red Chevron */
+        .b-shape-1 {
+            position: absolute;
+            left: -20%; top: 15%;
+            width: 60%; aspect-ratio: 1;
+            background: var(--accent-red);
+            transform: rotate(45deg);
+            z-index: 1;
+        }
+
+        /* Layered Dark Chevron */
+        .b-shape-2 {
+            position: absolute;
+            left: -28%; top: 15%;
+            width: 60%; aspect-ratio: 1;
+            background: var(--bg-dark);
+            transform: rotate(45deg);
+            box-shadow: 12px 12px 20px var(--shadow-color);
+            z-index: 2;
+        }
+        
+        /* Bottom red triangle */
+        .b-shape-3 {
+            position: absolute;
+            left: 15%; bottom: -20%;
+            width: 30%; aspect-ratio: 1;
+            background: var(--accent-red);
+            transform: rotate(45deg);
+            z-index: 1;
+        }
+
+        /* Right Red Contact Bar */
+        .b-contact-bar {
+            position: absolute;
+            right: 0; bottom: 0;
+            width: 12%; height: 55%;
+            background: var(--accent-red);
+            z-index: 2;
+        }
+
+        .b-header {
+            position: absolute;
+            top: 25px; right: 20px;
+            text-align: right;
+            z-index: 3;
+        }
+
+        .b-name { font-size: 20px; font-weight: 700; letter-spacing: 1px;}
+        .b-title { font-size: 10px; color: var(--text-gray); letter-spacing: 2px;}
+
+        .b-contact-info {
+            position: absolute;
+            bottom: 20px; right: 14%;
+            text-align: right;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .b-contact-info p { font-size: 8px; color: var(--text-gray); }
+
+        .b-icons {
+            position: absolute;
+            right: 0; bottom: 20px;
+            width: 12%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            z-index: 3;
+        }
+
+        .b-icons span {
+            font-size: 10px; color: white;
+        }
+
+        /* --- EDITOR SECTION (BOTTOM) --- */
+        .editor-section {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .editor-group {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .editor-group.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .input-field {
+            margin-bottom: 15px;
+        }
+
+        .input-field label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-gray);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .input-field input {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border 0.3s;
+        }
+
+        .input-field input:focus {
+            border-color: var(--accent-red);
+        }
+
+        .action-bar {
+            padding: 15px 20px;
+            background: #111;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .save-btn {
+            width: 100%;
+            background: linear-gradient(90deg, #ff416c, #ff4b2b);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 65, 108, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .save-btn:active {
+            transform: scale(0.98);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="preview-section">
+        <div class="controls">
+            <button class="toggle-btn active" onclick="switchView('front')" id="btn-front">Front Page</button>
+            <button class="toggle-btn" onclick="switchView('back')" id="btn-back">Back Page</button>
+        </div>
+
+        <div class="card-container" id="card-capture-target">
+            
+            <div class="card active" id="card-front">
+                <div class="f-shape-1"></div>
+                <div class="f-shape-2"></div>
+                <div class="f-shape-3"></div>
+                <div class="f-center-diamond"></div>
+                
+                <div class="f-content">
+                    <div class="f-logo-icon">
+                        <div class="top-diamond"></div>
+                        <div class="mid-diamonds">
+                            <div></div><div></div>
+                        </div>
+                    </div>
+                    <div class="f-logo-name" id="view-logo-name">LogoName</div>
+                    <div class="f-slogan" id="view-slogan">Slogan Goes Here</div>
+                </div>
+                <div class="f-brand" id="view-brand">Neumorphdesign</div>
+            </div>
+
+            <div class="card" id="card-back">
+                <div class="b-shape-1"></div>
+                <div class="b-shape-2"></div>
+                <div class="b-shape-3"></div>
+                <div class="b-contact-bar"></div>
+                
+                <div class="b-header">
+                    <div class="b-name" id="view-name">JESS MARIE</div>
+                    <div class="b-title" id="view-title">Art Director</div>
+                </div>
+
+                <div class="b-contact-info">
+                    <p id="view-email">name@company.com</p>
+                    <p id="view-address">Business city no 70</p>
+                    <p id="view-website">www.company.com</p>
+                    <p id="view-phone">+12 52006 - 5250 - 52028</p>
+                </div>
+
+                <div class="b-icons">
+                    <span>✉</span>
+                    <span>⌂</span>
+                    <span>🌐</span>
+                    <span>✆</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="editor-section">
+        <div class="editor-group active" id="edit-front">
+            <div class="input-field">
+                <label>Logo Name</label>
+                <input type="text" id="in-logo-name" value="LogoName" oninput="updateText('view-logo-name', this.value)">
+            </div>
+            <div class="input-field">
+                <label>Slogan</label>
+                <input type="text" id="in-slogan" value="Slogan Goes Here" oninput="updateText('view-slogan', this.value)">
+            </div>
+            <div class="input-field">
+                <label>Bottom Right Brand</label>
+                <input type="text" id="in-brand" value="Neumorphdesign" oninput="updateText('view-brand', this.value)">
+            </div>
+        </div>
+
+        <div class="editor-group" id="edit-back">
+            <div class="input-field">
+                <label>Full Name</label>
+                <input type="text" id="in-name" value="JESS MARIE" oninput="updateText('view-name', this.value)">
+            </div>
+            <div class="input-field">
+                <label>Job Title</label>
+                <input type="text" id="in-title" value="Art Director" oninput="updateText('view-title', this.value)">
+            </div>
+            <div class="input-field">
+                <label>Email</label>
+                <input type="text" id="in-email" value="name@company.com" oninput="updateText('view-email', this.value)">
+            </div>
+            <div class="input-field">
+                <label>Address</label>
+                <input type="text" id="in-address" value="Business city no 70" oninput="updateText('view-address', this.value)">
+            </div>
+            <div class="input-field">
+                <label>Website</label>
+                <input type="text" id="in-website" value="www.company.com" oninput="updateText('view-website', this.value)">
+            </div>
+            <div class="input-field">
+                <label>Phone Number</label>
+                <input type="text" id="in-phone" value="+12 52006 - 5250 - 52028" oninput="updateText('view-phone', this.value)">
+            </div>
+        </div>
+    </div>
+
+    <div class="action-bar">
+        <button class="save-btn" onclick="saveImage()">Save Current Page</button>
+    </div>
+
+    <script>
+        let currentSide = 'front';
+
+        function switchView(side) {
+            currentSide = side;
+            
+            // Update Buttons
+            document.getElementById('btn-front').classList.toggle('active', side === 'front');
+            document.getElementById('btn-back').classList.toggle('active', side === 'back');
+
+            // Update Cards
+            document.getElementById('card-front').classList.toggle('active', side === 'front');
+            document.getElementById('card-back').classList.toggle('active', side === 'back');
+
+            // Update Editor Groups
+            document.getElementById('edit-front').classList.toggle('active', side === 'front');
+            document.getElementById('edit-back').classList.toggle('active', side === 'back');
+        }
+
+        function updateText(targetId, text) {
+            document.getElementById(targetId).innerText = text;
+        }
+
+        function saveImage() {
+            const cardElement = document.getElementById(`card-${currentSide}`);
+            
+            // Temporarily adjust scale to capture higher resolution
+            html2canvas(cardElement, {
+                scale: 3, // High quality output
+                useCORS: true,
+                backgroundColor: null 
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                
+                // Standard HTML5 Download (Works in regular browsers)
+                const link = document.createElement('a');
+                link.download = `business_card_${currentSide}.png`;
+                link.href = imgData;
+                link.click();
+
+                // Note for WebView Integration:
+                // If the standard <a> download doesn't trigger inside your Android WebView, 
+                // you will need to pass the base64 'imgData' string back to Kotlin using a JavascriptInterface.
+                // Example: if (window.AndroidInterface) { window.AndroidInterface.saveImage(imgData); }
+            });
+        }
+    </script>
+</body>
+</html>

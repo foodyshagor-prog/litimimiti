@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Business Card Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        :root {
+            --gold-grad: linear-gradient(45deg, #A67C00 0%, #BF953F 14%, #FCF6BA 45%, #B38728 75%, #FBF5B7 100%);
+            --card-bg: #050505;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            color: #e0e0e0;
+        }
+
+        /* Card Preview Container (NOW ON TOP) */
+        .preview-wrapper {
+            background: #fff;
+            padding: 20px 10px;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            margin-bottom: 15px;
+        }
+
+        .card {
+            width: 350px;
+            height: 200px;
+            background: var(--card-bg);
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .gold-text {
+            background: var(--gold-grad);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* FRONT CARD DESIGN */
+        .front-card {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 2;
+            transform: translateX(-20px);
+        }
+
+        .butterfly-icon svg {
+            width: 50px;
+            height: 50px;
+        }
+        
+        .gold-svg path {
+            fill: url(#goldGradient);
+        }
+
+        .logo-text {
+            font-family: 'Great Vibes', cursive;
+            font-size: 2.8rem;
+            line-height: 0.8;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo-text span:nth-child(2) {
+            margin-left: 20px;
+        }
+
+        .shape-1 {
+            position: absolute;
+            right: -60px;
+            top: -50px;
+            width: 140px;
+            height: 300px;
+            background: var(--gold-grad);
+            transform: rotate(30deg);
+            z-index: 1;
+        }
+        .shape-2 {
+            position: absolute;
+            right: 40px;
+            bottom: -60px;
+            width: 50px;
+            height: 150px;
+            background: var(--gold-grad);
+            transform: rotate(30deg);
+            z-index: 1;
+        }
+
+        /* BACK CARD DESIGN */
+        .back-card {
+            display: flex;
+        }
+
+        .back-left {
+            width: 40%;
+            padding: 15px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            text-align: center;
+            z-index: 2;
+        }
+
+        /* New Profile Image Styles */
+        .profile-img-preview {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1.5px solid #BF953F;
+            margin-bottom: 5px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .name {
+            color: #fff;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .title {
+            color: #fff;
+            font-size: 0.55rem;
+            font-weight: 400;
+        }
+
+        .small-logo {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        .small-logo svg {
+            width: 22px;
+            height: 22px;
+        }
+        .small-logo .logo-text {
+            font-size: 1.4rem;
+        }
+
+        .back-divider {
+            position: absolute;
+            left: 42%;
+            top: -20px;
+            width: 25px;
+            height: 240px;
+            background: var(--gold-grad);
+            transform: rotate(15deg);
+            z-index: 1;
+        }
+
+        .back-right {
+            width: 60%;
+            padding: 25px 15px 20px 35px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            z-index: 2;
+        }
+
+        .services-list {
+            list-style: none;
+            margin-bottom: 15px;
+        }
+
+        .services-list li {
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .services-list li::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background: var(--gold-grad);
+        }
+
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.7rem;
+        }
+        .contact-item i {
+            background: var(--gold-grad);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Save Button */
+        .btn-save {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 25px;
+            border: none;
+            border-radius: 10px;
+            background: var(--gold-grad);
+            color: #000;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(191, 149, 63, 0.4);
+        }
+
+        /* Form Styles (NOW AT THE BOTTOM) */
+        .editor-form {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .input-group {
+            margin-bottom: 12px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+            color: #aaa;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-size: 0.9rem;
+        }
+
+        .input-group input[type="file"] {
+            padding: 7px;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #BF953F;
+        }
+
+        .svg-defs { width: 0; height: 0; position: absolute; }
+    </style>
+</head>
+<body>
+
+    <svg class="svg-defs">
+        <defs>
+            <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#A67C00" />
+                <stop offset="14%" stop-color="#BF953F" />
+                <stop offset="45%" stop-color="#FCF6BA" />
+                <stop offset="75%" stop-color="#B38728" />
+                <stop offset="100%" stop-color="#FBF5B7" />
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <div class="app-container">
+        <h2>Card Editor</h2>
+        
+        <div class="preview-wrapper" id="card-capture-area">
+            
+            <div class="card front-card">
+                <div class="shape-1"></div>
+                <div class="shape-2"></div>
+                <div class="logo-container">
+                    <div class="butterfly-icon gold-svg">
+                        <svg viewBox="0 0 24 24"><path d="M12 2c-.5 0-1 .5-1 1v18c0 .5.5 1 1 1s1-.5 1-1V3c0-.5-.5-1-1-1zM4.5 5.5C3.1 6.9 2 8.8 2 11c0 3.3 2.7 6 6 6 1.7 0 3.2-.7 4-1.8V7.3C11.2 5.3 9 4 6.5 4c-1 0-1.8.5-2 1.5zM19.5 5.5c-1.4-1.4-3.5-2.2-6-2.2v10.8c.8 1.1 2.3 1.8 4 1.8 3.3 0 6-2.7 6-6 0-2.2-1.1-4.1-2.5-5.5z"/></svg>
+                    </div>
+                    <div class="logo-text gold-text">
+                        <span id="out-logo1">Posh</span>
+                        <span id="out-logo2">Fairy</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card back-card">
+                <div class="back-divider"></div>
+                
+                <div class="back-left">
+                    <div class="user-profile">
+                        <img id="out-profile-img" class="profile-img-preview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 1.79zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5-3-8-3z'/></svg>" alt="Profile">
+                        <div class="name" id="out-name">AYOMIPO G. ADESIYUN</div>
+                        <div class="title" id="out-title">CEO</div>
+                    </div>
+                    
+                    <div class="small-logo">
+                        <div class="butterfly-icon gold-svg">
+                            <svg viewBox="0 0 24 24"><path d="M12 2c-.5 0-1 .5-1 1v18c0 .5.5 1 1 1s1-.5 1-1V3c0-.5-.5-1-1-1zM4.5 5.5C3.1 6.9 2 8.8 2 11c0 3.3 2.7 6 6 6 1.7 0 3.2-.7 4-1.8V7.3C11.2 5.3 9 4 6.5 4c-1 0-1.8.5-2 1.5zM19.5 5.5c-1.4-1.4-3.5-2.2-6-2.2v10.8c.8 1.1 2.3 1.8 4 1.8 3.3 0 6-2.7 6-6 0-2.2-1.1-4.1-2.5-5.5z"/></svg>
+                        </div>
+                        <div class="logo-text gold-text">
+                            <span id="out-back-logo1">Posh</span>
+                            <span id="out-back-logo2">Fairy</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="back-right">
+                    <ul class="services-list">
+                        <li id="out-s1">Image Consulting</li>
+                        <li id="out-s2">Personal Branding</li>
+                        <li id="out-s3">Business Logistics</li>
+                        <li>Personal Styling</li>
+                        <li>Trainings</li>
+                    </ul>
+
+                    <div class="contact-info">
+                        <div class="contact-item">
+                            <i class="fa-brands fa-whatsapp"></i>
+                            <span class="gold-text" id="out-phone">0803 918 0747</span>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fa-brands fa-instagram"></i>
+                            <span class="gold-text" id="out-ig">@image.by.poshfairy</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-save" onclick="saveImage()">Save Image</button>
+
+        <div class="editor-form">
+            <div class="input-group">
+                <label>Profile Image</label>
+                <input type="file" id="inp-img" accept="image/*" onchange="updateProfileImage(this)">
+            </div>
+            <div class="input-group">
+                <label>Brand Text Line 1</label>
+                <input type="text" id="inp-logo1" value="Posh" onkeyup="updateCard()">
+            </div>
+            <div class="input-group">
+                <label>Brand Text Line 2</label>
+                <input type="text" id="inp-logo2" value="Fairy" onkeyup="updateCard()">
+            </div>
+            <div class="input-group">
+                <label>Full Name</label>
+                <input type="text" id="inp-name" value="AYOMIPO G. ADESIYUN" onkeyup="updateCard()">
+            </div>
+            <div class="input-group">
+                <label>Job Title</label>
+                <input type="text" id="inp-title" value="CEO" onkeyup="updateCard()">
+            </div>
+            <div class="input-group">
+                <label>Service 1</label>
+                <input type="text" id="inp-s1" value="Image Consulting" onkeyup="updateCard()">
+            </div>
+            <div class="input-group">
+                <label>Service 2</label>
+                <input type="text" id="inp-s2" value="Personal Branding" onkeyup="updateCard()">
+            </div>
+            <div class="input-group">
+                <label>Service 3</label>
+                <input type="text" id="inp-s3" value="Business Logistics" onkeyup="updateCard()">
+            </div>
+            <div class="input-group">
+                <label>Phone Number</label>
+                <input type="text" id="inp-phone" value="0803 918 0747" onkeyup="updateCard()">
+            </div>
+            <div class="input-group">
+                <label>Instagram Handle</label>
+                <input type="text" id="inp-ig" value="@image.by.poshfairy" onkeyup="updateCard()">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Real-time text engine
+        function updateCard() {
+            // Update Brand Logos
+            const l1 = document.getElementById('inp-logo1').value;
+            const l2 = document.getElementById('inp-logo2').value;
+            document.getElementById('out-logo1').innerText = l1;
+            document.getElementById('out-back-logo1').innerText = l1;
+            document.getElementById('out-logo2').innerText = l2;
+            document.getElementById('out-back-logo2').innerText = l2;
+
+            // Update Metadata
+            document.getElementById('out-name').innerText = document.getElementById('inp-name').value;
+            document.getElementById('out-title').innerText = document.getElementById('inp-title').value;
+            document.getElementById('out-s1').innerText = document.getElementById('inp-s1').value;
+            document.getElementById('out-s2').innerText = document.getElementById('inp-s2').value;
+            document.getElementById('out-s3').innerText = document.getElementById('inp-s3').value;
+            document.getElementById('out-phone').innerText = document.getElementById('inp-phone').value;
+            document.getElementById('out-ig').innerText = document.getElementById('inp-ig').value;
+        }
+
+        // Image Handling Logic (Converts file to base64 for html2canvas compatibility)
+        function updateProfileImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('out-profile-img').src = e.target.result;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // Export Canvas Engine
+        function saveImage() {
+            const captureArea = document.getElementById('card-capture-area');
+            const button = document.querySelector('.btn-save');
+            
+            button.innerText = "Generating...";
+            
+            html2canvas(captureArea, { 
+                scale: 3, 
+                backgroundColor: "#ffffff",
+                useCORS: true
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'custom_business_card.png';
+                link.href = canvas.toDataURL('image/png', 1.0);
+                link.click();
+                
+                button.innerText = "Save Image";
+            });
+        }
+    </script>
+
+</body>
+</html>

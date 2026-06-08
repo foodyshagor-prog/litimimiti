@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Business Card Maker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --accent-red: #e62020;
+            --bg-dark: #121212;
+            --panel-dark: #1e1e1e;
+            --text-light: #f5f5f5;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- LAYOUT: TOP PREVIEW & BOTTOM EDITOR --- */
+        .preview-container {
+            height: 300px; /* Optimized height for single card view */
+            flex-shrink: 0;
+            background: radial-gradient(circle at center, #2a2a2a 0%, #111 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 10;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+
+        /* --- TOGGLE SWITCH UI --- */
+        .view-toggle {
+            position: absolute;
+            top: 15px;
+            display: flex;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #333;
+            border-radius: 25px;
+            padding: 4px;
+            z-index: 20;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .view-toggle button {
+            background: transparent;
+            border: none;
+            color: #888;
+            padding: 8px 20px;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .view-toggle button.active {
+            background: var(--accent-red);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(230, 32, 32, 0.5);
+        }
+
+        /* Scaler for much larger mobile preview */
+        .preview-scaler {
+            transform: scale(0.95); /* Significantly increased size */
+            transform-origin: center center;
+            margin-top: 30px; /* Space for the toggle switch */
+        }
+
+        .editor-container {
+            flex: 1;
+            background: linear-gradient(180deg, #1a1a1a, #050505);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        /* --- CARD DOM BASE --- */
+        /* By default, stacked precisely on top of each other for toggling */
+        .card-export-wrapper {
+            position: relative;
+            width: 350px;
+            height: 200px;
+            background: transparent;
+        }
+
+        .card {
+            position: absolute;
+            top: 0; left: 0;
+            width: 350px;
+            height: 200px;
+            background: #111;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        /* View State Logic */
+        .card-export-wrapper.view-front .back-card { opacity: 0; pointer-events: none; z-index: 1; transform: scale(0.95); }
+        .card-export-wrapper.view-front .front-card { opacity: 1; z-index: 2; transform: scale(1); }
+
+        .card-export-wrapper.view-back .front-card { opacity: 0; pointer-events: none; z-index: 1; transform: scale(0.95); }
+        .card-export-wrapper.view-back .back-card { opacity: 1; z-index: 2; transform: scale(1); }
+
+        /* EXPORT MODE LOGIC: Temporarily stacks them vertically for saving */
+        .card-export-wrapper.export-mode {
+            height: auto; /* Let it grow to fit both */
+            display: flex;
+            flex-direction: column;
+            gap: 20px; /* Transparent space between front and back in the final image */
+            padding: 10px;
+        }
+        .card-export-wrapper.export-mode .card {
+            position: relative;
+            opacity: 1 !important;
+            transform: scale(1) !important;
+            box-shadow: none; /* Let html2canvas handle clean edges */
+        }
+
+        /* --- RED TEXTURE PATTERN --- */
+        .red-texture {
+            background-color: #250000;
+            background-image: radial-gradient(#4a0000 15%, transparent 16%), radial-gradient(#4a0000 15%, transparent 16%);
+            background-size: 14px 14px;
+            background-position: 0 0, 7px 7px;
+        }
+
+        /* --- FRONT CARD STYLES --- */
+        .front-card { background: #1a1a1a; }
+        .fc-red-bg { position: absolute; inset: 0; width: 70%; }
+        
+        .fc-slice-1 {
+            position: absolute; top: -20%; right: 10%;
+            width: 150px; height: 140%; background: #222;
+            transform: rotate(35deg); box-shadow: -10px 0 20px rgba(0,0,0,0.8);
+        }
+        .fc-slice-2 {
+            position: absolute; top: -20%; right: -50px;
+            width: 250px; height: 140%; background: #151515;
+            transform: rotate(35deg); box-shadow: -15px 0 25px rgba(0,0,0,0.9);
+        }
+
+        .fc-content-left {
+            position: absolute; left: 20px; top: 20px; width: 55%; z-index: 5;
+        }
+        .fc-company { font-size: 12px; font-weight: 800; letter-spacing: 1px; color: #fff; margin-bottom: 2px; }
+        .fc-tagline { font-size: 6px; font-weight: 400; color: #aaa; letter-spacing: 2px; margin-bottom: 15px; }
+        
+        .fc-qr { width: 30px; height: 30px; background: #fff; padding: 2px; margin-bottom: 15px; }
+        .fc-qr::after {
+            content: ''; display: block; width: 100%; height: 100%;
+            background-image: radial-gradient(#000 40%, transparent 40%); background-size: 4px 4px;
+        }
+
+        .fc-contact { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+        .fc-contact li { display: flex; align-items: center; justify-content: flex-end; width: 100%; font-size: 6px; color: #ccc; text-align: right;}
+        .fc-contact-text { margin-right: 8px; }
+        .fc-icon {
+            width: 12px; height: 12px; background: #fff; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; color: #000; font-size: 6px; font-weight: bold;
+        }
+
+        .fc-content-right {
+            position: absolute; right: 20px; top: 0; height: 100%; width: 35%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 5;
+        }
+
+        /* --- BACK CARD STYLES --- */
+        .bc-red-bg { position: absolute; inset: 0; }
+        
+        .bc-mask-left {
+            position: absolute; right: 50%; top: -20%; width: 100%; height: 150%;
+            background: #151515; transform: rotate(-35deg); transform-origin: top right;
+            box-shadow: 15px 0 30px rgba(0,0,0,0.9);
+        }
+        .bc-mask-right {
+            position: absolute; left: 50%; top: -20%; width: 100%; height: 150%;
+            background: #151515; transform: rotate(35deg); transform-origin: top left;
+            box-shadow: -15px 0 30px rgba(0,0,0,0.9);
+        }
+
+        .bc-content {
+            position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 5;
+        }
+
+        /* --- REUSABLE LOGO --- */
+        .logo-mark { position: relative; width: 40px; height: 40px; margin-bottom: 5px; }
+        .logo-slash-1, .logo-slash-2 { position: absolute; top: 5px; width: 12px; height: 30px; background: var(--accent-red); }
+        .logo-slash-1 { left: 10px; transform: rotate(35deg); }
+        .logo-slash-2 { right: 10px; transform: rotate(-35deg); }
+        .logo-text { font-size: 10px; font-weight: 800; letter-spacing: 1px; color: #fff; }
+
+
+        /* --- EDITOR UI STYLES --- */
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 12px; color: #aaa; margin-bottom: 5px; font-weight: 500; }
+        .input-group input {
+            width: 100%; padding: 12px 15px; background: #252525; border: 1px solid #333;
+            color: #fff; border-radius: 8px; font-size: 14px; transition: border-color 0.3s;
+        }
+        .input-group input:focus { outline: none; border-color: var(--accent-red); }
+        
+        .btn-save {
+            width: 100%; padding: 15px; background: var(--accent-red); color: #fff;
+            border: none; border-radius: 8px; font-size: 16px; font-weight: 700; letter-spacing: 1px;
+            margin-top: 10px; margin-bottom: 30px; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(230, 32, 32, 0.4); transition: transform 0.1s, opacity 0.2s;
+        }
+        .btn-save:active { transform: scale(0.98); opacity: 0.9; }
+
+        @media (max-width: 400px) {
+            .preview-scaler { transform: scale(0.85); } /* Adjust slightly for very small screens */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="preview-container">
+        
+        <div class="view-toggle">
+            <button id="btn-front" class="active" onclick="switchView('front')">Front View</button>
+            <button id="btn-back" onclick="switchView('back')">Back View</button>
+        </div>
+
+        <div class="preview-scaler">
+            <div class="card-export-wrapper view-front" id="capture-area">
+                
+                <div class="card front-card">
+                    <div class="fc-red-bg red-texture"></div>
+                    <div class="fc-slice-1"></div>
+                    <div class="fc-slice-2"></div>
+                    
+                    <div class="fc-content-left">
+                        <div class="fc-company" id="out-company">SHAGOR STUDIO</div>
+                        <div class="fc-tagline" id="out-tagline">GRAPHICS & PHOTO EDITOR</div>
+                        <div class="fc-qr"></div>
+                        
+                        <ul class="fc-contact">
+                            <li><span class="fc-contact-text" id="out-phone">+880 123 456 789</span> <span class="fc-icon">📞</span></li>
+                            <li><span class="fc-contact-text" id="out-email">contact@shagorapp.com</span> <span class="fc-icon">✉️</span></li>
+                            <li><span class="fc-contact-text" id="out-address">12/A, Tech Hub, City</span> <span class="fc-icon">📍</span></li>
+                        </ul>
+                    </div>
+
+                    <div class="fc-content-right">
+                        <div class="logo-mark">
+                            <div class="logo-slash-1"></div><div class="logo-slash-2"></div>
+                        </div>
+                        <div class="logo-text" id="out-logo1">LOGO HERE</div>
+                    </div>
+                </div>
+
+                <div class="card back-card">
+                    <div class="bc-red-bg red-texture"></div>
+                    <div class="bc-mask-left"></div>
+                    <div class="bc-mask-right"></div>
+                    
+                    <div class="bc-content">
+                        <div class="logo-mark">
+                            <div class="logo-slash-1"></div><div class="logo-slash-2"></div>
+                        </div>
+                        <div class="logo-text" id="out-logo2">LOGO HERE</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="editor-container">
+        <div class="input-group">
+            <label>Brand / Logo Name</label>
+            <input type="text" id="in-logo" value="LOGO HERE" placeholder="LOGO HERE">
+        </div>
+        <div class="input-group">
+            <label>Company Name</label>
+            <input type="text" id="in-company" value="SHAGOR STUDIO" placeholder="Company Name">
+        </div>
+        <div class="input-group">
+            <label>Designation / Tagline</label>
+            <input type="text" id="in-tagline" value="GRAPHICS & PHOTO EDITOR" placeholder="Tagline">
+        </div>
+        <div class="input-group">
+            <label>Phone Number</label>
+            <input type="text" id="in-phone" value="+880 123 456 789" placeholder="Phone Number">
+        </div>
+        <div class="input-group">
+            <label>Email Address</label>
+            <input type="text" id="in-email" value="contact@shagorapp.com" placeholder="Email">
+        </div>
+        <div class="input-group">
+            <label>Address</label>
+            <input type="text" id="in-address" value="12/A, Tech Hub, City" placeholder="Address">
+        </div>
+        
+        <button class="btn-save" id="btn-save">Save Business Card</button>
+    </div>
+
+    <script>
+        // Data Binding: Map inputs directly to output text elements
+        const bindData = (inputId, outputId) => {
+            const input = document.getElementById(inputId);
+            const output = document.getElementById(outputId);
+            input.addEventListener('input', (e) => {
+                output.innerText = e.target.value;
+            });
+        };
+
+        // Initialize bindings
+        bindData('in-company', 'out-company');
+        bindData('in-tagline', 'out-tagline');
+        bindData('in-phone', 'out-phone');
+        bindData('in-email', 'out-email');
+        bindData('in-address', 'out-address');
+        
+        // Logo text
+        document.getElementById('in-logo').addEventListener('input', (e) => {
+            document.getElementById('out-logo1').innerText = e.target.value;
+            document.getElementById('out-logo2').innerText = e.target.value;
+        });
+
+        // Toggle Switch Logic
+        function switchView(view) {
+            const wrapper = document.getElementById('capture-area');
+            const btnFront = document.getElementById('btn-front');
+            const btnBack = document.getElementById('btn-back');
+
+            if (view === 'front') {
+                wrapper.classList.remove('view-back');
+                wrapper.classList.add('view-front');
+                btnFront.classList.add('active');
+                btnBack.classList.remove('active');
+            } else {
+                wrapper.classList.remove('view-front');
+                wrapper.classList.add('view-back');
+                btnBack.classList.add('active');
+                btnFront.classList.remove('active');
+            }
+        }
+
+        // Save Image Logic
+        document.getElementById('btn-save').addEventListener('click', () => {
+            const captureArea = document.getElementById('capture-area');
+            const saveBtn = document.getElementById('btn-save');
+            const originalText = saveBtn.innerText;
+            
+            // Visual feedback
+            saveBtn.innerText = "Generating...";
+            saveBtn.style.opacity = "0.7";
+
+            // PREPARE FOR EXPORT: Temporarily stack both cards so they export together
+            captureArea.classList.add('export-mode');
+
+            // Set a tiny timeout to allow the browser to apply the export-mode CSS before capturing
+            setTimeout(() => {
+                html2canvas(captureArea, {
+                    scale: 3, 
+                    backgroundColor: null, 
+                    useCORS: true 
+                }).then(canvas => {
+                    // CLEANUP: Immediately revert back to the toggle view
+                    captureArea.classList.remove('export-mode');
+
+                    const imgData = canvas.toDataURL('image/png');
+
+                    // WEB DOWNLOAD
+                    const link = document.createElement('a');
+                    link.download = 'shagor-business-card.png';
+                    link.href = imgData;
+                    link.click();
+
+                    // Reset button
+                    saveBtn.innerText = originalText;
+                    saveBtn.style.opacity = "1";
+                }).catch(err => {
+                    console.error("Export failed:", err);
+                    captureArea.classList.remove('export-mode'); // Ensure cleanup on error
+                    alert("Failed to generate image.");
+                    saveBtn.innerText = originalText;
+                    saveBtn.style.opacity = "1";
+                });
+            }, 50); 
+        });
+    </script>
+</body>
+</html>

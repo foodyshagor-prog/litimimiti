@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Premium Business Card Designer</title>
+  <!-- html2canvas library for rendering clean high-res outputs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    :root {
+      --bg-dark: #060b13;
+      --panel-bg: #0d1527;
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --accent-blue: #0044ff;
+      --accent-cyan: #00b7ff;
+      --text-white: #ffffff;
+      --text-muted: #7e8fbc;
+      --input-bg: #141f36;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-white);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* --- PREVIEW BAR (TOP) --- */
+    .preview-container {
+      width: 100%;
+      max-width: 360px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 20px;
+      position: sticky;
+      top: 0;
+      background-color: var(--bg-dark);
+      padding-bottom: 16px;
+      z-index: 10;
+    }
+
+    /* Strict Card Proportion Frame (350x200 matches standard 3.5" x 2") */
+    .card-canvas-wrapper {
+      width: 350px;
+      height: 200px;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.7);
+      position: relative;
+      background-color: #010712;
+      touch-action: none; /* Crucial for overriding webview default scrolling when dragging */
+      cursor: move;
+    }
+
+    .card-side {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      display: none;
+    }
+
+    .card-side.active {
+      display: block;
+    }
+
+    /* --- IMAGE ENGINE LAYER --- */
+    .photo-window {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      width: 65%; /* Extended container width to allow comfortable panning margin */
+      overflow: hidden;
+      z-index: 1;
+      pointer-events: none; /* Pass drags down to the main canvas controller */
+    }
+
+    .front-window { left: 0; }
+    .back-window { right: 0; width: 65%; }
+
+    .photo-window img {
+      position: absolute;
+      height: 100%;
+      width: auto;
+      display: block;
+      transform-origin: center center;
+    }
+
+    /* --- EXACT VECTOR SVG CURVE MASKS --- */
+    .card-svg-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    /* --- TEXT CONTENT LAYERS --- */
+    .text-content-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    /* FRONT SIDE DETAILS */
+    .front-layout {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      width: 58%;
+      margin-left: 42%;
+      padding-right: 15px;
+      text-align: center;
+    }
+
+    .logo-icon-svg {
+      width: 40px;
+      height: 40px;
+      margin-bottom: 4px;
+    }
+
+    .logo-title {
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      color: var(--text-white);
+    }
+
+    .logo-tagline {
+      font-size: 8.5px;
+      font-weight: 700;
+      letter-spacing: 2.5px;
+      color: var(--accent-cyan);
+      margin-top: 3px;
+    }
+
+    .front-website-footer {
+      position: absolute;
+      bottom: 16px;
+      font-size: 9px;
+      color: var(--text-white);
+      letter-spacing: 0.5px;
+      opacity: 0.8;
+    }
+
+    /* BACK SIDE DETAILS */
+    .back-layout {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+      width: 60%;
+      padding: 24px 0 20px 24px;
+    }
+
+    .profile-header h2 {
+      font-size: 21px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .profile-header h2 span.firstname { color: var(--accent-cyan); }
+    .profile-header h2 span.lastname { color: var(--text-white); }
+
+    .profile-header p {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin-top: 3px;
+      font-weight: 400;
+    }
+
+    .contact-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .contact-row {
+      display: flex;
+      align-items: center;
+    }
+
+    .contact-icon {
+      width: 14px;
+      height: 14px;
+      color: var(--accent-cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .contact-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .contact-divider {
+      width: 1px;
+      height: 16px;
+      background-color: rgba(255, 255, 255, 0.15);
+      margin: 0 10px;
+    }
+
+    .contact-stack {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .contact-label {
+      font-size: 6.5px;
+      color: var(--accent-cyan);
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .contact-value {
+      font-size: 9px;
+      color: var(--text-white);
+      margin-top: 1px;
+      font-weight: 500;
+    }
+
+    /* --- TOGGLE DEVICE CONTROLLER --- */
+    .view-toggle {
+      display: flex;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 30px;
+      padding: 4px;
+      margin-top: 14px;
+      width: 210px;
+    }
+
+    .toggle-btn {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      padding: 7px 0;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 20px;
+      cursor: pointer;
+    }
+
+    .toggle-btn.active {
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+      color: var(--text-white);
+    }
+
+    /* --- COMPACT EDITOR PANEL (BOTTOM) --- */
+    .editor-container {
+      width: 100%;
+      max-width: 360px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding-bottom: 90px;
+      -webkit-user-select: auto;
+      user-select: auto;
+    }
+
+    .input-group-panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .panel-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      color: var(--accent-cyan);
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .field:last-child { margin-bottom: 0; }
+
+    label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    input[type="text"] {
+      background: var(--input-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+      padding: 11px 14px;
+      color: var(--text-white);
+      font-size: 13px;
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent-cyan);
+    }
+
+    /* Custom Responsive Slider styling */
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      background: var(--input-bg);
+      height: 6px;
+      border-radius: 3px;
+      outline: none;
+      margin-top: 6px;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      cursor: pointer;
+    }
+
+    .file-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-upload-wrapper {
+      flex: 1;
+      position: relative;
+    }
+
+    .btn-upload-wrapper input[type="file"] {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      opacity: 0;
+    }
+
+    .ui-mock-upload-btn {
+      background: var(--input-bg);
+      border: 1px dashed rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-white);
+    }
+
+    /* --- STICKY CONSOLE ACCELERATOR --- */
+    .action-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: linear-gradient(to top, var(--bg-dark) 75%, transparent);
+      padding: 12px 16px 24px 16px;
+      display: flex;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .save-button {
+      width: 100%;
+      max-width: 360px;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+      border: none;
+      border-radius: 14px;
+      color: var(--text-white);
+      padding: 15px;
+      font-size: 15px;
+      font-weight: 700;
+      box-shadow: 0 5px 25px rgba(0, 183, 255, 0.3);
+    }
+
+    .save-button:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- --- PREVIEW BAR --- -->
+  <div class="preview-container">
+    <div class="card-canvas-wrapper" id="interact-canvas">
+      
+      <!-- FRONT PAGE VIEW -->
+      <div id="card-front" class="card-side active">
+        <!-- Photo stays in background container framework -->
+        <div class="photo-window front-window">
+          <img id="img-front" src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=400" alt="Profile" style="left: -15px; top: 0px;">
+        </div>
+        <!-- Perfect curve stroke masking asset layer -->
+        <svg class="card-svg-overlay" viewBox="0 0 350 200" preserveAspectRatio="none">
+          <!-- Dark rich background field shape -->
+          <path d="M 152 0 C 182 45, 138 145, 94 200 L 350 200 L 350 0 Z" fill="#020b18"/>
+          <!-- Thick dark blue design vector loop -->
+          <path d="M 152 0 C 182 45, 138 145, 94 200" fill="none" stroke="#003cd1" stroke-width="6"/>
+          <!-- Precise cyan highlight core vector loop -->
+          <path d="M 152 0 C 182 45, 138 145, 94 200" fill="none" stroke="#00b7ff" stroke-width="1.5"/>
+        </svg>
+        <!-- Interactive Front text nodes -->
+        <div class="text-content-layer">
+          <div class="front-layout">
+            <div id="logo-graphic-box">
+              <svg class="logo-icon-svg" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="6" stroke="#00b7ff" stroke-width="2.5"/>
+                <circle cx="12" cy="12" r="1.5" fill="#00b7ff"/>
+                <line x1="12" y1="1" x2="12" y2="3" stroke="#00b7ff" stroke-width="2" stroke-linecap="round"/>
+                <line x1="12" y1="21" x2="12" y2="23" stroke="#00b7ff" stroke-width="2" stroke-linecap="round"/>
+                <line x1="1" y1="12" x2="3" y2="12" stroke="#00b7ff" stroke-width="2" stroke-linecap="round"/>
+                <line x1="21" y1="12" x2="23" y2="12" stroke="#00b7ff" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="logo-title" id="lbl-logo-title">YOUR LOGO</div>
+            <div class="logo-tagline" id="lbl-logo-tag">TAGLINE HERE</div>
+            <div class="front-website-footer" id="lbl-web-front">yourwebsite.com</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BACK PAGE VIEW -->
+      <div id="card-back" class="card-side">
+        <!-- Photo stays in right-aligned background container framework -->
+        <div class="photo-window back-window">
+          <img id="img-back" src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=400" alt="Profile" style="left: -15px; top: 0px;">
+        </div>
+        <!-- Perfect mirrored curve stroke masking asset layer -->
+        <svg class="card-svg-overlay" viewBox="0 0 350 200" preserveAspectRatio="none">
+          <!-- Dark rich background field shape -->
+          <path d="M 0 0 L 198 0 C 168 45, 212 145, 256 200 L 0 200 Z" fill="#020b18"/>
+          <!-- Thick dark blue design vector loop -->
+          <path d="M 198 0 C 168 45, 212 145, 256 200" fill="none" stroke="#003cd1" stroke-width="6"/>
+          <!-- Precise cyan highlight core vector loop -->
+          <path d="M 198 0 C 168 45, 212 145, 256 200" fill="none" stroke="#00b7ff" stroke-width="1.5"/>
+        </svg>
+        <!-- Interactive Back text nodes -->
+        <div class="text-content-layer">
+          <div class="back-layout">
+            <div class="profile-header">
+              <h2 id="lbl-name-container"><span class="firstname">Dicky</span> <span class="lastname">Prayuda</span></h2>
+              <p id="lbl-designation">Graphic Designer</p>
+            </div>
+            
+            <div class="contact-list">
+              <!-- Phone node -->
+              <div class="contact-row">
+                <div class="contact-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                </div>
+                <div class="contact-divider"></div>
+                <div class="contact-stack">
+                  <span class="contact-label">Phone</span>
+                  <span class="contact-value" id="lbl-phone">+00 1234 56789</span>
+                </div>
+              </div>
+              <!-- Email node -->
+              <div class="contact-row">
+                <div class="contact-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </div>
+                <div class="contact-divider"></div>
+                <div class="contact-stack">
+                  <span class="contact-label">Email</span>
+                  <span class="contact-value" id="lbl-email">info@example.com</span>
+                </div>
+              </div>
+              <!-- Location node -->
+              <div class="contact-row">
+                <div class="contact-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                </div>
+                <div class="contact-divider"></div>
+                <div class="contact-stack">
+                  <span class="contact-label">Location</span>
+                  <span class="contact-value" id="lbl-location">Address here, City, 1234</span>
+                </div>
+              </div>
+              <!-- Website node -->
+              <div class="contact-row">
+                <div class="contact-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                </div>
+                <div class="contact-divider"></div>
+                <div class="contact-stack">
+                  <span class="contact-label">Website</span>
+                  <span class="contact-value" id="lbl-web-back">Yourwebsite.com</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Toggle Controls -->
+    <div class="view-toggle">
+      <button class="toggle-btn active" id="btn-toggle-front" onclick="switchSide('front')">Front View</button>
+      <button class="toggle-btn" id="btn-toggle-back" onclick="switchSide('back')">Back View</button>
+    </div>
+  </div>
+
+  <!-- --- COMPACT EDITOR PANEL --- -->
+  <div class="editor-container">
+    
+    <!-- Image adjustments -->
+    <div class="input-group-panel">
+      <div class="panel-title">Photo Customizations</div>
+      <div class="file-row">
+        <div class="btn-upload-wrapper">
+          <div class="ui-mock-upload-btn">👤 Change Profile</div>
+          <input type="file" accept="image/*" onchange="processImageImport(event, 'profile')">
+        </div>
+        <div class="btn-upload-wrapper">
+          <div class="ui-mock-upload-btn">💎 Custom Logo</div>
+          <input type="file" accept="image/*" onchange="processImageImport(event, 'logo')">
+        </div>
+      </div>
+      <div class="field" style="margin-top:14px;">
+        <label>Active Photo Zoom Scaling</label>
+        <input type="range" id="slider-zoom" min="0.5" max="2.5" step="0.01" value="1" oninput="applyZoomAdjustment(this.value)">
+      </div>
+      <p style="font-size:10px; color:var(--text-muted); text-align:center; margin-top:6px;">💡 Touch and drag directly on the card to align the photo.</p>
+    </div>
+
+    <!-- Branding panel -->
+    <div class="input-group-panel">
+      <div class="panel-title">Brand Customizations</div>
+      <div class="field">
+        <label>Company/Logo Header Text</label>
+        <input type="text" id="txt-logo-title" value="YOUR LOGO" oninput="updateTextNode('lbl-logo-title', this.value)">
+      </div>
+      <div class="field">
+        <label>Company Tagline</label>
+        <input type="text" id="txt-logo-tag" value="TAGLINE HERE" oninput="updateTextNode('lbl-logo-tag', this.value)">
+      </div>
+    </div>
+
+    <!-- Personal profile details -->
+    <div class="input-group-panel">
+      <div class="panel-title">Identity Parameters</div>
+      <div class="field">
+        <label>Cardholder Full Name</label>
+        <input type="text" id="txt-name" value="Dicky Prayuda" oninput="splitColorName(this.value)">
+      </div>
+      <div class="field">
+        <label>Corporate Designation</label>
+        <input type="text" id="txt-designation" value="Graphic Designer" oninput="updateTextNode('lbl-designation', this.value)">
+      </div>
+    </div>
+
+    <!-- Connection nodes details -->
+    <div class="input-group-panel">
+      <div class="panel-title">Communication Parameters</div>
+      <div class="field">
+        <label>Phone Vector Value</label>
+        <input type="text" id="txt-phone" value="+00 1234 56789" oninput="updateTextNode('lbl-phone', this.value)">
+      </div>
+      <div class="field">
+        <label>Email Vector Value</label>
+        <input type="text" id="txt-email" value="info@example.com" oninput="updateTextNode('lbl-email', this.value)">
+      </div>
+      <div class="field">
+        <label>Location Vector Value</label>
+        <input type="text" id="txt-location" value="Address here, City, 1234" oninput="updateTextNode('lbl-location', this.value)">
+      </div>
+      <div class="field">
+        <label>Unified Digital URL</label>
+        <input type="text" id="txt-web" value="Yourwebsite.com" oninput="mirrorWebsites(this.value)">
+      </div>
+    </div>
+
+  </div>
+
+  <!-- --- CONSOLE ACTION ACCELERATOR --- -->
+  <div class="action-bar">
+    <button class="save-button" onclick="triggerCardRender()">
+      📥 Export Current Page View
+    </button>
+  </div>
+
+  <!-- --- RUNTIME ENGINE LOGIC --- -->
+  <script>
+    let currentActiveSide = 'front';
+
+    // Advanced drag matrix state memory for spatial adjustments
+    let profileMatrices = {
+      front: { x: -15, y: 0, scale: 1 },
+      back: { x: -15, y: 0, scale: 1 }
+    };
+
+    let executionDragFlag = false;
+    let initialAnchorX, initialAnchorY;
+
+    // Component initialization
+    const interactiveCanvas = document.getElementById('interact-canvas');
+
+    function switchSide(side) {
+      currentActiveSide = side;
+      document.querySelectorAll('.card-side').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.toggle-btn').forEach(el => el.classList.remove('active'));
+
+      if (side === 'front') {
+        document.getElementById('card-front').classList.add('active');
+        document.getElementById('btn-toggle-front').classList.add('active');
+      } else {
+        document.getElementById('card-back').classList.add('active');
+        document.getElementById('btn-toggle-back').classList.add('active');
+      }
+
+      // Synchronize slider track values to active view parameters
+      document.getElementById('slider-zoom').value = profileMatrices[currentActiveSide].scale;
+    }
+
+    function updateTextNode(targetId, rawValue) {
+      document.getElementById(targetId).innerText = rawValue;
+    }
+
+    function mirrorWebsites(rawValue) {
+      document.getElementById('lbl-web-front').innerText = rawValue.toLowerCase();
+      document.getElementById('lbl-web-back').innerText = rawValue;
+    }
+
+    function splitColorName(rawValue) {
+      const brokenStrings = rawValue.trim().split(' ');
+      const containerNode = document.getElementById('lbl-name-container');
+      if (brokenStrings.length > 0 && rawValue.trim() !== "") {
+        const structuralLead = brokenStrings[0];
+        const remainingStrings = brokenStrings.slice(1).join(' ');
+        containerNode.innerHTML = `<span class="firstname">${structuralLead}</span> <span class="lastname">${remainingStrings}</span>`;
+      } else {
+        containerNode.innerHTML = '';
+      }
+    }
+
+    // Process media elements
+    function processImageImport(event, variant) {
+      const processedFile = event.target.files[0];
+      if (!processedFile) return;
+
+      const memoryReader = new FileReader();
+      memoryReader.onload = function(e) {
+        if (variant === 'profile') {
+          document.getElementById('img-front').src = e.target.result;
+          document.getElementById('img-back').src = e.target.result;
+          // Reset alignment metrics back to safe standards
+          profileMatrices.front = { x: 0, y: 0, scale: 1 };
+          profileMatrices.back = { x: 0, y: 0, scale: 1 };
+          document.getElementById('slider-zoom').value = 1;
+          renderTransformationStyles();
+        } else if (variant === 'logo') {
+          document.getElementById('logo-graphic-box').innerHTML = `<img src="${e.target.result}" style="width:40px; height:40px; object-fit:contain; margin-bottom:4px;"/>`;
+        }
+      };
+      memoryReader.readAsDataURL(processedFile);
+    }
+
+    function applyZoomAdjustment(zoomFactor) {
+      profileMatrices[currentActiveSide].scale = parseFloat(zoomFactor);
+      renderTransformationStyles();
+    }
+
+    function renderTransformationStyles() {
+      const targetedNode = document.getElementById(`img-${currentActiveSide}`);
+      if (targetedNode) {
+        targetedNode.style.transform = `translate(${profileMatrices[currentActiveSide].x}px, ${profileMatrices[currentActiveSide].y}px) scale(${profileMatrices[currentActiveSide].scale})`;
+      }
+    }
+
+    // Unified interactive pointer coordinates parser
+    function resolvePointerCoordinates(e) {
+      if (e.touches && e.touches.length > 0) {
+        return { posX: e.touches[0].clientX, posY: e.touches[0].clientY };
+      }
+      return { posX: e.clientX, posY: e.clientY };
+    }
+
+    function initiateDragPipeline(e) {
+      executionDragFlag = true;
+      const pointerCoordinates = resolvePointerCoordinates(e);
+      initialAnchorX = pointerCoordinates.posX - profileMatrices[currentActiveSide].x;
+      initialAnchorY = pointerCoordinates.posY - profileMatrices[currentActiveSide].y;
+    }
+
+    function trackDragMovement(e) {
+      if (!executionDragFlag) return;
+      if (e.cancelable) e.preventDefault(); // Lock mobile webview anchor shifts
+
+      const pointerCoordinates = resolvePointerCoordinates(e);
+      profileMatrices[currentActiveSide].x = pointerCoordinates.posX - initialAnchorX;
+      profileMatrices[currentActiveSide].y = pointerCoordinates.posY - initialAnchorY;
+      renderTransformationStyles();
+    }
+
+    function terminateDragPipeline() {
+      executionDragFlag = false;
+    }
+
+    // Register high-performance touch/gesture interceptors
+    interactiveCanvas.addEventListener('touchstart', initiateDragPipeline, { passive: false });
+    interactiveCanvas.addEventListener('touchmove', trackDragMovement, { passive: false });
+    window.addEventListener('touchend', terminateDragPipeline);
+
+    // Register desktop mouse emulation hooks for robust testing
+    interactiveCanvas.addEventListener('mousedown', initiateDragPipeline);
+    interactiveCanvas.addEventListener('mousemove', trackDragMovement);
+    window.addEventListener('mouseup', terminateDragPipeline);
+
+    // Init spatial transforms on load
+    window.addEventListener('DOMContentLoaded', () => {
+      renderTransformationStyles();
+      switchSide('front');
+    });
+
+    // High fidelity high-res rendering engine integration
+    function triggerCardRender() {
+      const activelyTargetedSideNode = currentActiveSide === 'front' ? document.getElementById('card-front') : document.getElementById('card-back');
+      
+      // Temporarily sanitize structure settings for accurate canvas tracking pass
+      activelyTargetedSideNode.style.display = 'block';
+      activelyTargetedSideNode.style.borderRadius = '16px';
+
+      html2canvas(activelyTargetedSideNode, {
+        scale: 3, // Multiplies output raster matrix for perfect crisp imagery inside apps
+        backgroundColor: null,
+        useCORS: true,
+        logging: false,
+        width: 350,
+        height: 200
+      }).then(generatedCanvasObj => {
+        // Return visibility rules safely back to cascading UI values
+        if (currentActiveSide === 'front') {
+          document.getElementById('card-back').style.display = 'none';
+        } else {
+          document.getElementById('card-front').style.display = 'none';
+        }
+        activelyTargetedSideNode.style.borderRadius = '0px';
+
+        const rawDataStream = generatedCanvasObj.toDataURL('image/png');
+        const triggerVirtualLink = document.createElement('a');
+        triggerVirtualLink.download = `BusinessCard_${currentActiveSide}.png`;
+        triggerVirtualLink.href = rawDataStream;
+        triggerVirtualLink.click();
+      }).catch(err => {
+        console.error("Render target execution anomaly intercepted:", err);
+      });
+    }
+  </script>
+</body>
+</html>

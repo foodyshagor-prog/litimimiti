@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Business Card Customizer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        :root {
+            --primary-orange: #FF6F00;
+            --dark-bg-start: #1A1A24;
+            --dark-bg-end: #0A0A0F;
+            --input-bg: #252533;
+            --text-light: #F3F3F6;
+            --text-dim: #8E8E9F;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(180deg, var(--dark-bg-start) 0%, var(--dark-bg-end) 100%);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* --- PREVIEW SECTION (TOP) --- */
+        .preview-container {
+            width: 100%;
+            padding: 20px 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Card Canvas Setup (3.5:2 Ratio scaled for mobile screens) */
+        .card-frame {
+            width: 100%;
+            max-width: 350px;
+            height: 200px;
+            background: #ffffff;
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+            color: #000;
+        }
+
+        /* Geometric Background Pattern */
+        .card-bg-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.06;
+            background-image: radial-gradient(#000 1px, transparent 1px), radial-gradient(#000 1px, #ffffff 1px);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+            pointer-events: none;
+        }
+
+        /* Hide inactive cards */
+        .card-side {
+            display: none;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+        }
+
+        .card-side.active {
+            display: block;
+        }
+
+        /* --- FRONT CARD STYLES --- */
+        .front-wave-container {
+            position: absolute;
+            bottom: -5px;
+            left: -5px;
+            width: 105%;
+            height: 140px;
+            pointer-events: none;
+        }
+
+        .company-name {
+            position: absolute;
+            top: 35px;
+            right: 25px;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary-orange);
+            letter-spacing: 0.5px;
+            text-align: right;
+        }
+
+        .front-contact-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: #ffffff;
+            z-index: 2;
+            font-size: 10px;
+            line-height: 1.3;
+        }
+
+        .contact-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .contact-icon {
+            width: 16px;
+            height: 16px;
+            background: var(--primary-orange);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+
+        .contact-icon svg {
+            width: 9px;
+            height: 9px;
+            fill: #fff;
+        }
+
+        .contact-divider {
+            width: 90px;
+            height: 1.5px;
+            background: var(--primary-orange);
+            margin: 6px 0;
+        }
+
+        /* --- BACK CARD STYLES --- */
+        .back-header {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 20px 0 20px;
+        }
+
+        .services-badge {
+            background: var(--primary-orange);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 12px;
+            border-radius: 4px;
+            height: fit-content;
+        }
+
+        .profile-title-block {
+            text-align: right;
+        }
+
+        .profile-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #111;
+        }
+
+        .profile-role-line {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            margin-top: -2px;
+        }
+
+        .role-orange-line {
+            width: 45px;
+            height: 1px;
+            background: var(--primary-orange);
+            margin-right: 5px;
+        }
+
+        .profile-role {
+            font-size: 10px;
+            color: var(--primary-orange);
+            font-style: italic;
+            font-weight: 600;
+        }
+
+        .services-list {
+            margin-left: 20px;
+            margin-top: 5px;
+            list-style: none;
+            font-size: 9.5px;
+            font-weight: 500;
+            color: #222;
+            max-width: 160px;
+        }
+
+        .services-list li {
+            position: relative;
+            padding-left: 12px;
+            margin-bottom: 3.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .services-list li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 4px;
+            width: 5px;
+            height: 5px;
+            background: var(--primary-orange);
+        }
+
+        /* Hexagonal Image Cluster Architecture */
+        .hex-grid-container {
+            position: absolute;
+            right: 12px;
+            bottom: 25px;
+            width: 145px;
+            height: 110px;
+            z-index: 2;
+        }
+
+        .back-wave-container {
+            position: absolute;
+            bottom: -5px;
+            left: -5px;
+            width: 105%;
+            height: 45px;
+            pointer-events: none;
+        }
+
+        /* --- SWITCH TABS --- */
+        .toggle-switch {
+            display: flex;
+            background: var(--input-bg);
+            border-radius: 25px;
+            padding: 4px;
+            margin-top: 15px;
+            width: 220px;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            padding: 6px 0;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: var(--primary-orange);
+            color: #ffffff;
+        }
+
+        /* --- EDITOR CONTROL PANEL (BOTTOM) --- */
+        .editor-container {
+            flex: 1;
+            background: linear-gradient(180deg, rgba(37, 37, 51, 0.4) 0%, rgba(10, 10, 15, 0.9) 100%);
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            padding: 24px 20px;
+            overflow-y: auto;
+        }
+
+        .editor-section {
+            display: none;
+        }
+
+        .editor-section.active {
+            display: block;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px;
+            color: #ffffff;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary-orange);
+        }
+
+        .image-pickers-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .image-upload-btn {
+            background: var(--input-bg);
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            font-size: 10px;
+            color: var(--text-dim);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .image-upload-btn input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* Action Buttons */
+        .action-button {
+            width: 100%;
+            background: var(--primary-orange);
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 10px;
+            box-shadow: 0 4px 15px rgba(255, 111, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .action-button:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="preview-container">
+        <div class="card-frame" id="business-card-capture">
+            <div class="card-bg-pattern"></div>
+            
+            <div class="card-side active" id="front-card-view">
+                <div class="company-name" id="preview-company">VOCA PERCY</div>
+                
+                <div class="front-contact-info">
+                    <div class="contact-row">
+                        <div class="contact-icon">
+                            <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                        </div>
+                        <div>
+                            <div id="preview-phone1">XXXX XXX XX</div>
+                            <div id="preview-phone2">XXXX XXX XX</div>
+                        </div>
+                    </div>
+                    <div class="contact-divider"></div>
+                    <div class="contact-row">
+                        <div class="contact-icon">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                        </div>
+                        <div>
+                            <div id="preview-addr1">XXXXX XXXXXXXXX XXXXXX</div>
+                            <div id="preview-addr2">XXXX X XXXXX XXX</div>
+                        </div>
+                    </div>
+                </div>
+
+                <svg class="front-wave-container" viewBox="0 0 360 140" preserveAspectRatio="none">
+                    <path d="M-5 45 C110 5, 170 115, 365 75 L365 145 L-5 145 Z" fill="#FF6F00" opacity="0.85"/>
+                    <path d="M-5 60 C100 25, 180 125, 365 90 L365 145 L-5 145 Z" fill="#000000"/>
+                    <path d="M260 125 C290 115, 320 122, 365 110 L365 145 L260 145 Z" fill="#ffffff" opacity="0.3"/>
+                    <path d="M280 132 C305 125, 330 132, 365 122 L365 145 L280 145 Z" fill="#FF6F00"/>
+                </svg>
+            </div>
+
+            <div class="card-side" id="back-card-view">
+                <div class="back-header">
+                    <div class="services-badge">Services:</div>
+                    <div class="profile-title-block">
+                        <div class="profile-name" id="preview-name">Victor Percy Bulus</div>
+                        <div class="profile-role-line">
+                            <div class="role-orange-line"></div>
+                            <div class="profile-role" id="preview-role">Director</div>
+                        </div>
+                    </div>
+                </div>
+
+                <ul class="services-list">
+                    <li id="preview-srv1">Realtor</li>
+                    <li id="preview-srv2">Selling of Land</li>
+                    <li id="preview-srv3">House / Apartment Renting</li>
+                    <li id="preview-srv4">Supply of Filling sand</li>
+                    <li id="preview-srv5">Plastering sand</li>
+                    <li id="preview-srv6">Road filling sand.</li>
+                </ul>
+
+                <svg class="hex-grid-container" viewBox="0 0 160 120">
+                    <defs>
+                        <pattern id="hex1" width="1" height="1" viewBox="0 0 100 100" preserveAspectRatio="xMidyMid slice">
+                            <image href="https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=150&q=80" width="100" height="100"/>
+                        </pattern>
+                        <pattern id="hex2" width="1" height="1" viewBox="0 0 100 100" preserveAspectRatio="xMidyMid slice">
+                            <image href="https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=150&q=80" width="100" height="100"/>
+                        </pattern>
+                        <pattern id="hex3" width="1" height="1" viewBox="0 0 100 100" preserveAspectRatio="xMidyMid slice">
+                            <image href="https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=150&q=80" width="100" height="100"/>
+                        </pattern>
+                        <pattern id="hex4" width="1" height="1" viewBox="0 0 100 100" preserveAspectRatio="xMidyMid slice">
+                            <image href="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=150&q=80" width="100" height="100"/>
+                        </pattern>
+                        <pattern id="hex5" width="1" height="1" viewBox="0 0 100 100" preserveAspectRatio="xMidyMid slice">
+                            <image href="https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&w=150&q=80" width="100" height="100"/>
+                        </pattern>
+                    </defs>
+                    <polygon points="40,35 70,17 100,35 100,70 70,88 40,70" fill="url(#hex1)" stroke="#FF6F00" stroke-width="1.5" />
+                    <polygon points="97,35 127,17 157,35 157,70 127,88 97,70" fill="url(#hex2)" stroke="#FF6F00" stroke-width="1.5" />
+                    <polygon points="11,80 41,62 71,80 71,115 41,133 11,115" fill="url(#hex3)" stroke="#FF6F00" stroke-width="1.5" />
+                    <polygon points="68,80 98,62 128,80 128,115 98,133 68,115" fill="url(#hex4)" stroke="#FF6F00" stroke-width="1.5" />
+                    <polygon points="125,80 155,62 185,80 185,115 155,133 125,115" fill="url(#hex5)" stroke="#FF6F00" stroke-width="1.5" />
+                </svg>
+
+                <svg class="back-wave-container" viewBox="0 0 360 50" preserveAspectRatio="none">
+                    <path d="M-5 25 C120 45, 240 5, 365 25 L365 55 L-5 55 Z" fill="#FF6F00" opacity="0.85"/>
+                    <path d="M-5 32 C120 50, 240 15, 365 32 L365 55 L-5 55 Z" fill="#000000"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="toggle-switch">
+            <button class="toggle-btn active" onclick="switchSide('front')">Front Side</button>
+            <button class="toggle-btn" onclick="switchSide('back')">Back Side</button>
+        </div>
+    </div>
+
+    <div class="editor-container">
+        
+        <div class="editor-section active" id="editor-front">
+            <div class="input-group">
+                <label>Company Name</label>
+                <input type="text" id="input-company" value="VOCA PERCY" oninput="updateText('preview-company', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Phone Line 1</label>
+                <input type="text" id="input-phone1" value="XXXX XXX XX" oninput="updateText('preview-phone1', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Phone Line 2</label>
+                <input type="text" id="input-phone2" value="XXXX XXX XX" oninput="updateText('preview-phone2', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Address Line 1</label>
+                <input type="text" id="input-addr1" value="XXXXX XXXXXXXXX XXXXXX" oninput="updateText('preview-addr1', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Address Line 2</label>
+                <input type="text" id="input-addr2" value="XXXX X XXXXX XXX" oninput="updateText('preview-addr2', this.value)">
+            </div>
+        </div>
+
+        <div class="editor-section" id="editor-back">
+            <div class="input-group">
+                <label>Full Name</label>
+                <input type="text" id="input-name" value="Victor Percy Bulus" oninput="updateText('preview-name', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Job Designation/Role</label>
+                <input type="text" id="input-role" value="Director" oninput="updateText('preview-role', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Core Business Services Offered</label>
+                <input type="text" style="margin-bottom:8px;" value="Realtor" oninput="updateText('preview-srv1', this.value)">
+                <input type="text" style="margin-bottom:8px;" value="Selling of Land" oninput="updateText('preview-srv2', this.value)">
+                <input type="text" style="margin-bottom:8px;" value="House / Apartment Renting" oninput="updateText('preview-srv3', this.value)">
+                <input type="text" style="margin-bottom:8px;" value="Supply of Filling sand" oninput="updateText('preview-srv4', this.value)">
+                <input type="text" style="margin-bottom:8px;" value="Plastering sand" oninput="updateText('preview-srv5', this.value)">
+                <input type="text" value="Road filling sand." oninput="updateText('preview-srv6', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Swap Gallery Cluster Images</label>
+                <div class="image-pickers-grid">
+                    <div class="image-upload-btn">Img 1<input type="file" accept="image/*" onchange="uploadHexImage(event, 'hex1')"></div>
+                    <div class="image-upload-btn">Img 2<input type="file" accept="image/*" onchange="uploadHexImage(event, 'hex2')"></div>
+                    <div class="image-upload-btn">Img 3<input type="file" accept="image/*" onchange="uploadHexImage(event, 'hex3')"></div>
+                    <div class="image-upload-btn">Img 4<input type="file" accept="image/*" onchange="uploadHexImage(event, 'hex4')"></div>
+                    <div class="image-upload-btn">Img 5<input type="file" accept="image/*" onchange="uploadHexImage(event, 'hex5')"></div>
+                </div>
+            </div>
+        </div>
+
+        <button class="action-button" onclick="exportCardToImage()">
+            <svg style="width:20px;height:20px;" viewBox="0 0 24 24"><path fill="currentColor" d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg>
+            Save Current View Image
+        </button>
+    </div>
+
+    <script>
+        // Real-time synchronization engine
+        function updateText(targetId, currentVal) {
+            document.getElementById(targetId).innerText = currentVal;
+        }
+
+        // Handle structural view state shifting
+        function switchSide(side) {
+            const btns = document.querySelectorAll('.toggle-btn');
+            const frontView = document.getElementById('front-card-view');
+            const backView = document.getElementById('back-card-view');
+            const frontEditor = document.getElementById('editor-front');
+            const backEditor = document.getElementById('editor-back');
+
+            btns.forEach(b => b.classList.remove('active'));
+
+            if (side === 'front') {
+                btns[0].classList.add('active');
+                frontView.classList.add('active');
+                backView.classList.remove('active');
+                frontEditor.classList.add('active');
+                backEditor.classList.remove('active');
+            } else {
+                btns[1].classList.add('active');
+                frontView.classList.remove('active');
+                backView.classList.add('active');
+                frontEditor.classList.remove('active');
+                backEditor.classList.add('active');
+            }
+        }
+
+        // Base64 file streaming processor for the complex SVG element masks
+        function uploadHexImage(event, patternId) {
+            const uploadedFile = event.target.files[0];
+            if (uploadedFile) {
+                const streamReader = new FileReader();
+                streamReader.onload = function(e) {
+                    const patternElement = document.getElementById(patternId);
+                    if (patternElement) {
+                        const imageChild = patternElement.querySelector('image');
+                        imageChild.setAttribute('href', e.target.result);
+                    }
+                };
+                streamReader.readAsDataURL(uploadedFile);
+            }
+        }
+
+        // Digital Canvas Render Export Pipeline
+        function exportCardToImage() {
+            const targetElement = document.getElementById('business-card-capture');
+            const activeMode = document.getElementById('front-card-view').classList.contains('active') ? 'Front' : 'Back';
+            
+            // Temporary CSS scale booster initialization to achieve ultra high pixel density output
+            html2canvas(targetElement, {
+                scale: 3, 
+                useCORS: true, 
+                allowTaint: true,
+                backgroundColor: null,
+                logging: false
+            }).then(canvas => {
+                const imageStream = canvas.toDataURL('image/png');
+                const simulationAnchor = document.createElement('a');
+                simulationAnchor.href = imageStream;
+                simulationAnchor.download = `Business_Card_${activeMode}_Design.png`;
+                document.body.appendChild(simulationAnchor);
+                simulationAnchor.click();
+                document.body.removeChild(simulationAnchor);
+            }).catch(err => {
+                console.error("Rendering pipeline execution failed: ", err);
+            });
+        }
+    </script>
+</body>
+</html>

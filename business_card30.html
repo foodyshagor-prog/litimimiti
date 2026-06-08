@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Business Card Maker</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f051d 0%, #020106 100%);
+            --panel-bg: rgba(25, 15, 40, 0.7);
+            --accent-purple: #bd24d9;
+            --accent-glow: rgba(189, 36, 217, 0.4);
+            --text-main: #f3effa;
+            --text-muted: #a39bb0;
+            --input-bg: rgba(255, 255, 255, 0.06);
+            --border-color: rgba(189, 36, 217, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Top Preview Section */
+        .preview-container {
+            width: 100%;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        .canvas-wrapper {
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 7 / 4;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            background: #000;
+        }
+
+        /* Toggle Switch */
+        .view-toggle {
+            display: flex;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 25px;
+            margin-top: 14px;
+            padding: 4px;
+            width: 200px;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px 0;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: var(--accent-purple);
+            color: #fff;
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        /* Bottom Editor Section */
+        .editor-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-panel {
+            display: none;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .form-panel.active {
+            display: flex;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .input-group label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .input-group input {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px;
+            color: var(--text-main);
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-group input:focus {
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 8px rgba(189, 36, 217, 0.2);
+        }
+
+        /* Action Buttons */
+        .actions-wrapper {
+            margin-top: auto;
+            padding-top: 15px;
+        }
+
+        .save-btn {
+            width: 100%;
+            background: linear-gradient(90deg, #9c1bc2, #bd24d9);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px var(--accent-glow);
+            transition: transform 0.1s ease;
+        }
+
+        .save-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="preview-container">
+        <div class="canvas-wrapper">
+            <canvas id="cardCanvas" width="1050" height="600"></canvas>
+        </div>
+        
+        <div class="view-toggle">
+            <button class="toggle-btn active" id="btnFront" onclick="switchView('front')">Front Side</button>
+            <button class="toggle-btn" id="btnBack" onclick="switchView('back')">Back Side</button>
+        </div>
+    </div>
+
+    <div class="editor-container">
+        
+        <div class="form-panel active" id="panelFront">
+            <div class="input-group">
+                <label for="inputName">Full Name</label>
+                <input type="text" id="inputName" value="Ansa Saleem" oninput="updateCard()">
+            </div>
+            <div class="input-group">
+                <label for="inputTitle">Job Title</label>
+                <input type="text" id="inputTitle" value="Graphic Designer" oninput="updateCard()">
+            </div>
+            <div class="input-group">
+                <label for="inputPhone">Phone Number</label>
+                <input type="text" id="inputPhone" value="00000000000" oninput="updateCard()">
+            </div>
+            <div class="input-group">
+                <label for="inputWeb">Website</label>
+                <input type="text" id="inputWeb" value="www.yourwebsite.com" oninput="updateCard()">
+            </div>
+            <div class="input-group">
+                <label for="inputEmail">Email Address</label>
+                <input type="text" id="inputEmail" value="yourmail@name.com" oninput="updateCard()">
+            </div>
+            <div class="input-group">
+                <label for="inputLocation">Location/Address</label>
+                <input type="text" id="inputLocation" value="street number, city and country" oninput="updateCard()">
+            </div>
+        </div>
+
+        <div class="form-panel" id="panelBack">
+            <div class="input-group">
+                <label for="inputLogoPrimary">Logo Initial Accent (e.g. S)</label>
+                <input type="text" id="inputLogoPrimary" value="S" oninput="updateCard()">
+            </div>
+            <div class="input-group">
+                <label for="inputLogoSecondary">Logo Initial Background (e.g. A)</label>
+                <input type="text" id="inputLogoSecondary" value="A" oninput="updateCard()">
+            </div>
+        </div>
+
+        <div class="actions-wrapper">
+            <button class="save-btn" onclick="saveCardImage()">Save Image to Device</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('cardCanvas');
+        const ctx = canvas.getContext('2d');
+        let currentView = 'front';
+
+        // Preset palette matching the original design
+        const colors = {
+            bg: '#000000',
+            primaryText: '#bc22dc', // Bright vibrant purple
+            subText: '#908e94',    // Muted grey
+            infoText: '#e3dee8',   // White-ish grey
+            shapes: [
+                'rgba(86, 9, 107, 0.85)',
+                'rgba(128, 14, 158, 0.7)',
+                'rgba(176, 25, 214, 0.55)',
+                'rgba(215, 52, 255, 0.4)',
+                'rgba(241, 140, 255, 0.25)'
+            ]
+        };
+
+        function switchView(view) {
+            currentView = view;
+            document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.form-panel').forEach(panel => panel.classList.remove('active'));
+
+            if(view === 'front') {
+                document.getElementById('btnFront').classList.add('active');
+                document.getElementById('panelFront').classList.add('active');
+            } else {
+                document.getElementById('btnBack').classList.add('active');
+                document.getElementById('panelBack').classList.add('active');
+            }
+            updateCard();
+        }
+
+        // Helper to draw clean vector icons manually (avoids reliance on external font assets)
+        function drawIcon(ctx, type, x, y) {
+            ctx.save();
+            // Outer round purple circle container
+            ctx.beginPath();
+            ctx.arc(x, y, 16, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(128, 14, 158, 0.4)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(215, 52, 255, 0.5)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.fillStyle = '#e3dee8';
+            ctx.strokeStyle = '#e3dee8';
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            if (type === 'phone') {
+                ctx.beginPath();
+                ctx.arc(x, y - 2, 4, 0, Math.PI, true);
+                ctx.moveTo(x - 4, y - 2);
+                ctx.lineTo(x - 5, y + 4);
+                ctx.lineTo(x + 5, y + 4);
+                ctx.lineTo(x + 4, y - 2);
+                ctx.stroke();
+            } else if (type === 'web') {
+                ctx.beginPath();
+                ctx.arc(x, y, 7, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.ellipse(x, y, 3, 7, 0, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x - 7, y); ctx.lineTo(x + 7, y);
+                ctx.stroke();
+            } else if (type === 'email') {
+                ctx.beginPath();
+                ctx.rect(x - 7, y - 5, 14, 10);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x - 7, y - 5);
+                ctx.lineTo(x, y + 1);
+                ctx.lineTo(x + 7, y - 5);
+                ctx.stroke();
+            } else if (type === 'location') {
+                ctx.beginPath();
+                ctx.arc(x, y - 2, 4, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x - 4, y - 2);
+                ctx.quadraticCurveTo(x - 4, y + 3, x, y + 8);
+                ctx.quadraticCurveTo(x + 4, y + 3, x + 4, y - 2);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // Helper to draw perfectly angled design squares
+        function drawDiamond(ctx, x, y, size, color) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(45 * Math.PI / 180);
+            ctx.fillStyle = color;
+            ctx.fillRect(-size / 2, -size / 2, size, size);
+            ctx.restore();
+        }
+
+        function drawFrontDecoration(ctx) {
+            // Replicating original right side pattern cluster
+            drawDiamond(ctx, 800, 100, 40, colors.shapes[4]);
+            drawDiamond(ctx, 770, 180, 100, colors.shapes[0]);
+            drawDiamond(ctx, 880, 240, 170, colors.shapes[1]);
+            drawDiamond(ctx, 720, 280, 60, colors.shapes[2]);
+            drawDiamond(ctx, 790, 310, 80, colors.shapes[3]);
+            drawDiamond(ctx, 810, 340, 50, colors.shapes[4]);
+            drawDiamond(ctx, 920, 400, 140, colors.shapes[0]);
+            drawDiamond(ctx, 830, 480, 110, colors.shapes[2]);
+            drawDiamond(ctx, 730, 440, 30, colors.shapes[4]);
+        }
+
+        function drawBackDecoration(ctx) {
+            // Replicating original Top-Right cluster
+            drawDiamond(ctx, 920, 80, 90, colors.shapes[3]);
+            drawDiamond(ctx, 1000, 120, 140, colors.shapes[1]);
+            drawDiamond(ctx, 850, 110, 60, colors.shapes[2]);
+            drawDiamond(ctx, 895, 155, 45, colors.shapes[4]);
+            drawDiamond(ctx, 950, 210, 110, colors.shapes[0]);
+
+            // Replicating original Bottom-Left cluster
+            drawDiamond(ctx, 120, 480, 130, colors.shapes[1]);
+            drawDiamond(ctx, 230, 520, 90, colors.shapes[2]);
+            drawDiamond(ctx, 195, 445, 45, colors.shapes[4]);
+            drawDiamond(ctx, 80, 390, 100, colors.shapes[0]);
+            drawDiamond(ctx, 150, 340, 50, colors.shapes[3]);
+        }
+
+        function updateCard() {
+            // Clear canvas base background
+            ctx.fillStyle = colors.bg;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (currentView === 'front') {
+                // Background Geometric Shapes
+                drawFrontDecoration(ctx);
+
+                // Target Text Inputs
+                const name = document.getElementById('inputName').value;
+                const title = document.getElementById('inputTitle').value;
+                const phone = document.getElementById('inputPhone').value;
+                const web = document.getElementById('inputWeb').value;
+                const email = document.getElementById('inputEmail').value;
+                const loc = document.getElementById('inputLocation').value;
+
+                // Render Name
+                ctx.fillStyle = colors.primaryText;
+                ctx.font = 'bold 52px sans-serif';
+                ctx.fillText(name, 90, 170);
+
+                // Render Title
+                ctx.fillStyle = colors.subText;
+                ctx.font = '24px sans-serif';
+                ctx.fillText(title, 95, 215);
+
+                // Render Info list rows (Icons + Text alignment)
+                const startX = 110;
+                let startY = 310;
+                const rowSpacing = 65;
+
+                const infoRows = [
+                    { type: 'phone', text: phone },
+                    { type: 'web', text: web },
+                    { type: 'email', text: email },
+                    { type: 'location', text: loc }
+                ];
+
+                infoRows.forEach(row => {
+                    drawIcon(ctx, row.type, startX, startY - 8);
+                    ctx.fillStyle = colors.infoText;
+                    ctx.font = '22px sans-serif';
+                    ctx.fillText(row.text, startX + 38, startY);
+                    startY += rowSpacing;
+                });
+
+            } else {
+                // Background Geometric Shapes
+                drawBackDecoration(ctx);
+
+                // Monogram Branding Customization
+                const primaryInitial = document.getElementById('inputLogoPrimary').value;
+                const secondaryInitial = document.getElementById('inputLogoSecondary').value;
+
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2 + 30;
+
+                // Structural background letter layout
+                ctx.textAlign = 'center';
+                ctx.fillStyle = 'rgba(128, 14, 158, 0.3)';
+                ctx.font = 'italic bold 210px Georgia, serif';
+                ctx.fillText(secondaryInitial, centerX - 25, centerY);
+
+                // Foreground accented focal letter layout
+                ctx.fillStyle = colors.primaryText;
+                ctx.font = 'italic 230px Georgia, serif';
+                ctx.fillText(primaryInitial, centerX + 15, centerY - 10);
+                
+                // Reset text alignment orientation rules safely
+                ctx.textAlign = 'left';
+            }
+        }
+
+        function saveCardImage() {
+            // Generate clean image conversion output link
+            const dataUrl = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = `${currentView}_business_card.png`;
+            link.href = dataUrl;
+            link.click();
+        }
+
+        // Initialize display execution
+        window.onload = () => {
+            updateCard();
+        };
+    </script>
+</body>
+</html>

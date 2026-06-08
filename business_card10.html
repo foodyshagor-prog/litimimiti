@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Business Card Editor - Front & Back</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<style>
+  :root {
+    --bg-gradient: linear-gradient(135deg, #12141d 0%, #1a1e29 100%);
+    --card-bg: #111111;
+    --primary: #FFEB00; /* Bright yellow */
+    --text-main: #ffffff;
+    --text-muted: #a0a0a0;
+  }
+  
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  
+  body {
+    background: var(--bg-gradient);
+    color: white;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* --- Top Preview Section --- */
+  .preview-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 25px 15px;
+    background: #0a0a0c; 
+    border-bottom-left-radius: 25px;
+    border-bottom-right-radius: 25px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    z-index: 10;
+  }
+
+  /* Container holding both cards for downloading */
+  .capture-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Space between front and back cards */
+    width: 100%;
+    max-width: 340px;
+    background: transparent;
+  }
+
+  /* Fixed aspect ratio card wrapper */
+  .card-wrapper {
+    width: 100%;
+    aspect-ratio: 1.75 / 1;
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--card-bg);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  }
+
+  /* =========================================
+     FRONT CARD STYLES
+     ========================================= */
+  .front-content {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .front-logo {
+    width: 90px;
+    height: 90px;
+    margin-bottom: 20px;
+  }
+  .front-logo svg {
+    width: 100%;
+    height: 100%;
+    fill: var(--primary);
+  }
+
+  .front-web-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: absolute;
+    bottom: 20%;
+  }
+  .front-web-container span {
+    color: var(--text-main);
+    font-size: 10px;
+    letter-spacing: 0.5px;
+  }
+  .front-web-container svg {
+    width: 12px;
+    height: 12px;
+    fill: var(--primary);
+  }
+
+  /* =========================================
+     BACK CARD STYLES (Geometric layout)
+     ========================================= */
+  .yellow-diagonal {
+    position: absolute;
+    top: 40%;
+    left: -15%;
+    width: 130%;
+    height: 45%;
+    background: var(--primary);
+    transform: rotate(-12deg);
+    z-index: 1;
+  }
+
+  .left-cutout {
+    position: absolute;
+    top: 45%;
+    left: -5%;
+    width: 20%;
+    height: 35%;
+    background: var(--card-bg);
+    border-top-right-radius: 50px;
+    border-bottom-right-radius: 50px;
+    z-index: 2;
+    transform: rotate(-12deg);
+  }
+
+  .right-pill {
+    position: absolute;
+    top: 45%;
+    right: 0;
+    width: 60%;
+    height: 32%;
+    background: var(--card-bg);
+    border-top-left-radius: 40px;
+    border-bottom-left-radius: 40px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-left: 25px;
+  }
+
+  .card-content {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  .back-logo {
+    position: absolute;
+    top: 15%;
+    left: 10%;
+    width: 45px;
+    height: 45px;
+  }
+  .back-logo svg {
+    width: 100%; height: 100%;
+    fill: var(--primary);
+  }
+
+  .name-text {
+    color: white;
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .desig-text {
+    color: var(--text-muted);
+    font-size: 7px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  .contact-info {
+    position: absolute;
+    bottom: 8%;
+    right: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .contact-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .contact-row span {
+    color: var(--text-main);
+    font-size: 8px;
+    letter-spacing: 0.3px;
+  }
+  .contact-row svg {
+    width: 10px; height: 10px;
+    fill: var(--primary);
+  }
+
+  /* --- Bottom Editor Section --- */
+  .editor-container {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    overflow-y: auto;
+  }
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .input-group label {
+    font-size: 11px;
+    color: #b0b0b0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+  }
+  .input-group input {
+    width: 100%;
+    padding: 14px 15px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03);
+    color: white;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.3s ease;
+  }
+  .input-group input:focus {
+    border-color: var(--primary);
+    background: rgba(255,255,255,0.08);
+  }
+
+  .save-btn {
+    margin-top: 5px;
+    margin-bottom: 20px;
+    padding: 16px;
+    border-radius: 12px;
+    border: none;
+    background: var(--primary);
+    color: #111;
+    font-size: 15px;
+    font-weight: 800;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(255, 235, 0, 0.2);
+    transition: transform 0.1s, opacity 0.2s;
+  }
+  .save-btn:active { transform: scale(0.97); }
+  .save-btn.loading { opacity: 0.7; pointer-events: none; }
+</style>
+</head>
+<body>
+
+  <div class="preview-container">
+    <div class="capture-container" id="capture-area">
+      
+      <div class="card-wrapper" id="card-front">
+        <div class="front-content">
+          <div class="front-logo">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+              <path d="M14 8C12 8 10 9 10 11C10 13 14 13 14 15C14 17 12 18 10 18" stroke="#111" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="front-web-container">
+            <span id="display-web-front">Your web address here</span>
+            <svg viewBox="0 0 512 512"><path d="M352 256c0 22.2-1.2 43.6-3.3 64H163.3c-2.2-20.4-3.3-41.8-3.3-64s1.2-43.6 3.3-64H348.7c2.2 20.4 3.3 41.8 3.3 64zm28.8-64H503.9c5.3 20.5 8.1 41.9 8.1 64s-2.8 43.5-8.1 64H380.8c2.1-20.6 3.2-42 3.2-64s-1.1-43.4-3.2-64zm112.6-32H376.7c-10-63.9-29.8-117.4-55.3-151.6c78.3 20.7 142 77.5 171.9 151.6zm-149.1 0H167.7c6.1-36.4 15.5-68.6 27-94.7c10.5-23.6 22.2-40.7 33.5-51.5C239.4 3.2 248.7 0 256 0s16.6 3.2 27.8 13.8c11.3 10.8 23 27.9 33.5 51.5c11.6 26 20.9 58.2 27 94.7zm-209 0H18.6C48.6 85.9 112.4 29.1 190.6 8.4C165.1 42.6 145.3 96.1 135.3 160zM8.1 192H131.2c-2.1 20.6-3.2 42-3.2 64s1.1 43.4 3.2 64H8.1C2.8 299.5 0 278.1 0 256s2.8-43.5 8.1-64zM194.7 446.6c-11.6-26-20.9-58.2-27-94.6H344.3c-6.1 36.4-15.5 68.6-27 94.6c-10.5 23.6-22.2 40.7-33.5 51.5C272.6 508.8 263.3 512 256 512s-16.6-3.2-27.8-13.8c-11.3-10.8-23-27.9-33.5-51.5zM135.3 352c10 63.9 29.8 117.4 55.3 151.6C112.4 482.9 48.6 426.1 18.6 352H135.3zm358.1 0c-30 74.1-93.6 130.9-171.9 151.6c25.5-34.2 45.2-87.7 55.3-151.6H493.4z"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-wrapper" id="card-back">
+        <div class="yellow-diagonal"></div>
+        <div class="left-cutout"></div>
+        
+        <div class="right-pill">
+          <div class="name-text" id="display-name">Shagor</div>
+          <div class="desig-text" id="display-desig">DESIGNATION HERE</div>
+        </div>
+
+        <div class="card-content">
+          <div class="back-logo">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+              <path d="M14 8C12 8 10 9 10 11C10 13 14 13 14 15C14 17 12 18 10 18" stroke="#111" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+
+          <div class="contact-info">
+            <div class="contact-row">
+              <span id="display-phone">+00 000 000 00</span>
+              <svg viewBox="0 0 512 512"><path d="M164.9 24.6c-7.7-18.6-28-28.5-47.4-23.2l-88 24C12.1 30.2 0 46 0 64C0 311.4 200.6 512 448 512c18 0 33.8-12.1 38.6-29.5l24-88c5.3-19.4-4.6-39.7-23.2-47.4l-96-40c-16.3-6.8-35.2-2.1-46.3 11.6L304.7 368C234.3 334.7 177.3 277.7 144 207.3L193.3 167c13.7-11.2 18.4-30 11.6-46.3l-40-96z"/></svg>
+            </div>
+            <div class="contact-row">
+              <span id="display-email-back">Your email address here</span>
+              <svg viewBox="0 0 512 512"><path d="M48 64C21.5 64 0 85.5 0 112c0 15.1 7.1 29.3 19.2 38.4L236.8 313.6c11.4 8.5 27 8.5 38.4 0L492.8 150.4c12.1-9.1 19.2-23.3 19.2-38.4c0-26.5-21.5-48-48-48H48zM0 176V384c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V176L294.4 339.2c-22.8 17.1-54 17.1-76.8 0L0 176z"/></svg>
+            </div>
+            <div class="contact-row">
+              <span id="display-web-back">Your web address here</span>
+              <svg viewBox="0 0 512 512"><path d="M352 256c0 22.2-1.2 43.6-3.3 64H163.3c-2.2-20.4-3.3-41.8-3.3-64s1.2-43.6 3.3-64H348.7c2.2 20.4 3.3 41.8 3.3 64zm28.8-64H503.9c5.3 20.5 8.1 41.9 8.1 64s-2.8 43.5-8.1 64H380.8c2.1-20.6 3.2-42 3.2-64s-1.1-43.4-3.2-64zm112.6-32H376.7c-10-63.9-29.8-117.4-55.3-151.6c78.3 20.7 142 77.5 171.9 151.6zm-149.1 0H167.7c6.1-36.4 15.5-68.6 27-94.7c10.5-23.6 22.2-40.7 33.5-51.5C239.4 3.2 248.7 0 256 0s16.6 3.2 27.8 13.8c11.3 10.8 23 27.9 33.5 51.5c11.6 26 20.9 58.2 27 94.7zm-209 0H18.6C48.6 85.9 112.4 29.1 190.6 8.4C165.1 42.6 145.3 96.1 135.3 160zM8.1 192H131.2c-2.1 20.6-3.2 42-3.2 64s1.1 43.4 3.2 64H8.1C2.8 299.5 0 278.1 0 256s2.8-43.5 8.1-64zM194.7 446.6c-11.6-26-20.9-58.2-27-94.6H344.3c-6.1 36.4-15.5 68.6-27 94.6c-10.5 23.6-22.2 40.7-33.5 51.5C272.6 508.8 263.3 512 256 512s-16.6-3.2-27.8-13.8c-11.3-10.8-23-27.9-33.5-51.5zM135.3 352c10 63.9 29.8 117.4 55.3 151.6C112.4 482.9 48.6 426.1 18.6 352H135.3zm358.1 0c-30 74.1-93.6 130.9-171.9 151.6c25.5-34.2 45.2-87.7 55.3-151.6H493.4z"/></svg>
+            </div>
+            <div class="contact-row">
+              <span id="display-address">Your business address goes here</span>
+              <svg viewBox="0 0 576 512"><path d="M575.8 255.5c0 18-15 32.1-32 32.1h-32l.7 160.2c0 2.7-.2 5.4-.5 8.1V472c0 22.1-17.9 40-40 40H456c-1.1 0-2.2 0-3.3-.1c-1.4 .1-2.8 .1-4.2 .1H416 392c-22.1 0-40-17.9-40-40V448 384c0-17.7-14.3-32-32-32H256c-17.7 0-32 14.3-32 32v64 24c0 22.1-17.9 40-40 40H160 128.1c-1.5 0-3-.1-4.5-.2c-1.2 .1-2.4 .2-3.6 .2H104c-22.1 0-40-17.9-40-40V360c0-.9 0-1.9 .1-2.8V287.6H32c-18 0-32-14-32-32.1c0-9 3-17 10-24L266.4 8c7-7 15-8 22-8s15 2 21 7L564.8 231.5c8 7 11 15 11 24z"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="editor-container">
+    <div class="input-group">
+      <label>Name</label>
+      <input type="text" id="input-name" placeholder="Shagor">
+    </div>
+    <div class="input-group">
+      <label>Designation</label>
+      <input type="text" id="input-desig" placeholder="DESIGNATION HERE">
+    </div>
+    <div class="input-group">
+      <label>Phone Number</label>
+      <input type="tel" id="input-phone" placeholder="+00 000 000 00">
+    </div>
+    <div class="input-group">
+      <label>Email Address</label>
+      <input type="email" id="input-email" placeholder="Your email address here">
+    </div>
+    <div class="input-group">
+      <label>Web Address (Updates Both Pages)</label>
+      <input type="text" id="input-web" placeholder="Your web address here">
+    </div>
+    <div class="input-group">
+      <label>Business Address</label>
+      <input type="text" id="input-address" placeholder="Your business address goes here">
+    </div>
+    
+    <button class="save-btn" id="save-btn">Save Image (Front & Back)</button>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Map inputs to their respective display elements
+      // Notice how 'input-web' updates BOTH the front and back text
+      const fieldMap = {
+        'input-name': ['display-name'],
+        'input-desig': ['display-desig'],
+        'input-phone': ['display-phone'],
+        'input-email': ['display-email-back'],
+        'input-web': ['display-web-front', 'display-web-back'],
+        'input-address': ['display-address']
+      };
+
+      // Set up real-time binding
+      for (const [inputId, displayIds] of Object.entries(fieldMap)) {
+        const inputEl = document.getElementById(inputId);
+        
+        inputEl.addEventListener('input', (e) => {
+          // Loop through all mapped display IDs and update them
+          displayIds.forEach(displayId => {
+            const displayEl = document.getElementById(displayId);
+            if(displayEl) {
+                displayEl.textContent = e.target.value || e.target.placeholder;
+            }
+          });
+        });
+      }
+
+      // Handle Image Generation
+      const saveBtn = document.getElementById('save-btn');
+      const captureArea = document.getElementById('capture-area'); // Target the wrapper container
+
+      saveBtn.addEventListener('click', () => {
+        saveBtn.textContent = 'Generating...';
+        saveBtn.classList.add('loading');
+        
+        // Capture both cards together
+        html2canvas(captureArea, {
+          scale: 4, 
+          backgroundColor: null, // Maintains transparency between the cards
+          logging: false
+        }).then(canvas => {
+          const link = document.createElement('a');
+          link.download = 'My_Business_Cards.png';
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+          
+          saveBtn.textContent = 'Save Image (Front & Back)';
+          saveBtn.classList.remove('loading');
+        }).catch(err => {
+          console.error('Error generating image:', err);
+          saveBtn.textContent = 'Error! Try Again';
+          saveBtn.classList.remove('loading');
+          setTimeout(() => { saveBtn.textContent = 'Save Image (Front & Back)'; }, 2500);
+        });
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Premium Business Card Editor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color-1: #1a1d24;
+            --bg-color-2: #111317;
+            --panel-bg: rgba(28, 32, 40, 0.95);
+            --accent-glow: rgba(0, 198, 255, 0.2);
+            --input-bg: #252a34;
+            --text-main: #ffffff;
+            --text-muted: #8e94a0;
+            
+            /* Card Colors */
+            --card-bg: #141619;
+            --c-red: #e53935;
+            --c-red-dark: #b71c1c;
+            --c-orange: #ff9800;
+            --c-orange-dark: #e65100;
+            --c-blue: #03a9f4;
+            --c-blue-dark: #0d47a1;
+            --c-green: #4caf50;
+            --c-green-dark: #1b5e20;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Montserrat', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(180deg, var(--bg-color-1) 0%, var(--bg-color-2) 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- PREVIEW AREA (TOP) --- */
+        .preview-container {
+            width: 100%;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            z-index: 10;
+        }
+
+        .view-switcher {
+            display: flex;
+            background: var(--input-bg);
+            padding: 4px;
+            border-radius: 30px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .switch-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px 20px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .switch-btn.active {
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(0, 114, 255, 0.3);
+        }
+
+        /* --- BUSINESS CARD STYLING (SAME TO SAME) --- */
+        .card-wrapper {
+            width: 350px;
+            height: 200px;
+            perspective: 1000px;
+            margin-bottom: 8px;
+        }
+
+        .business-card {
+            width: 100%;
+            height: 100%;
+            background: var(--card-bg);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: none;
+        }
+
+        .business-card.active {
+            display: block;
+        }
+
+        /* Four-Color Accent Borders */
+        .card-border-top, .card-border-bottom {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            display: flex;
+        }
+        .card-border-top { top: 0; }
+        .card-border-bottom { bottom: 0; }
+
+        .b-segment {
+            flex: 1;
+            height: 100%;
+        }
+        .bs-red { background-color: var(--c-red); }
+        .bs-orange { background-color: var(--c-orange); }
+        .bs-blue { background-color: var(--c-blue); }
+        .bs-green { background-color: var(--c-green); }
+
+        /* Hexagon Watermarks */
+        .hex-bg {
+            position: absolute;
+            border: 2px solid rgba(255, 255, 255, 0.04);
+            width: 160px;
+            height: 184px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+        }
+
+        /* Front Side Layout */
+        #card-front {
+            display: none;
+        }
+        #card-front.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #card-front .hex-bg {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 150px;
+            height: 172px;
+        }
+
+        .front-content {
+            text-align: center;
+            z-index: 2;
+        }
+
+        .logo-icon {
+            width: 34px;
+            height: 38px;
+            background: transparent;
+            border: 2.5px solid var(--c-orange);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            margin: 0 auto 12px auto;
+        }
+
+        .company-name {
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .company-slogan {
+            color: #b0b5c0;
+            font-size: 8px;
+            font-weight: 400;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        /* Back Side Layout */
+        #card-back {
+            display: none;
+        }
+        #card-back.active {
+            display: flex;
+        }
+        #card-back .hex-bg {
+            top: 50%;
+            left: -20px;
+            transform: translateY(-50%);
+            width: 170px;
+            height: 195px;
+        }
+
+        .back-left {
+            flex: 1.1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-left: 30px;
+            z-index: 2;
+        }
+
+        .holder-name {
+            color: #ffffff;
+            font-size: 19px;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .holder-name strong {
+            font-weight: 700;
+        }
+
+        .holder-title {
+            color: #838994;
+            font-size: 10px;
+            font-weight: 400;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        .back-right {
+            flex: 0.9;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-end;
+            padding-right: 0px;
+            gap: 7px;
+            z-index: 2;
+        }
+
+        /* 3D Folded Ribbon Styling */
+        .ribbon-row {
+            display: flex;
+            align-items: center;
+            width: 165px;
+            height: 28px;
+            position: relative;
+        }
+
+        .ribbon-icon-box {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 10px;
+            z-index: 3;
+            box-shadow: -2px 2px 5px rgba(0,0,0,0.2);
+        }
+
+        /* The 3D fold geometry connection block */
+        .ribbon-fold {
+            width: 8px;
+            height: 28px;
+            position: relative;
+            z-index: 2;
+            overflow: hidden;
+        }
+        .ribbon-fold::before {
+            content: '';
+            position: absolute;
+            top: 0; right: 0;
+            border-width: 14px 8px 14px 0;
+            border-style: solid;
+        }
+
+        .ribbon-text-box {
+            flex: 1;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            padding-left: 8px;
+            color: #fff;
+            font-size: 7.5px;
+            font-weight: 600;
+            z-index: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: -4px; /* Creates layered 3D step look */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        }
+
+        /* Color configurations for 3D Ribbons */
+        .ribbon-row.red .ribbon-icon-box { background-color: var(--c-red-dark); }
+        .ribbon-row.red .ribbon-fold::before { border-color: var(--c-red) transparent var(--c-red) var(--c-red-dark); }
+        .ribbon-row.red .ribbon-text-box { background-color: var(--c-red); }
+
+        .ribbon-row.orange .ribbon-icon-box { background-color: var(--c-orange-dark); }
+        .ribbon-row.orange .ribbon-fold::before { border-color: var(--c-orange) transparent var(--c-orange) var(--c-orange-dark); }
+        .ribbon-row.orange .ribbon-text-box { background-color: var(--c-orange); }
+
+        .ribbon-row.blue .ribbon-icon-box { background-color: var(--c-blue-dark); }
+        .ribbon-row.blue .ribbon-fold::before { border-color: var(--c-blue) transparent var(--c-blue) var(--c-blue-dark); }
+        .ribbon-row.blue .ribbon-text-box { background-color: var(--c-blue); }
+
+        .ribbon-row.green .ribbon-icon-box { background-color: var(--c-green-dark); }
+        .ribbon-row.green .ribbon-fold::before { border-color: var(--c-green) transparent var(--c-green) var(--c-green-dark); }
+        .ribbon-row.green .ribbon-text-box { background-color: var(--c-green); }
+
+
+        /* --- EDITOR CONTAINER (BOTTOM) --- */
+        .editor-container {
+            flex: 1;
+            background: var(--panel-bg);
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            padding: 20px 16px;
+            overflow-y: auto;
+            box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .editor-section {
+            display: none;
+        }
+        .editor-section.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-group {
+            margin-bottom: 14px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 12px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 12px 12px 12px 38px;
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .input-wrapper input:focus {
+            border-color: #00c6ff;
+            box-shadow: 0 0 10px rgba(0, 198, 255, 0.2);
+        }
+
+        /* --- ACTION ACCENT BUTTON --- */
+        .btn-save {
+            width: 100%;
+            background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 14px;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 24px;
+            box-shadow: 0 6px 20px rgba(0, 114, 255, 0.4);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn-save:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="preview-container">
+        <div class="view-switcher">
+            <button class="switch-btn active" onclick="switchSide('front')">Front View</button>
+            <button class="switch-btn" onclick="switchSide('back')">Back View</button>
+        </div>
+
+        <div class="card-wrapper">
+            <div id="card-front" class="business-card active">
+                <div class="card-border-top">
+                    <div class="b-segment bs-red"></div>
+                    <div class="b-segment bs-orange"></div>
+                    <div class="b-segment bs-blue"></div>
+                    <div class="b-segment bs-green"></div>
+                </div>
+                <div class="hex-bg"></div>
+                <div class="front-content">
+                    <div class="logo-icon"></div>
+                    <div class="company-name" id="lbl-company">Company Name</div>
+                    <div class="company-slogan" id="lbl-slogan">Slogan of the company goes here</div>
+                </div>
+                <div class="card-border-bottom">
+                    <div class="b-segment bs-red"></div>
+                    <div class="b-segment bs-orange"></div>
+                    <div class="b-segment bs-blue"></div>
+                    <div class="b-segment bs-green"></div>
+                </div>
+            </div>
+
+            <div id="card-back" class="business-card">
+                <div class="card-border-top">
+                    <div class="b-segment bs-red"></div>
+                    <div class="b-segment bs-orange"></div>
+                    <div class="b-segment bs-blue"></div>
+                    <div class="b-segment bs-green"></div>
+                </div>
+                <div class="hex-bg"></div>
+                
+                <div class="back-left">
+                    <div class="holder-name" id="lbl-name">Dwyane <strong>Clark</strong></div>
+                    <div class="holder-title" id="lbl-title">Graphic Designer</div>
+                </div>
+
+                <div class="back-right">
+                    <div class="ribbon-row red">
+                        <div class="ribbon-icon-box"><i class="fas fa-envelope"></i></div>
+                        <div class="ribbon-fold"></div>
+                        <div class="ribbon-text-box" id="lbl-email">info@companyname.com</div>
+                    </div>
+                    <div class="ribbon-row orange">
+                        <div class="ribbon-icon-box"><i class="fas fa-phone-alt"></i></div>
+                        <div class="ribbon-fold"></div>
+                        <div class="ribbon-text-box" id="lbl-phone">+18 2485 4275 7789</div>
+                    </div>
+                    <div class="ribbon-row blue">
+                        <div class="ribbon-icon-box"><i class="fas fa-home"></i></div>
+                        <div class="ribbon-fold"></div>
+                        <div class="ribbon-text-box" id="lbl-address">Street Location, NY City, USA</div>
+                    </div>
+                    <div class="ribbon-row green">
+                        <div class="ribbon-icon-box"><i class="fas fa-globe"></i></div>
+                        <div class="ribbon-fold"></div>
+                        <div class="ribbon-text-box" id="lbl-web">www.company-name.com</div>
+                    </div>
+                </div>
+
+                <div class="card-border-bottom">
+                    <div class="b-segment bs-red"></div>
+                    <div class="b-segment bs-orange"></div>
+                    <div class="b-segment bs-blue"></div>
+                    <div class="b-segment bs-green"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="editor-container">
+        
+        <div id="editor-front" class="editor-section active">
+            <div class="section-title"><i class="fas fa-id-card"></i> Front Side Details</div>
+            <div class="input-group">
+                <label>Company Name</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-building"></i>
+                    <input type="text" id="input-company" value="Company Name" oninput="updateText('company')">
+                </div>
+            </div>
+            <div class="input-group">
+                <label>Company Slogan</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-bullhorn"></i>
+                    <input type="text" id="input-slogan" value="Slogan of the company goes here" oninput="updateText('slogan')">
+                </div>
+            </div>
+        </div>
+
+        <div id="editor-back" class="editor-section">
+            <div class="section-title"><i class="fas fa-user-edit"></i> Back Side Details</div>
+            <div class="input-group">
+                <label>Full Name</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="input-name" value="Dwyane Clark" oninput="updateText('name')">
+                </div>
+            </div>
+            <div class="input-group">
+                <label>Job Title</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-briefcase"></i>
+                    <input type="text" id="input-title" value="Graphic Designer" oninput="updateText('title')">
+                </div>
+            </div>
+            <div class="input-group">
+                <label>Email Address</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-envelope"></i>
+                    <input type="text" id="input-email" value="info@companyname.com" oninput="updateText('email')">
+                </div>
+            </div>
+            <div class="input-group">
+                <label>Phone Number</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-phone-alt"></i>
+                    <input type="text" id="input-phone" value="+18 2485 4275 7789" oninput="updateText('phone')">
+                </div>
+            </div>
+            <div class="input-group">
+                <label>Location Address</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <input type="text" id="input-address" value="Street Location, NY City, USA" oninput="updateText('address')">
+                </div>
+            </div>
+            <div class="input-group">
+                <label>Website URL</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-globe"></i>
+                    <input type="text" id="input-web" value="www.company-name.com" oninput="updateText('web')">
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-save" onclick="exportCardImage()">
+            <i class="fas fa-download"></i> Save Card Image
+        </button>
+    </div>
+
+    <script>
+        let activeSide = 'front';
+
+        function switchSide(side) {
+            activeSide = side;
+            
+            // Switch active toggle buttons
+            document.querySelectorAll('.switch-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Toggle card visibility
+            document.getElementById('card-front').classList.remove('active');
+            document.getElementById('card-back').classList.remove('active');
+            document.getElementById(`card-${side}`).classList.add('active');
+
+            // Toggle editor visibility
+            document.getElementById('editor-front').classList.remove('active');
+            document.getElementById('editor-back').classList.remove('active');
+            document.getElementById(`editor-${side}`).classList.add('active');
+        }
+
+        function updateText(field) {
+            const inputValue = document.getElementById(`input-${field}`).value;
+            
+            if (field === 'name') {
+                // Formatting the last word as bold matching the sample image look
+                const words = inputValue.trim().split(' ');
+                if (words.length > 1) {
+                    const lastWord = words.pop();
+                    document.getElementById('lbl-name').innerHTML = `${words.join(' ')} <strong>${lastWord}</strong>`;
+                } else {
+                    document.getElementById('lbl-name').innerHTML = inputValue;
+                }
+            } else {
+                document.getElementById(`lbl-${field}`).innerText = inputValue;
+            }
+        }
+
+        function exportCardImage() {
+            const targetElement = document.getElementById(`card-${activeSide}`);
+            
+            // High quality output options optimization for photo editing apps
+            html2canvas(targetElement, {
+                scale: 4, 
+                useCORS: true,
+                backgroundColor: null,
+                logging: false
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                
+                // Creates automated mobile runtime download anchor link anchor hook
+                const downloadLink = document.createElement('a');
+                downloadLink.href = imgData;
+                downloadLink.download = `${activeSide}_business_card.png`;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+            }).catch(err => {
+                console.error("Error generating business card layout graphic output:", err);
+            });
+        }
+    </script>
+</body>
+</html>

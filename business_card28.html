@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Business Card Maker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        /* ==========================================
+           Mobile App UI (Modern Dark Gradient)
+           ========================================== */
+        :root {
+            --app-bg-1: #1a1c29;
+            --app-bg-2: #0f1016;
+            --primary: #f24814;
+            --primary-dark: #d63d0f;
+            --surface: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, var(--app-bg-1), var(--app-bg-2));
+            color: #fff;
+            overflow: hidden; /* App-like feel */
+        }
+
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        .app-container {
+            display: flex; flex-direction: column; height: 100%;
+        }
+
+        .header {
+            padding: 16px; text-align: center; font-size: 18px; font-weight: 600;
+            background: rgba(0,0,0,0.4); border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        /* Preview Section Top */
+        .preview-section {
+            padding: 15px; flex-shrink: 0;
+            display: flex; flex-direction: column; align-items: center;
+            border-bottom: 1px solid var(--border);
+            background: rgba(0,0,0,0.2);
+        }
+
+        .toggle-container {
+            display: flex; background: rgba(0,0,0,0.5); border-radius: 30px;
+            padding: 4px; margin-bottom: 15px; width: 220px;
+        }
+
+        .toggle-btn {
+            flex: 1; padding: 10px 0; text-align: center; border-radius: 26px;
+            font-size: 14px; font-weight: 600; cursor: pointer; border: none;
+            background: transparent; color: #888; transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: var(--primary); color: #fff;
+            box-shadow: 0 4px 10px rgba(242, 72, 20, 0.4);
+        }
+
+        .card-scaler {
+            width: 100%; max-width: 400px;
+            display: flex; justify-content: center;
+            /* Container query allows us to perfectly scale text inside the card */
+            container-type: inline-size; 
+        }
+
+        /* Editor Section Bottom */
+        .editor-section {
+            flex-grow: 1; overflow-y: auto; padding: 20px;
+            padding-bottom: 80px; /* Space for FAB or bottom nav if needed */
+        }
+
+        .input-group { margin-bottom: 16px; }
+        .input-group label {
+            display: block; font-size: 12px; color: #aaa;
+            margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .input-control {
+            width: 100%; padding: 14px; border-radius: 10px; border: 1px solid var(--border);
+            background: var(--surface); color: #fff; font-size: 15px;
+            box-sizing: border-box; outline: none; transition: border 0.3s;
+        }
+        .input-control:focus { border-color: var(--primary); }
+
+        .btn-save {
+            width: 100%; padding: 16px; border-radius: 12px; border: none;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white; font-size: 16px; font-weight: bold; margin-top: 10px;
+            box-shadow: 0 6px 15px rgba(242, 72, 20, 0.3); cursor: pointer;
+        }
+        .btn-save:active { transform: scale(0.98); }
+
+        /* ==========================================
+           Business Card Design (Same-to-Same Effect)
+           ========================================== */
+        .card-wrapper {
+            width: 100%; aspect-ratio: 1.75; /* Standard 1050x600 ratio */
+            position: relative; overflow: hidden;
+            background: #032431; /* Base Dark Blue */
+            font-family: 'Montserrat', sans-serif;
+            border-radius: 8px; /* Slight rounding for preview */
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+
+        /* Target purely for rendering high-res output */
+        .card-render-target {
+            width: 1050px; height: 600px; position: absolute;
+            transform-origin: top left;
+        }
+
+        /* Layer System for accurate Drop Shadows & Angles */
+        .layer-wrap { position: absolute; inset: -20px; } /* expanded to prevent shadow clipping */
+        .layer-wrap.orange-shadow { filter: drop-shadow(8px 0px 15px rgba(0,0,0,0.5)); z-index: 1; }
+        .layer-wrap.white-shadow { filter: drop-shadow(8px 0px 15px rgba(0,0,0,0.3)); z-index: 2; }
+        
+        .layer-inner { width: 100%; height: 100%; position: absolute; }
+        
+        /* Front Polygons */
+        .orange-front { background: #f24814; clip-path: polygon(0 0, 82% 0, 50% 100%, 0 100%); }
+        .white-front { background: #ffffff; clip-path: polygon(0 0, 58% 0, 42% 100%, 0 100%); }
+
+        /* Back Polygons */
+        .orange-back { background: #f24814; clip-path: polygon(0 0, 60% 0, 80% 100%, 0 100%); }
+        .white-back { background: #ffffff; clip-path: polygon(0 0, 38% 0, 58% 100%, 0 100%); }
+
+        /* Content Overlay Base */
+        .card-content { position: absolute; inset: 0; z-index: 5; }
+
+        /* Shared Logo Styles */
+        .logo-group { position: absolute; display: flex; flex-direction: column; align-items: center; }
+        .logo-icon {
+            width: 45px; height: 45px; border: 5px solid #f24814;
+            border-radius: 12px; transform: rotate(45deg);
+            position: relative; margin-bottom: 15px;
+        }
+        .logo-caret {
+            position: absolute; width: 16px; height: 16px;
+            border: 5px solid #f24814; border-bottom: none; border-right: none;
+            top: 13px; left: 13px; transform: rotate(45deg); border-radius: 3px;
+        }
+        .logo-name {
+            font-size: 28px; font-weight: 800; color: #032431;
+            letter-spacing: 2px; margin: 0; line-height: 1;
+        }
+        .logo-tag {
+            font-size: 11px; font-weight: 600; color: #555;
+            letter-spacing: 3px; margin: 5px 0 0 0;
+        }
+
+        /* Front Specific Content */
+        #front-card .logo-group { top: 50%; left: 25%; transform: translate(-50%, -50%); }
+        .front-bottom-text {
+            position: absolute; right: 50px; bottom: 50px;
+            color: #fff; font-size: 18px; font-weight: 500; letter-spacing: 1px;
+        }
+
+        /* Back Specific Content */
+        #back-card .logo-group { top: 35%; left: 24%; transform: translate(-50%, -50%); }
+        
+        .qr-code {
+            position: absolute; left: 16%; bottom: 60px; transform: translateX(-50%);
+            width: 90px; height: 90px; padding: 5px; background: white; border-radius: 5px;
+        }
+
+        .back-right {
+            position: absolute; right: 0; top: 0; width: 55%; height: 100%;
+            padding-top: 120px; padding-left: 20px; box-sizing: border-box;
+        }
+        .contact-name {
+            color: #fff; font-size: 34px; font-weight: 800;
+            margin: 0; letter-spacing: 1px;
+        }
+        .contact-title {
+            color: #92b1c0; font-size: 16px; font-weight: 500;
+            margin: 5px 0 45px 0; letter-spacing: 1px;
+        }
+
+        .contact-list { display: flex; flex-direction: column; gap: 15px; }
+        .contact-item { display: flex; align-items: center; }
+        .c-icon-wrap {
+            width: 26px; height: 26px; border-radius: 50%;
+            border: 2px solid #f24814; display: flex;
+            justify-content: center; align-items: center; margin-right: 15px;
+        }
+        .c-icon-wrap svg { width: 14px; height: 14px; stroke: #f24814; }
+        .c-text { color: #fff; font-size: 14px; font-weight: 400; letter-spacing: 0.5px; }
+
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="header">Pro Card Maker</div>
+
+    <div class="preview-section">
+        <div class="toggle-container">
+            <button class="toggle-btn active" id="btn-front" onclick="switchSide('front')">Front Side</button>
+            <button class="toggle-btn" id="btn-back" onclick="switchSide('back')">Back Side</button>
+        </div>
+        
+        <div class="card-scaler" id="card-scaler">
+            <div class="card-wrapper" id="card-preview">
+                
+                <div class="card-render-target" id="front-card">
+                    <div class="layer-wrap orange-shadow"><div class="layer-inner orange-front"></div></div>
+                    <div class="layer-wrap white-shadow"><div class="layer-inner white-front"></div></div>
+                    
+                    <div class="card-content">
+                        <div class="logo-group">
+                            <div class="logo-icon"><div class="logo-caret"></div></div>
+                            <h1 class="logo-name val-logo">DESIGN</h1>
+                            <p class="logo-tag val-tag">TAGLINE SPACE</p>
+                        </div>
+                        <div class="front-bottom-text val-f-bottom">Lorem Ipsum Dolor</div>
+                    </div>
+                </div>
+
+                <div class="card-render-target" id="back-card" style="display: none;">
+                    <div class="layer-wrap orange-shadow"><div class="layer-inner orange-back"></div></div>
+                    <div class="layer-wrap white-shadow"><div class="layer-inner white-back"></div></div>
+                    
+                    <div class="card-content">
+                        <div class="logo-group" style="transform: translate(-50%, -50%) scale(0.85);">
+                            <div class="logo-icon"><div class="logo-caret"></div></div>
+                            <h1 class="logo-name val-logo">DESIGN</h1>
+                            <p class="logo-tag val-tag">TAGLINE SPACE</p>
+                        </div>
+                        <img id="qr-img" class="qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=example.com" crossorigin="anonymous" alt="QR">
+                        
+                        <div class="back-right">
+                            <h2 class="contact-name val-name">MARK SMITH</h2>
+                            <h3 class="contact-title val-title">Project Manager</h3>
+                            
+                            <div class="contact-list">
+                                <div class="contact-item">
+                                    <div class="c-icon-wrap">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                    </div>
+                                    <span class="c-text val-address">123 Dummy, Lorem</span>
+                                </div>
+                                <div class="contact-item">
+                                    <div class="c-icon-wrap">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                    </div>
+                                    <span class="c-text val-phone">+00 1234 5XXX 9012</span>
+                                </div>
+                                <div class="contact-item">
+                                    <div class="c-icon-wrap">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                                    </div>
+                                    <span class="c-text val-email">info@email space</span>
+                                </div>
+                                <div class="contact-item">
+                                    <div class="c-icon-wrap">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                                    </div>
+                                    <span class="c-text val-website">www websiteaddress</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <button class="btn-save" onclick="saveImage()">SAVE IMAGE</button>
+    </div>
+
+    <div class="editor-section" id="editor-inputs">
+        <div class="input-group">
+            <label>Logo Name</label>
+            <input type="text" class="input-control editor-input" data-key="val-logo" value="DESIGN">
+        </div>
+        <div class="input-group">
+            <label>Tagline</label>
+            <input type="text" class="input-control editor-input" data-key="val-tag" value="TAGLINE SPACE">
+        </div>
+        
+        <div id="front-inputs">
+            <div class="input-group">
+                <label>Bottom Right Text</label>
+                <input type="text" class="input-control editor-input" data-key="val-f-bottom" value="Lorem Ipsum Dolor">
+            </div>
+        </div>
+
+        <div id="back-inputs" style="display: none;">
+            <div class="input-group">
+                <label>Full Name</label>
+                <input type="text" class="input-control editor-input" data-key="val-name" value="MARK SMITH">
+            </div>
+            <div class="input-group">
+                <label>Job Title</label>
+                <input type="text" class="input-control editor-input" data-key="val-title" value="Project Manager">
+            </div>
+            <div class="input-group">
+                <label>Address</label>
+                <input type="text" class="input-control editor-input" data-key="val-address" value="123 Dummy, Lorem">
+            </div>
+            <div class="input-group">
+                <label>Phone Number</label>
+                <input type="text" class="input-control editor-input" data-key="val-phone" value="+00 1234 5XXX 9012">
+            </div>
+            <div class="input-group">
+                <label>Email Address</label>
+                <input type="text" class="input-control editor-input" data-key="val-email" value="info@email space">
+            </div>
+            <div class="input-group">
+                <label>Website</label>
+                <input type="text" class="input-control editor-input" data-key="val-website" value="www websiteaddress">
+            </div>
+            <div class="input-group">
+                <label>QR Code Data (URL or Text)</label>
+                <input type="text" class="input-control" id="qr-input" value="example.com">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let activeSide = 'front';
+
+    // Scale the 1050x600 card perfectly into the mobile view
+    function resizeCard() {
+        const scaler = document.getElementById('card-scaler');
+        const front = document.getElementById('front-card');
+        const back = document.getElementById('back-card');
+        const scale = scaler.clientWidth / 1050;
+        
+        const transformRule = `scale(${scale})`;
+        front.style.transform = transformRule;
+        back.style.transform = transformRule;
+    }
+
+    window.addEventListener('resize', resizeCard);
+    window.addEventListener('DOMContentLoaded', resizeCard);
+
+    // Toggle logic
+    function switchSide(side) {
+        activeSide = side;
+        
+        // Toggle Card Views
+        document.getElementById('front-card').style.display = side === 'front' ? 'block' : 'none';
+        document.getElementById('back-card').style.display = side === 'back' ? 'block' : 'none';
+        
+        // Toggle Buttons
+        document.getElementById('btn-front').classList.toggle('active', side === 'front');
+        document.getElementById('btn-back').classList.toggle('active', side === 'back');
+        
+        // Toggle Editor Inputs
+        document.getElementById('front-inputs').style.display = side === 'front' ? 'block' : 'none';
+        document.getElementById('back-inputs').style.display = side === 'back' ? 'block' : 'none';
+    }
+
+    // Input Data Binding
+    document.querySelectorAll('.editor-input').forEach(input => {
+        input.addEventListener('input', (e) => {
+            const key = e.target.dataset.key;
+            const text = e.target.value;
+            document.querySelectorAll(`.${key}`).forEach(el => {
+                el.textContent = text;
+            });
+        });
+    });
+
+    // QR Code Update (Debounced to avoid spamming the API)
+    let qrTimeout;
+    document.getElementById('qr-input').addEventListener('input', (e) => {
+        clearTimeout(qrTimeout);
+        qrTimeout = setTimeout(() => {
+            const data = encodeURIComponent(e.target.value);
+            document.getElementById('qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${data}`;
+        }, 500);
+    });
+
+    // Save Image Logic utilizing HTML2Canvas
+    // Android Dev Note: If the standard <a> download is intercepted in WebView, you can intercept the Data URL in Kotlin via a JavascriptInterface.
+    function saveImage() {
+        const targetNode = document.getElementById(activeSide + '-card');
+        const btn = document.querySelector('.btn-save');
+        btn.textContent = "SAVING...";
+        
+        // Temporarily reset transform for perfect 1050x600 rendering
+        const originalTransform = targetNode.style.transform;
+        targetNode.style.transform = 'scale(1)';
+
+        html2canvas(targetNode, {
+            scale: 2, // 2x output for ultra HD crispness
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#032431' // Prevents transparent edge bleed
+        }).then(canvas => {
+            targetNode.style.transform = originalTransform; // Restore UI scale
+            btn.textContent = "SAVE IMAGE";
+
+            const dataURL = canvas.toDataURL('image/png');
+            
+            // Standard web trigger (Captured by WebView DownloadListener)
+            const link = document.createElement('a');
+            link.download = `Business_Card_${activeSide.toUpperCase()}.png`;
+            link.href = dataURL;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }).catch(err => {
+            console.error("Save failed:", err);
+            btn.textContent = "SAVE FAILED";
+            setTimeout(() => btn.textContent = "SAVE IMAGE", 2000);
+            targetNode.style.transform = originalTransform;
+        });
+    }
+</script>
+
+</body>
+</html>

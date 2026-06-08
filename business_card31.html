@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Business Card Editor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #121212;
+            --surface-color: #1e1e24;
+            --primary-orange: #ff6b00;
+            --gradient-orange: linear-gradient(135deg, #ff9500, #ff4500);
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- PREVIEW SECTION (TOP) --- */
+        .preview-container {
+            padding: 20px 15px;
+            background-color: #0a0a0c;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-bottom: 1px solid #333;
+            z-index: 10;
+        }
+
+        .card-wrapper {
+            width: 100%;
+            max-width: 380px;
+            aspect-ratio: 1.8 / 1;
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            background-color: #15151a;
+        }
+
+        .card-side {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+            pointer-events: none;
+            background-color: #15151a;
+        }
+
+        .card-side.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Card Graphics (SVG Backgrounds) */
+        .card-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .card-content {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            height: 100%;
+            display: flex;
+        }
+
+        /* Front Page Layout */
+        .front-content {
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-end;
+            padding: 20px 30px;
+            text-align: right;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .logo-icon {
+            color: var(--primary-orange);
+            font-size: 20px;
+        }
+
+        .company-name {
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .company-name span {
+            color: var(--primary-orange);
+        }
+
+        .tagline {
+            font-size: 9px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .main-number {
+            font-size: 11px;
+            background: var(--gradient-orange);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: bold;
+        }
+
+        /* Back Page Layout */
+        .back-content {
+            flex-direction: column;
+            justify-content: center;
+            padding: 20px 25px;
+            width: 60%;
+        }
+
+        .back-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .back-logo {
+            width: 30px;
+            height: 30px;
+            background: var(--gradient-orange);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .back-name {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: var(--primary-orange);
+        }
+
+        .back-title {
+            font-size: 8px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .contact-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 8px;
+            color: #ddd;
+        }
+
+        .contact-icon {
+            color: var(--primary-orange);
+            width: 12px;
+            text-align: center;
+        }
+
+        /* --- CONTROLS --- */
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 380px;
+            margin-top: 15px;
+        }
+
+        .switch-container {
+            display: flex;
+            background-color: var(--surface-color);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .switch-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px 16px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .switch-btn.active {
+            background: var(--gradient-orange);
+            color: white;
+        }
+
+        .save-btn {
+            background: var(--gradient-orange);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        /* --- EDITOR SECTION (BOTTOM) --- */
+        .editor-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: var(--bg-color);
+        }
+
+        .editor-form {
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .editor-form.active {
+            display: flex;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .input-group label {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .input-group input {
+            background-color: var(--surface-color);
+            border: 1px solid #333;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary-orange);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="preview-container">
+        <div class="card-wrapper" id="card-capture-area">
+            
+            <div class="card-side active" id="preview-front">
+                <svg class="card-bg" viewBox="0 0 400 220" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#ff9a00;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#d13a00;stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="grad2" x1="100%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#ff5e00;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <rect width="100%" height="100%" fill="#15151a"/>
+                    <path d="M-50,-50 C150,0 200,150 50,250 L-50,250 Z" fill="url(#grad2)" opacity="0.6"/>
+                    <path d="M-20,-70 C200,-20 220,180 0,270 L-50,250 Z" fill="url(#grad1)"/>
+                    <path d="M-50,50 C100,100 120,200 20,250 Z" fill="#000" opacity="0.3"/>
+                </svg>
+                
+                <div class="card-content front-content">
+                    <div class="logo-area">
+                        <i class="fa-solid fa-cube logo-icon"></i>
+                    </div>
+                    <div class="company-name" id="disp-f-company">CLUMA <span>WOTN</span></div>
+                    <div class="main-number" id="disp-f-number">0.000.000.000</div>
+                    <div class="tagline" id="disp-f-tagline">Weenonse sotie on itel</div>
+                </div>
+            </div>
+
+            <div class="card-side" id="preview-back">
+                <svg class="card-bg" viewBox="0 0 400 220" preserveAspectRatio="none">
+                    <rect width="100%" height="100%" fill="#15151a"/>
+                    <path d="M250,-50 C200,100 300,200 450,250 L450,-50 Z" fill="url(#grad2)" opacity="0.6"/>
+                    <path d="M300,-50 C180,50 250,220 450,270 L450,-50 Z" fill="url(#grad1)"/>
+                    <path d="M350,100 C250,150 300,250 450,250 Z" fill="#000" opacity="0.3"/>
+                </svg>
+
+                <div class="card-content back-content">
+                    <div class="back-header">
+                        <div class="back-logo"><i class="fa-solid fa-bars"></i></div>
+                        <div>
+                            <div class="back-name" id="disp-b-name">MURTIOME</div>
+                            <div class="back-title" id="disp-b-title">DEOINTSOTRINO</div>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-list">
+                        <div class="contact-item">
+                            <i class="fa-solid fa-location-dot contact-icon"></i>
+                            <span id="disp-b-address">Pooedfom eeogreale teop o mlo rfo<br>Sommes Srobon</span>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fa-solid fa-envelope contact-icon"></i>
+                            <span id="disp-b-email">Peaetflom seogreale teop esten</span>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fa-solid fa-globe contact-icon"></i>
+                            <span id="disp-b-website">Doastflom eeoooreste teop o mlo rfo<br>Dormer Clorsl</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="controls">
+            <div class="switch-container">
+                <button class="switch-btn active" onclick="switchPage('front')">Front</button>
+                <button class="switch-btn" onclick="switchPage('back')">Back</button>
+            </div>
+            <button class="save-btn" onclick="saveImage()">
+                <i class="fa-solid fa-download"></i> Save Image
+            </button>
+        </div>
+    </div>
+
+    <div class="editor-container">
+        <div class="editor-form active" id="form-front">
+            <div class="input-group">
+                <label>Company Name (Use space to color second word)</label>
+                <input type="text" id="in-f-company" value="CLUMA WOTN" onkeyup="updateCompany(this.value)">
+            </div>
+            <div class="input-group">
+                <label>Main Number / Highlights</label>
+                <input type="text" id="in-f-number" value="0.000.000.000" onkeyup="updateText('disp-f-number', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Tagline / Subtitle</label>
+                <input type="text" id="in-f-tagline" value="Weenonse sotie on itel" onkeyup="updateText('disp-f-tagline', this.value)">
+            </div>
+        </div>
+
+        <div class="editor-form" id="form-back">
+            <div class="input-group">
+                <label>Full Name / Brand</label>
+                <input type="text" id="in-b-name" value="MURTIOME" onkeyup="updateText('disp-b-name', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Job Title / Department</label>
+                <input type="text" id="in-b-title" value="DEOINTSOTRINO" onkeyup="updateText('disp-b-title', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Address</label>
+                <input type="text" id="in-b-address" value="Pooedfom eeogreale teop o mlo rfo Sommes Srobon" onkeyup="updateText('disp-b-address', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Email</label>
+                <input type="text" id="in-b-email" value="Peaetflom seogreale teop esten" onkeyup="updateText('disp-b-email', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Website</label>
+                <input type="text" id="in-b-website" value="Doastflom eeoooreste teop o mlo rfo Dormer Clorsl" onkeyup="updateText('disp-b-website', this.value)">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data binding helper
+        function updateText(targetId, val) {
+            document.getElementById(targetId).innerText = val;
+        }
+
+        // Special handling for company name to highlight the second word orange
+        function updateCompany(val) {
+            const parts = val.trim().split(' ');
+            if(parts.length > 1) {
+                const first = parts.shift();
+                const rest = parts.join(' ');
+                document.getElementById('disp-f-company').innerHTML = `${first} <span>${rest}</span>`;
+            } else {
+                document.getElementById('disp-f-company').innerHTML = val;
+            }
+        }
+
+        // Switch between Front and Back editor/preview
+        let currentPage = 'front';
+        function switchPage(page) {
+            currentPage = page;
+            
+            // Update Buttons
+            const btns = document.querySelectorAll('.switch-btn');
+            btns[0].classList.toggle('active', page === 'front');
+            btns[1].classList.toggle('active', page === 'back');
+
+            // Update Previews
+            document.getElementById('preview-front').classList.toggle('active', page === 'front');
+            document.getElementById('preview-back').classList.toggle('active', page === 'back');
+
+            // Update Forms
+            document.getElementById('form-front').classList.toggle('active', page === 'front');
+            document.getElementById('form-back').classList.toggle('active', page === 'back');
+        }
+
+        // Save Image using html2canvas
+        function saveImage() {
+            const captureArea = document.getElementById('card-capture-area');
+            const originalBorderRadius = captureArea.style.borderRadius;
+            const originalShadow = captureArea.style.boxShadow;
+
+            // Temporarily remove shadow/radius for cleaner canvas capture
+            captureArea.style.borderRadius = '0';
+            captureArea.style.boxShadow = 'none';
+
+            html2canvas(captureArea, {
+                scale: 3, // High resolution output
+                backgroundColor: null,
+                useCORS: true
+            }).then(canvas => {
+                // Restore styling
+                captureArea.style.borderRadius = originalBorderRadius || '12px';
+                captureArea.style.boxShadow = originalShadow || '0 10px 20px rgba(0,0,0,0.5)';
+
+                // Create download link
+                const link = document.createElement('a');
+                link.download = `business_card_${currentPage}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }).catch(err => {
+                console.error("Error capturing image: ", err);
+                alert("Could not save the image. Please try again.");
+                
+                // Ensure styles are restored on error
+                captureArea.style.borderRadius = originalBorderRadius || '12px';
+                captureArea.style.boxShadow = originalShadow || '0 10px 20px rgba(0,0,0,0.5)';
+            });
+        }
+    </script>
+</body>
+</html>

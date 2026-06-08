@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Business Card Maker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        /* Modern Dark Gradient Editor UI */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(135deg, #121318 0%, #1c1e24 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* App Container Layout */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* Top Preview Area */
+        .preview-section {
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .toggle-container {
+            display: flex;
+            background: #272a34;
+            border-radius: 25px;
+            padding: 4px;
+            margin-bottom: 16px;
+            width: 80%;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .toggle-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+        }
+
+        /* Card Container Aspect Ratio Scaling */
+        .card-wrapper {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+            margin-bottom: 8px;
+        }
+
+        /* Business Card Layout Design (Same to Same Effect) */
+        .business-card {
+            width: 350px;
+            height: 200px;
+            background-color: #8cb94c; /* Reference Green */
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            border-radius: 4px;
+            display: none;
+            transform-origin: center;
+        }
+
+        .business-card.active {
+            display: block;
+        }
+
+        /* Card Wave / Leaf Shape Effect Styling */
+        .card-front .leaf-shape {
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            width: 102%;
+            height: 102%;
+            background-color: #2e3238; /* Reference Dark Slate */
+            border: 2px solid #ffffff;
+            border-radius: 0 120px 0 120px;
+            box-sizing: border-box;
+        }
+
+        .card-back .leaf-shape {
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            width: 102%;
+            height: 102%;
+            background-color: #ffffff;
+            border: 2px solid #2e3238;
+            border-radius: 0 120px 0 120px;
+            box-sizing: border-box;
+        }
+
+        /* Front Card Elements */
+        .front-content {
+            position: relative;
+            z-index: 2;
+            height: 100%;
+            padding: 20px 25px;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .header-info {
+            text-align: right;
+            margin-top: 5px;
+        }
+
+        .card-name {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: #ffffff;
+        }
+
+        .card-title {
+            font-size: 10px;
+            font-weight: 400;
+            letter-spacing: 1.5px;
+            color: #b0b5bc;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        .contact-details {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 5px;
+            max-width: 75%;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 9px;
+            color: #e2e8f0;
+        }
+
+        .icon-circle {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 1px solid #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .icon-circle svg {
+            width: 9px;
+            height: 9px;
+            fill: #ffffff;
+        }
+
+        .contact-texts {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+
+        /* Back Card Elements */
+        .back-content {
+            position: relative;
+            z-index: 2;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #2e3238;
+        }
+
+        .logo-circle {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 2px solid #8cb94c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            font-weight: bold;
+            font-size: 22px;
+            color: #8cb94c;
+            background: transparent;
+        }
+
+        .card-company {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .card-slogan {
+            font-size: 9px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            color: #718096;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        /* Bottom Editor Panels */
+        .editor-section {
+            flex: 1;
+            background: #17191e;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px 24px 0 0;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .editor-panel {
+            display: none;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .editor-panel.active {
+            display: flex;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .input-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-group input {
+            background: #22252e;
+            border: 1px solid #2d323f;
+            border-radius: 10px;
+            padding: 12px;
+            color: #ffffff;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-group input:focus {
+            border-color: #3b82f6;
+        }
+
+        /* Bottom Save Button Area */
+        .action-area {
+            padding: 12px 20px;
+            background: #17191e;
+        }
+
+        .save-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .save-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    
+    <div class="preview-section">
+        <div class="toggle-container">
+            <button class="toggle-btn active" onclick="switchSide('front')">Front Side</button>
+            <button class="toggle-btn" onclick="switchSide('back')">Back Side</button>
+        </div>
+        
+        <div class="card-wrapper">
+            <div id="cardFront" class="business-card card-front active">
+                <div class="leaf-shape"></div>
+                <div class="front-content">
+                    <div class="header-info">
+                        <div id="lbl_name" class="card-name">JOHN SMITH</div>
+                        <div id="lbl_title" class="card-title">GRAPHIC DESIGNER</div>
+                    </div>
+                    
+                    <div class="contact-details">
+                        <div class="contact-item">
+                            <div class="icon-circle">
+                                <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                            </div>
+                            <div class="contact-texts">
+                                <span id="lbl_address1">your city address</span>
+                                <span id="lbl_address2" style="color:#b0b5bc">street location, ny city, USA</span>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <div class="icon-circle">
+                                <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                            </div>
+                            <div class="contact-texts">
+                                <span id="lbl_phone1">+00 12345 67890</span>
+                                <span id="lbl_phone2">+00 12345 67890</span>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <div class="icon-circle">
+                                <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                            </div>
+                            <div class="contact-texts">
+                                <span id="lbl_email">info@company-name.com</span>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <div class="icon-circle">
+                                <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95c-.32-1.25-.78-2.45-1.38-3.56 1.84.63 3.37 1.91 4.33 3.56zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14c-.16-.64-.26-1.31-.26-2s.1-1.36.26-2h3.38c-.09.66-.14 1.32-.14 2s.05 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56-1.84-.63-3.37-1.91-4.33-3.56zm2.95-8H5.08c.96-1.65 2.49-2.93 4.33-3.56-.6 1.11-1.06 2.31-1.38 3.56zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zm2.15-5.96H9.85c-.1-.66-.15-1.32-.15-2s.05-1.34.15-2h4.3c.1.66.15 1.32.15 2s-.05 1.34-.15 2zm1.78 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95c-.96 1.65-2.49 2.93-4.33 3.56zm3.34-5.56h-3.38c.09-.66.14-1.32.14-2s-.05-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2z"/></svg>
+                            </div>
+                            <div class="contact-texts">
+                                <span id="lbl_web">www.company-name.com</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="cardBack" class="business-card card-back">
+                <div class="leaf-shape"></div>
+                <div class="back-content">
+                    <div id="lbl_logo" class="logo-circle">C</div>
+                    <div id="lbl_company" class="card-company">COMPANY NAME</div>
+                    <div id="lbl_slogan" class="card-slogan">SLOGAN GOES HERE</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="editor-section">
+        
+        <div id="panelFront" class="editor-panel active">
+            <div class="input-group">
+                <label>Full Name</label>
+                <input type="text" id="input_name" value="JOHN SMITH" oninput="updateText('lbl_name', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Job Title</label>
+                <input type="text" id="input_title" value="GRAPHIC DESIGNER" oninput="updateText('lbl_title', this.value)">
+            </div>
+            <div class="input-group">
+                <label>City Address Header</label>
+                <input type="text" id="input_address1" value="your city address" oninput="updateText('lbl_address1', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Full Address Subtext</label>
+                <input type="text" id="input_address2" value="street location, ny city, USA" oninput="updateText('lbl_address2', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Primary Phone</label>
+                <input type="text" id="input_phone1" value="+00 12345 67890" oninput="updateText('lbl_phone1', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Secondary Phone</label>
+                <input type="text" id="input_phone2" value="+00 12345 67890" oninput="updateText('lbl_phone2', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Email Address</label>
+                <input type="text" id="input_email" value="info@company-name.com" oninput="updateText('lbl_email', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Website URL</label>
+                <input type="text" id="input_web" value="www.company-name.com" oninput="updateText('lbl_web', this.value)">
+            </div>
+        </div>
+
+        <div id="panelBack" class="editor-panel">
+            <div class="input-group">
+                <label>Logo Initial</label>
+                <input type="text" id="input_logo" value="C" maxlength="2" oninput="updateText('lbl_logo', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Company Name</label>
+                <input type="text" id="input_company" value="COMPANY NAME" oninput="updateText('lbl_company', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Company Slogan</label>
+                <input type="text" id="input_slogan" value="SLOGAN GOES HERE" oninput="updateText('lbl_slogan', this.value)">
+            </div>
+        </div>
+
+    </div>
+
+    <div class="action-area">
+        <button class="save-btn" onclick="exportCardImage()">
+            <svg style="width:20px;height:20px;fill:currentColor" viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+            Save Active Side Image
+        </button>
+    </div>
+</div>
+
+<script>
+    // Live UI View state management
+    let currentSide = 'front';
+
+    function switchSide(side) {
+        currentSide = side;
+        
+        // Dynamic Toggle Buttons
+        document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+
+        // Toggle Preview Frames
+        document.getElementById('cardFront').classList.remove('active');
+        document.getElementById('cardBack').classList.remove('active');
+        
+        // Toggle Control Panels
+        document.getElementById('panelFront').classList.remove('active');
+        document.getElementById('panelBack').classList.remove('active');
+
+        if (side === 'front') {
+            document.getElementById('cardFront').classList.add('active');
+            document.getElementById('panelFront').classList.add('active');
+        } else {
+            document.getElementById('cardBack').classList.add('active');
+            document.getElementById('panelBack').classList.add('active');
+        }
+    }
+
+    // Interactive Field Synchronizer 
+    function updateText(elementId, text) {
+        document.getElementById(elementId).innerText = text;
+    }
+
+    // High-Fidelity Image Export Engine
+    function exportCardImage() {
+        const targetElementId = currentSide === 'front' ? 'cardFront' : 'cardBack';
+        const element = document.getElementById(targetElementId);
+
+        // Pre-rendering configuration adjustments for high resolution outputs inside mobile environments
+        html2canvas(element, {
+            useCORS: true,
+            scale: 3, // Upscales to sharp print-ready layout standard
+            backgroundColor: null,
+            logging: false
+        }).then(canvas => {
+            const dataUrl = canvas.toDataURL('image/png');
+            
+            // Native platform callback bridge injection
+            if (window.Android && window.Android.saveImage) {
+                // Calls Android interface if configured within app source wrapper
+                window.Android.saveImage(dataUrl);
+            } else {
+                // Fallback implementation for direct web browser execution environments
+                const link = document.createElement('a');
+                link.download = `${currentSide}_business_card.png`;
+                link.href = dataUrl;
+                link.click();
+            }
+        }).catch(err => {
+            console.error('An error occurred during image canvas compilation: ', err);
+        });
+    }
+</script>
+</body>
+</html>

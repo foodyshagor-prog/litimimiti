@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Business Card Editor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f111a, #1a1d29);
+            --panel-bg: rgba(28, 32, 45, 0.85);
+            --input-bg: #0b0d13;
+            --text-main: #f1f5f9;
+            --text-muted: #64748b;
+            
+            /* Exact Card Palette Matches */
+            --card-dark: #1c1a19;
+            --brand-orange: #f39c12;
+            --brand-deep-orange: #cf4d1d;
+            --brand-cream: #ffb74d;
+            
+            --card-width: 350px;
+            --card-height: 200px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* --- FIXED TOP PREVIEW SUITE --- */
+        .preview-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 290px;
+            background: rgba(11, 13, 19, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-top: 10px;
+        }
+
+        /* --- TOGGLE CONTROLLER --- */
+        .switch-wrapper {
+            display: flex;
+            background: var(--input-bg);
+            padding: 4px;
+            border-radius: 30px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            width: 220px;
+        }
+
+        .switch-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 10px 0;
+            border-radius: 25px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .switch-btn.active {
+            background: linear-gradient(135deg, var(--brand-orange), var(--brand-deep-orange));
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+        }
+
+        /* --- CARD CANVAS WORKSPACE --- */
+        .card-viewport {
+            width: var(--card-width);
+            height: var(--card-height);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .card-wrapper {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .business-card {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+            overflow: hidden;
+            display: none;
+        }
+
+        .business-card.active {
+            display: block;
+        }
+
+        /* --- FRONT SIDE MODEL --- */
+        .card-front {
+            background-color: #ffffff;
+        }
+
+        .front-content {
+            position: relative;
+            z-index: 5;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 28px 30px;
+        }
+
+        .brand-block {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-box svg {
+            width: 38px;
+            height: 38px;
+        }
+
+        .brand-text-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .display-company {
+            font-size: 1.55rem;
+            font-weight: 700;
+            color: var(--brand-orange);
+            line-height: 1;
+        }
+
+        .display-slogan {
+            font-size: 0.5rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        .front-footer-text {
+            text-align: right;
+            font-size: 0.65rem;
+            color: #95a5a6;
+            letter-spacing: 0.5px;
+            margin-bottom: -4px;
+        }
+
+        .front-waves {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 125px;
+            z-index: 2;
+        }
+
+        /* --- BACK SIDE MODEL --- */
+        .card-back {
+            background-color: var(--card-dark);
+        }
+
+        .back-waves {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 175px;
+            z-index: 2;
+        }
+
+        .back-content {
+            position: relative;
+            z-index: 5;
+            height: 100%;
+            display: flex;
+        }
+
+        .back-left-zone {
+            width: 42%;
+            display: flex;
+            align-items: center;
+            padding-left: 22px;
+            height: 100%;
+        }
+
+        .back-right-zone {
+            width: 58%;
+            padding: 26px 22px 22px 5px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .profile-header {
+            margin-bottom: 8px;
+        }
+
+        .display-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--brand-orange);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            line-height: 1.2;
+        }
+
+        .display-role {
+            font-size: 0.58rem;
+            font-weight: 600;
+            letter-spacing: 2.5px;
+            color: #ffffff;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        .contact-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .contact-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.5rem;
+            color: #ffffff;
+        }
+
+        .contact-row svg {
+            width: 11px;
+            height: 11px;
+            fill: var(--brand-orange);
+            flex-shrink: 0;
+        }
+
+        .social-container {
+            display: flex;
+            justify-content: flex-end;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        .social-box {
+            width: 15px;
+            height: 15px;
+            border: 0.5px solid rgba(255, 255, 255, 0.25);
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3px;
+        }
+
+        .social-box svg {
+            width: 100%;
+            height: 100%;
+            fill: #ffffff;
+        }
+
+        /* --- SCROLLABLE EDITOR CONTAINER --- */
+        .editor-container {
+            margin-top: 290px;
+            flex: 1;
+            padding: 20px;
+            padding-bottom: 95px;
+            overflow-y: auto;
+        }
+
+        .editor-card {
+            background: var(--panel-bg);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .section-title {
+            font-size: 0.9rem;
+            color: var(--brand-cream);
+            margin-bottom: 16px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .field-group {
+            margin-bottom: 14px;
+        }
+
+        .field-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        input {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 12px;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--brand-orange);
+        }
+
+        /* --- PERSISTENT FLOATING ACCENT BUTTON --- */
+        .footer-action {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 15px 20px;
+            background: linear-gradient(to top, #0f111a 75%, transparent);
+            z-index: 10;
+        }
+
+        .save-action-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--brand-orange), var(--brand-deep-orange));
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            box-shadow: 0 8px 24px rgba(207, 77, 29, 0.35);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .save-action-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="preview-container">
+        <div class="switch-wrapper">
+            <button class="switch-btn active" id="tab-front" onclick="switchView('front')">FRONT PAGE</button>
+            <button class="switch-btn" id="tab-back" onclick="switchView('back')">BACK PAGE</button>
+        </div>
+
+        <div class="card-viewport">
+            <div class="card-wrapper" id="render-target">
+                
+                <div class="business-card card-front active" id="el-front">
+                    <div class="front-content">
+                        <div class="brand-block">
+                            <div class="logo-box">
+                                <svg viewBox="0 0 100 100">
+                                    <circle cx="50" cy="50" r="40" fill="none" stroke="var(--brand-orange)" stroke-width="10" stroke-dasharray="190 70" transform="rotate(-40 50 50)"/>
+                                    <path d="M30 62 L50 35 L70 62" fill="none" stroke="var(--card-dark)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="brand-text-group">
+                                <span class="display-company dynamic-node" data-id="company">Media</span>
+                                <span class="display-slogan dynamic-node" data-id="slogan">Sloganhere</span>
+                            </div>
+                        </div>
+                        <div class="front-footer-text dynamic-node" data-id="subtext">lorem ipsum dolor</div>
+                    </div>
+                    
+                    <svg class="front-waves" viewBox="0 0 350 125" preserveAspectRatio="none">
+                        <path d="M0,35 C90,90 160,5 350,25 L350,125 L0,125 Z" fill="var(--brand-cream)"/>
+                        <path d="M0,55 C80,105 170,20 350,45 L350,125 L0,125 Z" fill="var(--brand-orange)"/>
+                        <path d="M0,75 C70,115 180,40 350,70 L350,125 L0,125 Z" fill="var(--brand-deep-orange)"/>
+                        <path d="M0,95 C60,130 190,65 350,90 L350,125 L0,125 Z" fill="var(--card-dark)"/>
+                    </svg>
+                </div>
+
+                <div class="business-card card-back" id="el-back">
+                    <svg class="back-waves" viewBox="0 0 175 200" preserveAspectRatio="none">
+                        <path d="M0,0 L132,0 C132,40 182,80 157,150 L122,200 L0,200 Z" fill="var(--brand-deep-orange)"/>
+                        <path d="M0,0 L120,0 C120,40 167,80 144,150 L110,200 L0,200 Z" fill="var(--brand-orange)"/>
+                        <path d="M0,0 L108,0 C108,40 152,80 131,150 L98,200 L0,200 Z" fill="var(--brand-cream)"/>
+                        <path d="M0,0 L96,0 C96,40 137,80 118,150 L86,200 L0,200 Z" fill="#ffffff"/>
+                    </svg>
+                    
+                    <div class="back-content">
+                        <div class="back-left-zone">
+                            <div class="brand-block" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                                <div class="logo-box">
+                                    <svg viewBox="0 0 100 100">
+                                        <circle cx="50" cy="50" r="40" fill="none" stroke="var(--brand-orange)" stroke-width="10" stroke-dasharray="190 70" transform="rotate(-40 50 50)"/>
+                                        <path d="M30 62 L50 35 L70 62" fill="none" stroke="var(--card-dark)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                                <div class="brand-text-group">
+                                    <span class="display-company dynamic-node" data-id="company">Media</span>
+                                    <span class="display-slogan dynamic-node" data-id="slogan">Sloganhere</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="back-right-zone">
+                            <div class="profile-header">
+                                <div class="display-name dynamic-node" data-id="name">Mark Harrison</div>
+                                <div class="display-role dynamic-node" data-id="role">Constructor</div>
+                            </div>
+                            
+                            <div class="contact-stack">
+                                <div class="contact-row">
+                                    <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                                    <span class="dynamic-node" data-id="address">2088 Graphic Road, Lyon, France 11425</span>
+                                </div>
+                                <div class="contact-row">
+                                    <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                                    <span class="dynamic-node" data-id="email">MarkHarrison@lorem.com</span>
+                                </div>
+                                <div class="contact-row">
+                                    <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                                    <span class="dynamic-node" data-id="phone">+18 9153 3990 0008</span>
+                                </div>
+                            </div>
+
+                            <div class="social-container">
+                                <div class="social-box"><svg viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg></div>
+                                <div class="social-box"><svg viewBox="0 0 24 24"><path d="M22.46 6c-.77.35-1.6.58-2.46.69.88-.53 1.56-1.37 1.88-2.38-.83.5-1.75.85-2.73 1.05a4.28 4.28 0 0 0-7.29 3.91A12.14 12.14 0 0 1 1.64 4.16a4.25 4.25 0 0 0-.58 2.14c0 1.44.73 2.71 1.84 3.45a4.22 4.22 0 0 1-1.93-.53v.05a4.28 4.28 0 0 0 3.43 4.19 4.3 4.3 0 0 1-1.93.07 4.29 4.29 0 0 0 4 2.98 8.6 8.6 0 0 1-5.32 1.84c-.34 0-.68-.02-1.02-.06a12.13 12.13 0 0 0 6.57 1.92c7.88 0 12.2-6.53 12.2-12.2 0-.19 0-.37-.01-.56.84-.6 1.56-1.36 2.14-2.23z"/></svg></div>
+                                <div class="social-box"><svg viewBox="0 0 24 24"><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2m13 2h-2.5A3.5 3.5 0 0 0 12 8.5V11h-2v3h2v7h3v-7h3v-3h-3V9a1 1 0 0 1 1-1h2V5z"/></svg></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="editor-container">
+        
+        <div class="editor-card">
+            <div class="section-title">Brand Customization</div>
+            <div class="field-group">
+                <label>Company Identity</label>
+                <input type="text" value="Media" oninput="syncFields('company', this.value)">
+            </div>
+            <div class="field-group">
+                <label>Tagline / Slogan</label>
+                <input type="text" value="Sloganhere" oninput="syncFields('slogan', this.value)">
+            </div>
+            <div class="field-group">
+                <label>Front Context Text</label>
+                <input type="text" value="lorem ipsum dolor" oninput="syncFields('subtext', this.value)">
+            </div>
+        </div>
+
+        <div class="editor-card">
+            <div class="section-title">Profile Assignments</div>
+            <div class="field-group">
+                <label>Cardholder Name</label>
+                <input type="text" value="Mark Harrison" oninput="syncFields('name', this.value)">
+            </div>
+            <div class="field-group">
+                <label>Professional Assignment</label>
+                <input type="text" value="Constructor" oninput="syncFields('role', this.value)">
+            </div>
+            <div class="field-group">
+                <label>Operational Address</label>
+                <input type="text" value="2088 Graphic Road, Lyon, France 11425" oninput="syncFields('address', this.value)">
+            </div>
+            <div class="field-group">
+                <label>E-Mail Address</label>
+                <input type="email" value="MarkHarrison@lorem.com" oninput="syncFields('email', this.value)">
+            </div>
+            <div class="field-group">
+                <label>Contact Number</label>
+                <input type="text" value="+18 9153 3990 0008" oninput="syncFields('phone', this.value)">
+            </div>
+        </div>
+
+    </div>
+
+    <div class="footer-action">
+        <button class="save-action-btn" onclick="processCanvasExport()">
+            <svg style="width:20px;height:20px" viewBox="0 0 24 24"><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+            Save High-Res Card Image
+        </button>
+    </div>
+
+    <script>
+        let currentActiveSide = 'front';
+
+        function switchView(side) {
+            currentActiveSide = side;
+            
+            document.getElementById('tab-front').classList.toggle('active', side === 'front');
+            document.getElementById('tab-back').classList.toggle('active', side === 'back');
+            
+            document.getElementById('el-front').classList.toggle('active', side === 'front');
+            document.getElementById('el-back').classList.toggle('active', side === 'back');
+        }
+
+        // Global real-time field synchronization system
+        function syncFields(fieldId, executionValue) {
+            const nodes = document.querySelectorAll(`.dynamic-node[data-id="${fieldId}"]`);
+            nodes.forEach(node => {
+                node.textContent = executionValue;
+            });
+        }
+
+        // Offline storage asset file compilation logic
+        function processCanvasExport() {
+            const targetElement = currentActiveSide === 'front' ? document.getElementById('el-front') : document.getElementById('el-back');
+            
+            const layoutStateFallback = targetElement.style.display;
+            targetElement.style.display = 'block';
+
+            html2canvas(targetElement, {
+                scale: 4, // Produces sharp 4K canvas raster generations for crisp viewing in mobile webviews
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: null,
+                logging: false
+            }).then(canvas => {
+                targetElement.style.display = layoutStateFallback;
+
+                const base64DataUri = canvas.toDataURL("image/png");
+
+                const nativeDownloadBridge = document.createElement('a');
+                nativeDownloadBridge.download = `card_${currentActiveSide}_export.png`;
+                nativeDownloadBridge.href = base64DataUri;
+                document.body.appendChild(nativeDownloadBridge);
+                nativeDownloadBridge.click();
+                document.body.removeChild(nativeDownloadBridge);
+            }).catch(error => {
+                console.error("Local hardware acceleration canvas generation pipeline exception: ", error);
+            });
+        }
+    </script>
+</body>
+</html>

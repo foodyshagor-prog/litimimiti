@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobile Business Card Editor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #14141f 0%, #0b0b12 100%);
+            --card-bg: #1e1e2e;
+            --accent-color: #ff9f43;
+            --text-main: #ffffff;
+            --text-muted: #a0a0b0;
+            --input-bg: #252538;
+            --card-gold: #f39c12;
+            --card-gold-dark: #d35400;
+            --card-green: #1b5e20;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* App Layout Structure */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100%;
+        }
+
+        /* Top Preview Area */
+        .preview-section {
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+        }
+
+        .view-toggle {
+            display: flex;
+            background: var(--input-bg);
+            border-radius: 25px;
+            padding: 4px;
+            margin-bottom: 15px;
+            width: 80%;
+            max-width: 300px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .toggle-btn {
+            flex: 1;
+            border: none;
+            background: none;
+            color: var(--text-muted);
+            padding: 8px 0;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: var(--accent-color);
+            color: #000;
+            box-shadow: 0 4px 10px rgba(255, 159, 67, 0.3);
+        }
+
+        /* Scaled Card Stage */
+        .card-stage {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+            margin-bottom: 5px;
+        }
+
+        /* Business Card Base Styling (1050x600 Print Resolution Aspect Ratio scaled via CSS) */
+        .business-card {
+            width: 1050px;
+            height: 600px;
+            background: #fff;
+            color: #000;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            transform-origin: center center;
+            transform: scale(0.32); /* Autocalculated dynamically for mobile screens via JS */
+            flex-shrink: 0;
+            display: none;
+        }
+
+        .business-card.visible {
+            display: block;
+        }
+
+        /* Reusable Card Elements */
+        .logo-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: absolute;
+        }
+
+        .logo-icon {
+            width: 140px;
+            height: 100px;
+        }
+
+        .logo-text {
+            font-family: 'Dancing Script', cursive;
+            font-size: 52px;
+            color: #222;
+            line-height: 1;
+            margin-top: 5px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .logo-subtext {
+            font-family: 'Poppins', sans-serif;
+            font-size: 18px;
+            letter-spacing: 4px;
+            color: #555;
+            font-weight: 400;
+            margin-top: 2px;
+        }
+
+        /* SIDE 1 Layout styling */
+        #card-side1 {
+            background: #fdfdfd;
+        }
+        
+        #card-side1 .wave-bg {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 320px;
+            background: #f49f1c;
+            clip-path: ellipse(85% 75% at 50% 100%);
+        }
+
+        #card-side1 .wave-overlay {
+            position: absolute;
+            bottom: 25px;
+            left: 0;
+            width: 100%;
+            height: 320px;
+            background: #e08b10;
+            clip-path: ellipse(90% 75% at 53% 100%);
+            z-index: 1;
+        }
+
+        #card-side1 .wave-bg-top {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 275px;
+            background: #f49f1c;
+            z-index: 2;
+            clip-path: ellipse(95% 80% at 50% 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0 60px;
+            text-align: center;
+        }
+
+        #card-side1 .watermark {
+            position: absolute;
+            right: -30px;
+            top: -20px;
+            opacity: 0.08;
+            transform: scale(2.2) rotate(15deg);
+            pointer-events: none;
+        }
+
+        #card-side1 .logo-container {
+            top: 50px;
+            left: 70px;
+            align-items: flex-start;
+        }
+        #card-side1 .logo-text, #card-side1 .logo-subtext { text-align: left; }
+
+        .side1-content {
+            color: #fff;
+            font-size: 21px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            line-height: 1.5;
+            margin-top: 20px;
+            text-transform: uppercase;
+        }
+
+        .side1-socials {
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            margin-top: 25px;
+            width: 100%;
+        }
+
+        .social-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: 500;
+        }
+
+        /* SIDE 2 Layout styling */
+        #card-side2 {
+            background: #ffffff;
+        }
+
+        #card-side2 .orange-block {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 58%;
+            height: 100%;
+            background: #f49f1c;
+            clip-path: polygon(18% 0%, 100% 0%, 100% 100%, 0% 100%);
+        }
+        
+        #card-side2 .orange-block-curve {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 63%;
+            height: 100%;
+            background: rgba(244, 159, 28, 0.4);
+            clip-path: polygon(10% 0%, 100% 0%, 100% 100%, 0% 100%);
+        }
+
+        #card-side2 .logo-container {
+            right: 10%;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 5;
+        }
+
+        .side2-left-content {
+            position: absolute;
+            left: 70px;
+            top: 0;
+            bottom: 0;
+            width: 450px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .ceo-title {
+            color: #e67e22;
+            font-size: 26px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .ceo-name {
+            color: #2c3e50;
+            font-size: 34px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 40px;
+            letter-spacing: 1px;
+        }
+
+        .contact-info-structure {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .contact-row {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .icon-circle {
+            width: 46px;
+            height: 46px;
+            background: #f49f1c;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+        }
+
+        .contact-details {
+            display: flex;
+            flex-direction: column;
+            color: #333;
+            font-size: 22px;
+            font-weight: 600;
+        }
+        .contact-details span {
+            line-height: 1.3;
+        }
+
+        /* Bottom Editor Scrollable Area */
+        .editor-section {
+            flex: 1;
+            background: #161622;
+            border-top-left-radius: 30px;
+            border-top-right-radius: 30px;
+            padding: 25px 20px;
+            overflow-y: auto;
+            padding-bottom: 40px;
+        }
+
+        .editor-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .editor-panel {
+            display: none;
+        }
+
+        .editor-panel.active {
+            display: block;
+        }
+
+        .input-group {
+            margin-bottom: 18px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .input-group input, .input-group textarea {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: #fff;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus, .input-group textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            background: #2a2a3f;
+        }
+
+        /* Primary Call to Action Button */
+        .btn-save {
+            width: 100%;
+            background: linear-gradient(90deg, #ff9f43, #ff6b6b);
+            color: #fff;
+            border: none;
+            border-radius: 15px;
+            padding: 16px;
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+            cursor: pointer;
+        }
+
+        .btn-save:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <div class="preview-section">
+            <div class="view-toggle">
+                <button class="toggle-btn active" onclick="switchCardSide(1)">Front Side</button>
+                <button class="toggle-btn" onclick="switchCardSide(2)">Back Side</button>
+            </div>
+            
+            <div class="card-stage" id="cardStage">
+                <div id="card-side1" class="business-card visible">
+                    <div class="watermark">
+                        <svg class="logo-icon" viewBox="0 0 100 100">
+                            <path d="M20,60 C20,30 80,30 80,60 Z" fill="#1b5e20"/>
+                            <rect x="18" y="60" width="64" height="4" rx="2" fill="#1b5e20"/>
+                            <circle cx="50" cy="24" r="5" fill="#1b5e20"/>
+                            <path d="M46,24 Q48,15 44,10 M54,24 Q52,14 56,8" stroke="#1b5e20" stroke-width="2" fill="none"/>
+                            <path d="M25,68 L45,85" stroke="#111" stroke-width="3" stroke-linecap="round"/>
+                            <circle cx="23" cy="67" r="4" fill="#111"/>
+                            <path d="M75,68 L55,85" stroke="#111" stroke-width="3" stroke-linecap="round"/>
+                            <path d="M72,65 L78,70 M75,63 L81,68" stroke="#111" stroke-width="2"/>
+                        </svg>
+                    </div>
+
+                    <div class="logo-container">
+                        <svg class="logo-icon" viewBox="0 0 100 100">
+                            <path d="M20,60 C20,30 80,30 80,60 Z" fill="#1b5e20"/>
+                            <rect x="18" y="60" width="64" height="4" rx="2" fill="#1b5e20"/>
+                            <circle cx="50" cy="24" r="5" fill="#1b5e20"/>
+                            <path d="M46,24 Q48,15 44,10 M54,24 Q52,14 56,8" stroke="#1b5e20" stroke-width="2" fill="none"/>
+                            <path d="M30,68 L52,85" stroke="#111" stroke-width="3.5" stroke-linecap="round"/>
+                            <path d="M25,65 C23,62 33,56 35,62 Z" fill="#111"/> 
+                            <path d="M70,68 L48,85" stroke="#111" stroke-width="3.5" stroke-linecap="round"/>
+                            <path d="M66,64 L74,72 M69,61 L77,69 M72,58 L80,66" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>
+                        </svg>
+                        <div class="logo-text editable-target" id="output-brand-name1">Wells Special</div>
+                        <div class="logo-subtext editable-target" id="output-brand-sub1">& CATERING SERVICE</div>
+                    </div>
+
+                    <div class="wave-overlay"></div>
+                    <div class="wave-bg"></div>
+                    <div class="wave-bg-top">
+                        <div class="side1-content editable-target" id="output-tagline">
+                            We take orders for weddings, engagements, funerals, parties, corporate, family package & all events.
+                        </div>
+                        <div class="side1-socials">
+                            <div class="social-item">
+                                <i class="fab fa-instagram"></i>
+                                <span class="editable-target" id="output-instagram">@wellsspecialcatering</span>
+                            </div>
+                            <div class="social-item">
+                                <i class="fab fa-facebook-f"></i>
+                                <span class="editable-target" id="output-facebook">WellsSpecialCatering</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="card-side2" class="business-card">
+                    <div class="side2-left-content">
+                        <div class="ceo-title editable-target" id="output-role">Deputy CEO -</div>
+                        <div class="ceo-name editable-target" id="output-name">Sylvester Wellington</div>
+                        
+                        <div class="contact-info-structure">
+                            <div class="contact-row">
+                                <div class="icon-circle"><i class="fa-solid fa-phone"></i></div>
+                                <div class="contact-details">
+                                    <span class="editable-target" id="output-phone1">0303319347</span>
+                                    <span class="editable-target" id="output-phone2">0208335159</span>
+                                </div>
+                            </div>
+                            <div class="contact-row">
+                                <div class="icon-circle"><i class="fa-solid fa-envelope"></i></div>
+                                <div class="contact-details">
+                                    <span class="editable-target" id="output-email">sylvesterwellington@yahoo.co.uk</span>
+                                </div>
+                            </div>
+                            <div class="contact-row">
+                                <div class="icon-circle"><i class="fa-solid fa-location-dot"></i></div>
+                                <div class="contact-details">
+                                    <span class="editable-target" id="output-address">P.O.Box Os 537<br>Osu, Accra.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="orange-block-curve"></div>
+                    <div class="orange-block"></div>
+
+                    <div class="logo-container">
+                        <svg class="logo-icon" viewBox="0 0 100 100">
+                            <path d="M20,60 C20,30 80,30 80,60 Z" fill="#1b5e20"/>
+                            <rect x="18" y="60" width="64" height="4" rx="2" fill="#1b5e20"/>
+                            <circle cx="50" cy="24" r="5" fill="#1b5e20"/>
+                            <path d="M46,24 Q48,15 44,10 M54,24 Q52,14 56,8" stroke="#1b5e20" stroke-width="2" fill="none"/>
+                            <path d="M30,68 L52,85" stroke="#111" stroke-width="3.5" stroke-linecap="round"/>
+                            <path d="M25,65 C23,62 33,56 35,62 Z" fill="#111"/>
+                            <path d="M70,68 L48,85" stroke="#111" stroke-width="3.5" stroke-linecap="round"/>
+                            <path d="M66,64 L74,72 M69,61 L77,69 M72,58 L80,66" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>
+                        </svg>
+                        <div class="logo-text editable-target" id="output-brand-name2">Wells Special</div>
+                        <div class="logo-subtext editable-target" id="output-brand-sub2">& CATERING SERVICE</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="editor-section">
+            <div class="editor-title">
+                <i class="fa-solid fa-sliders text-accent"></i>
+                <span>Card Customization Panel</span>
+            </div>
+
+            <div id="panel-side1" class="editor-panel active">
+                <div class="input-group">
+                    <label>Company / Brand Title</label>
+                    <input type="text" id="input-brand-name" value="Wells Special" oninput="syncText('brand-name', this.value)">
+                </div>
+                <div class="input-group">
+                    <label>Sub-services Text</label>
+                    <input type="text" id="input-brand-sub" value="& CATERING SERVICE" oninput="syncText('brand-sub', this.value)">
+                </div>
+                <div class="input-group">
+                    <label>Catering Pitch / Tagline</label>
+                    <textarea rows="3" oninput="updatePlain('output-tagline', this.value)">We take orders for weddings, engagements, funerals, parties, corporate, family package & all events.</textarea>
+                </div>
+                <div class="input-group">
+                    <label>Instagram Account</label>
+                    <input type="text" value="@wellsspecialcatering" oninput="updatePlain('output-instagram', this.value)">
+                </div>
+                <div class="input-group">
+                    <label>Facebook Account</label>
+                    <input type="text" value="WellsSpecialCatering" oninput="updatePlain('output-facebook', this.value)">
+                </div>
+            </div>
+
+            <div id="panel-side2" class="editor-panel">
+                <div class="input-group">
+                    <label>Executive Designation / Role</label>
+                    <input type="text" value="Deputy CEO -" oninput="updatePlain('output-role', this.value)">
+                </div>
+                <div class="input-group">
+                    <label>Full Name</label>
+                    <input type="text" value="Sylvester Wellington" oninput="updatePlain('output-name', this.value)">
+                </div>
+                <div class="input-group">
+                    <label>Primary Phone Number</label>
+                    <input type="tel" value="0303319347" oninput="updatePlain('output-phone1', this.value)">
+                </div>
+                <div class="input-group">
+                    <label>Secondary Phone Number</label>
+                    <input type="tel" value="0208335159" oninput="updatePlain('output-phone2', this.value)">
+                </div>
+                <div class="input-group">
+                    <label>Business Email Address</label>
+                    <input type="email" value="sylvesterwellington@yahoo.co.uk" oninput="updatePlain('output-email', this.value)">
+                </div>
+                <div class="input-group">
+                    <label>Office Address (Use HTML line break &lt;br&gt; if needed)</label>
+                    <input type="text" value="P.O.Box Os 537<br>Osu, Accra." oninput="updateHTML('output-address', this.value)">
+                </div>
+            </div>
+
+            <button class="btn-save" onclick="exportCardImage()">
+                <i class="fa-solid fa-circle-down"></i> Save Current Side to Device
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let currentSide = 1;
+
+        // Auto responsive calculation to match layout bounds inside a native mobile viewport container dynamically
+        function structureResponsiveScale() {
+            const stage = document.getElementById('cardStage');
+            const cards = document.querySelectorAll('.business-card');
+            const availableWidth = stage.offsetWidth - 10; 
+            const designWidth = 1050;
+            const targetScale = availableWidth / designWidth;
+            
+            cards.forEach(card => {
+                card.style.transform = `scale(${targetScale})`;
+            });
+            
+            // Adjust height of container wrapper area safely to prevent scaling overflow bounds clips
+            stage.style.height = `${600 * targetScale}px`;
+        }
+
+        function switchCardSide(sideId) {
+            currentSide = sideId;
+            document.querySelectorAll('.toggle-btn').forEach((btn, idx) => {
+                btn.classList.toggle('active', idx + 1 === sideId);
+            });
+            
+            document.getElementById('card-side1').classList.toggle('visible', sideId === 1);
+            document.getElementById('card-side2').classList.toggle('visible', sideId === 2);
+            
+            document.getElementById('panel-side1').classList.toggle('active', sideId === 1);
+            document.getElementById('panel-side2').classList.toggle('active', sideId === 2);
+        }
+
+        // Real-time bindings helpers
+        function updatePlain(targetId, value) {
+            document.getElementById(targetId).innerText = value;
+        }
+
+        function updateHTML(targetId, value) {
+            document.getElementById(targetId).innerHTML = value;
+        }
+
+        // Sync inputs that exist across both faces simultaneously (e.g., Company Header Title)
+        function syncText(suffix, value) {
+            document.getElementById(`output-${suffix}1`).innerText = value;
+            document.getElementById(`output-${suffix}2`).innerText = value;
+        }
+
+        // Canvas Snapshot Export Processor 
+        function exportCardImage() {
+            const activeCardId = currentSide === 1 ? 'card-side1' : 'card-side2';
+            const targetNode = document.getElementById(activeCardId);
+            
+            // Temporary resetting transformation scales to extract natural pixel sizing flawlessly
+            const historicalTransform = targetNode.style.transform;
+            targetNode.style.transform = 'none';
+            targetNode.style.display = 'block';
+
+            html2canvas(targetNode, {
+                width: 1050,
+                height: 600,
+                scale: 2, // High resolution printable canvas buffer upscale feature
+                useCORS: true,
+                logging: false
+            }).then(canvas => {
+                // Revert visual transforms seamlessly back to operational mobile size layout rules
+                targetNode.style.transform = historicalTransform;
+                if(currentSide === 1) {
+                    document.getElementById('card-side2').style.display = 'none';
+                } else {
+                    document.getElementById('card-side1').style.display = 'none';
+                }
+
+                // Generates downloadable URI asset logic chain
+                const convertedImageURI = canvas.toDataURL("image/png");
+                const hiddenAnchor = document.createElement('a');
+                hiddenAnchor.download = `BusinessCard_Side${currentSide}.png`;
+                hiddenAnchor.href = convertedImageURI;
+                document.body.appendChild(hiddenAnchor);
+                hiddenAnchor.click();
+                document.body.removeChild(hiddenAnchor);
+            }).catch(err => {
+                console.error("Error exporting image asset data line matrix: ", err);
+            });
+        }
+
+        // Attach layout watchers
+        window.addEventListener('resize', structureResponsiveScale);
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(structureResponsiveScale, 150);
+        });
+    </script>
+</body>
+</html>
