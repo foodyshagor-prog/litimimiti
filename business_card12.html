@@ -31,6 +31,7 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
+            height: 100dvh; /* Prevents mobile browser address bars from breaking layout */
             overflow: hidden;
         }
 
@@ -192,11 +193,13 @@
         /* --- Editor Section --- */
         .editor-section {
             flex: 1;
+            min-height: 0; /* CRITICAL: Allows scroll to trigger inside flex layouts */
             overflow-y: auto;
             padding: 20px;
             display: flex;
             flex-direction: column;
             gap: 15px;
+            -webkit-overflow-scrolling: touch; /* Smooth inertial scrolling on iOS */
         }
 
         /* Custom Scrollbar for modern look */
@@ -351,7 +354,7 @@
 
         <button class="btn-save" id="btn-save">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="white"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-            Save Active Image
+            Save Combined Design
         </button>
     </div>
 
@@ -387,59 +390,108 @@
             const scaleRatio = currentWidth / targetWidth;
             
             document.querySelectorAll('.card').forEach(card => {
-                card.style.transform = `scale(${scaleRatio})`;
+                // Keep inline transforms handling responsive display updates
+                if(!card.classList.contains('rendering-canvas')) {
+                    card.style.transform = `scale(${scaleRatio})`;
+                }
             });
             
-            // Adjust scaler container height to fit the scaled card
             scaler.style.height = `${450 * scaleRatio}px`;
         }
         
         window.addEventListener('resize', adjustCardScale);
-        // Initial setup
         setTimeout(adjustCardScale, 100);
 
-        // 4. Save Image via HTML2Canvas
+        // 4. Save Image via HTML2Canvas (Combined layout renderer)
         document.getElementById('btn-save').addEventListener('click', () => {
             const btn = document.getElementById('btn-save');
             const originalText = btn.innerHTML;
             btn.innerHTML = 'Rendering...';
             btn.style.opacity = '0.7';
 
-            const activeCard = document.querySelector('.card.active');
-            
-            // Briefly remove the CSS transform scale so html2canvas captures 
-            // the full high-res 800x450 base dimensions, not the shrunk mobile view.
-            const originalTransform = activeCard.style.transform;
-            activeCard.style.transform = 'scale(1)';
+            const cardFront = document.getElementById('card-front');
+            const cardBack = document.getElementById('card-back');
 
-            html2canvas(activeCard, {
-                scale: 2, // 2x resolution for sharper export (1600x900)
-                backgroundColor: '#0a0a0a',
-                logging: false
-            }).then(canvas => {
-                // Restore UI scale
-                activeCard.style.transform = originalTransform;
+            // Save layout states to restore later
+            const originalFrontDisplay = cardFront.style.display;
+            const originalBackDisplay = cardBack.style.display;
+            const originalFrontTransform = cardFront.style.transform;
+            const originalBackTransform = cardBack.style.transform;
+
+            // CRITICAL BUGFIX: Force both elements to layout block and 100% scale 
+            // so html2canvas reads their design parameters correctly.
+            cardFront.style.display = 'block';
+            cardBack.style.display = 'block';
+            cardFront.style.transform = 'scale(1)';
+            cardBack.style.transform = 'scale(1)';
+
+            // Styling variables for image composition
+            const bgColor = '#f0f2f5'; 
+            const outerPaddingH = 50;  
+            const outerPaddingV = 50;  
+            const verticalGap = 50;    
+            const cardWidth = 800; 
+            const cardHeight = 450;
+
+            // Render both cards concurrently
+            Promise.all([
+                html2canvas(cardFront, { scale: 2, backgroundColor: '#0a0a0a', logging: false }),
+                html2canvas(cardBack, { scale: 2, backgroundColor: '#0a0a0a', logging: false })
+            ]).then(canvases => {
+                const [frontCanvas, backCanvas] = canvases;
+
+                // Instantly restore layout so the UI doesn't visually flicker
+                cardFront.style.display = originalFrontDisplay;
+                cardBack.style.display = originalBackDisplay;
+                cardFront.style.transform = originalFrontTransform;
+                cardBack.style.transform = originalBackTransform;
+
+                // Base target structural canvas setup
+                const finalWidth = cardWidth + (2 * outerPaddingH);
+                const finalHeight = (2 * cardHeight) + verticalGap + (2 * outerPaddingV);
+
+                const exportScale = 2; // Sharp 2x export resolution multiplier
+                const finalCanvas = document.createElement('canvas');
+                finalCanvas.width = finalWidth * exportScale;
+                finalCanvas.height = finalHeight * exportScale;
                 
-                const imageData = canvas.toDataURL("image/png");
+                const ctx = finalCanvas.getContext('2d');
+                ctx.scale(exportScale, exportScale); // Maps high-res workspace coordinates to 1x logic
+
+                // Composition step 1: Outer Workspace Background
+                ctx.fillStyle = bgColor;
+                ctx.fillRect(0, 0, finalWidth, finalHeight);
+
+                // Composition step 2: Front card layer rendering
+                ctx.drawImage(frontCanvas, outerPaddingH, outerPaddingV, cardWidth, cardHeight);
+
+                // Composition step 3: Back card layer rendering
+                const backY = outerPaddingV + cardHeight + verticalGap;
+                ctx.drawImage(backCanvas, outerPaddingH, backY, cardWidth, cardHeight);
+
+                // Build file output string
+                const imageData = finalCanvas.toDataURL("image/png");
                 
-                // If intercepted by Android WebView interface bridging:
+                // Intercept handling for native Android implementation fallback
                 if (window.AndroidBridge && window.AndroidBridge.saveBase64Image) {
-                    // Stripping the MIME type header for native processing
                     const base64Data = imageData.split(',')[1];
                     window.AndroidBridge.saveBase64Image(base64Data);
                 } else {
-                    // Standard web download fallback
                     const link = document.createElement('a');
-                    link.download = 'business_card.png';
+                    link.download = 'business_card_presentation.png';
                     link.href = imageData;
                     link.click();
                 }
 
                 btn.innerHTML = originalText;
                 btn.style.opacity = '1';
+
             }).catch(err => {
-                console.error("Error capturing image: ", err);
-                activeCard.style.transform = originalTransform;
+                console.error("Error creating image composition: ", err);
+                cardFront.style.display = originalFrontDisplay;
+                cardBack.style.display = originalBackDisplay;
+                cardFront.style.transform = originalFrontTransform;
+                cardBack.style.transform = originalBackTransform;
                 btn.innerHTML = originalText;
                 btn.style.opacity = '1';
             });
