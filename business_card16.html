@@ -428,7 +428,7 @@
             </div>
         </div>
 
-        <button class="save-action-btn" onclick="executeCapture()">Save Active Layout</button>
+        <button class="save-action-btn" onclick="executeCapture()">Save Combined Layout</button>
     </div>
 
     <script>
@@ -485,24 +485,65 @@
         window.addEventListener('load', performScaleCheck);
         window.addEventListener('resize', performScaleCheck);
 
-        // High-fidelity image capture engine
+        // High-fidelity, multi-side image capture engine
         function executeCapture() {
-            const targetCard = document.querySelector('.bc-card.active');
-            const nativeTransform = targetCard.style.transform;
+            const frontCard = document.getElementById('view-front');
+            const backCard = document.getElementById('view-back');
             
-            // Normalize layout boundaries prior to snapshot render
-            targetCard.style.transform = 'scale(1)';
+            // --- STEP 1: Normalize layouts for print quality ---
+            // Store current scales to restore them later
+            const frontTransform = frontCard.style.transform;
+            const backTransform = backCard.style.transform;
             
-            html2canvas(targetCard, {
-                scale: 6, // 6x structural scaling maps 350x200 canvas directly to print-quality 2100x1200 image asset
+            // Remove scale transform to get full native resolution (350x200)
+            frontCard.style.transform = 'scale(1)';
+            backCard.style.transform = 'scale(1)';
+            
+            // --- STEP 2: Create a temporary container for the combined, styled output ---
+            const finalOutputWrapper = document.createElement('div');
+            finalOutputWrapper.style.cssText = `
+                background-color: #f0f2f5; 
+                padding: 40px; 
+                display: flex; 
+                flex-direction: column; 
+                align-items: center; 
+                gap: 30px;
+                position: absolute;
+                left: -9999px;
+            `;
+            
+            // Clone the original card elements (with their child elements and styles)
+            const clonedFront = frontCard.cloneNode(true);
+            const clonedBack = backCard.cloneNode(true);
+            
+            // Crucial: Cloned elements don't inherit 'active' class logic. Ensure both are visible.
+            clonedFront.style.display = 'block'; 
+            clonedBack.style.display = 'block';
+
+            // Add the cards to the temporary wrapper
+            finalOutputWrapper.appendChild(clonedFront);
+            finalOutputWrapper.appendChild(clonedBack);
+            
+            // Temporarily append this to the document body so html2canvas can access it
+            document.body.appendChild(finalOutputWrapper);
+            
+            // --- STEP 3: Execute the capture of the entire styled container ---
+            html2canvas(finalOutputWrapper, {
+                scale: 6, // 6x structural scaling maps native canvas directly to print-quality asset
                 useCORS: true,
                 logging: false,
-                backgroundColor: null
+                backgroundColor: null // Let the container's background-color style handle it
             }).then(generatedCanvas => {
-                targetCard.style.transform = nativeTransform; // Return visual viewport scale
+                // --- STEP 4: Restore the editor's visual scale ---
+                frontCard.style.transform = frontTransform;
+                backCard.style.transform = backTransform;
+                
+                // Clean up: remove the temporary element
+                document.body.removeChild(finalOutputWrapper);
 
+                // --- STEP 5: Trigger the download ---
                 const temporaryLink = document.createElement('a');
-                temporaryLink.download = 'business_card_output.png';
+                temporaryLink.download = 'business_card_combined.png'; // Updated name
                 temporaryLink.href = generatedCanvas.toDataURL('image/png');
                 temporaryLink.click();
             });
