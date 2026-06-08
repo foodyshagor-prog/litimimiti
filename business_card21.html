@@ -364,7 +364,7 @@
         </div>
 
         <button class="save-btn" onclick="saveImage()">
-            <i class="fas fa-download"></i> Save Visible Page
+            <i class="fas fa-download"></i> Save Both Sides (Combined)
         </button>
     </div>
 
@@ -406,38 +406,80 @@
             }
         }
 
-        // Save functionality using html2canvas
+        // Save functionality using html2canvas to combine both sides vertically
         function saveImage() {
-            // Find the currently active card
-            const activeCard = document.querySelector('.card.active');
-            const originalTransform = activeCard.style.transform;
+            const frontCard = document.getElementById('card-front');
+            const backCard = document.getElementById('card-back');
             
-            // Temporarily remove scaling so html2canvas captures full 600x342 high-res resolution
-            activeCard.style.transform = 'scale(1)';
+            // Temporarily force both cards to be block-level layout and unscaled for crisp execution capture
+            frontCard.style.display = 'block';
+            frontCard.style.transform = 'scale(1)';
+            backCard.style.display = 'block';
+            backCard.style.transform = 'scale(1)';
             
-            html2canvas(activeCard, {
-                scale: 3, // Multiplies resolution by 3 for an ultra-HD crisp export
+            const options = {
+                scale: 3, // Multiplies resolution by 3 for an ultra-HD crisp presentation export
                 useCORS: true,
-                backgroundColor: null // Transparent behind the card bounds
-            }).then(canvas => {
-                const base64Image = canvas.toDataURL("image/png");
+                backgroundColor: null // Maintain precise transparency bounds internally
+            };
+            
+            // Trigger html2canvas synchronous node capture workflows simultaneously
+            const promiseFront = html2canvas(frontCard, options);
+            const promiseBack = html2canvas(backCard, options);
+            
+            // Instantly remove inline override style properties so stylesheet rules take control back in the same tick
+            frontCard.style.display = '';
+            backCard.style.display = '';
+            resizeCard(); // Automatically re-evaluates responsive structural transforms
+            
+            // Resolve canvas rendering tasks and compose single stacked file layout
+            Promise.all([promiseFront, promiseBack]).then(([canvasFront, canvasBack]) => {
+                const scale = options.scale;
                 
-                // --- ANDROID WEBVIEW INTEGRATION ---
-                // If you are using Jetpack Compose/Kotlin, you can catch this via a JavascriptInterface.
-                // Example: AndroidAppBridge.saveBase64Image(base64Image)
+                // Fine-tuned display design options (multiplied by rendering export scale factor)
+                const paddingX = 50 * scale; // Clean presentation left/right border spaces
+                const paddingY = 50 * scale; // Clean presentation top/bottom margin spaces
+                const gap = 40 * scale;      // Balanced gap space separating front and back cards
                 
+                const cardWidth = canvasFront.width;
+                const cardHeight = canvasFront.height;
+                
+                // Calculate presentation boundary dimensions
+                const combinedWidth = cardWidth + (paddingX * 2);
+                const combinedHeight = (cardHeight * 2) + (paddingY * 2) + gap;
+                
+                // Prepare composition layout element
+                const combinedCanvas = document.createElement('canvas');
+                combinedCanvas.width = combinedWidth;
+                combinedCanvas.height = combinedHeight;
+                
+                const ctx = combinedCanvas.getContext('2d');
+                
+                // Render elegant presentation backdrop fill (#f0f2f5)
+                ctx.fillStyle = '#f0f2f5';
+                ctx.fillRect(0, 0, combinedWidth, combinedHeight);
+                
+                // Draw Front Side centered horizontally on top bounds
+                ctx.drawImage(canvasFront, paddingX, paddingY);
+                
+                // Draw Back Side centered horizontally directly below front layout block
+                ctx.drawImage(canvasBack, paddingX, paddingY + cardHeight + gap);
+                
+                // Generate absolute base64 binary image object payload
+                const base64Image = combinedCanvas.toDataURL("image/png");
+                
+                // --- PRESENTATION EXPORT BRIDGE DELIVERY ---
                 if (window.AndroidBridge) {
                     window.AndroidBridge.saveImage(base64Image);
                 } else {
-                    // Fallback for standard browser testing
+                    // Standard desktop/mobile web browser automated anchor fallback fallback link
                     let link = document.createElement('a');
-                    link.download = 'business_card.png';
+                    link.download = 'business_card_presentation.png';
                     link.href = base64Image;
                     link.click();
                 }
-
-                // Restore original mobile scale
-                activeCard.style.transform = originalTransform;
+            }).catch(err => {
+                console.error("An error occurred combining layout asset nodes:", err);
             });
         }
     </script>
