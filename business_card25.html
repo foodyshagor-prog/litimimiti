@@ -139,7 +139,6 @@
 
         .card-content {
             position: relative;
-            zIndex: 2;
             width: 100%;
             height: 100%;
             padding: 24px;
@@ -489,11 +488,9 @@
     </div>
 
     <script>
-        // Synchronized Text Input Propagation Engine
         function updateText(targetId, value) {
             const element = document.getElementById(targetId);
             if (element) {
-                // Ensure proper newline preservation mapping for textareas
                 element.innerText = value;
             }
         }
@@ -504,58 +501,90 @@
             document.getElementById('preview-logo-text').innerHTML = `${mainW} <span>${subW}</span>`;
         }
 
-        // Segment Switch Toggle Management Pipeline
         function switchSide(side) {
-            // Update Toggle Tab UI highlights
             const buttons = document.querySelectorAll('.toggle-btn');
             buttons[0].classList.toggle('active', side === 'front');
             buttons[1].classList.toggle('active', side === 'back');
 
-            // Swap Active Canvas Context
             document.getElementById('card-front').classList.toggle('active', side === 'front');
             document.getElementById('card-back').classList.toggle('active', side === 'back');
 
-            // Rotate visible editor forms synchronously
             document.getElementById('editor-front').classList.toggle('active', side === 'front');
             document.getElementById('editor-back').classList.toggle('active', side === 'back');
         }
 
-        // Document Object Model Render Capture Export
+        // Modified Dynamic Combined Export Engine
         function exportCard() {
-            // Determine currently active container configuration to output
-            const activeCard = document.querySelector('.business-card.active');
-            const sideName = activeCard.id === 'card-front' ? 'front' : 'back';
-            
-            // Inform mobile container layer processing loop started
             const saveBtn = document.querySelector('.save-btn');
             saveBtn.innerText = "Processing...";
             saveBtn.disabled = true;
 
-            // Execute html2canvas frame execution using a 3x scale factor matrix for pristine printing clarity
-            html2canvas(activeCard, {
+            const frontCard = document.getElementById('card-front');
+            const backCard = document.getElementById('card-back');
+
+            // 1. Create a temporary layout wrapper built entirely off-screen
+            const tempWrapper = document.createElement('div');
+            tempWrapper.style.position = 'absolute';
+            tempWrapper.style.top = '-9999px';
+            tempWrapper.style.left = '-9999px';
+            tempWrapper.style.background = '#f0f2f5'; // Light gray presentation backdrop
+            tempWrapper.style.padding = '40px';        // Elegant outer bounding margin
+            tempWrapper.style.display = 'flex';
+            tempWrapper.style.flexDirection = 'column';
+            tempWrapper.style.alignItems = 'center';
+            tempWrapper.style.gap = '30px';            // Balanced vertical spacing separation
+
+            // 2. Deep clone both structural nodes to preserve runtime text fields
+            const frontClone = frontCard.cloneNode(true);
+            const backClone = backCard.cloneNode(true);
+
+            // 3. Normalize display dimensions explicitly to prevent dimensional compression outside viewports
+            frontClone.style.display = 'block';
+            frontClone.style.width = '350px';
+            frontClone.style.height = '200px';
+            frontClone.style.boxShadow = '0 12px 28px rgba(0,0,0,0.12)'; // Modern clean preview shadow
+
+            backClone.style.display = 'block';
+            backClone.style.width = '350px';
+            backClone.style.height = '200px';
+            backClone.style.boxShadow = '0 12px 28px rgba(0,0,0,0.12)';
+
+            // Assemble temporary structure
+            tempWrapper.appendChild(frontClone);
+            tempWrapper.appendChild(backClone);
+            document.body.appendChild(tempWrapper);
+
+            // 4. Capture consolidated container layout matrix at high scale rendering ratios
+            html2canvas(tempWrapper, {
                 scale: 3, 
                 useCORS: true,
                 allowTaint: true,
-                backgroundColor: null
+                backgroundColor: '#f0f2f5'
             }).then(canvas => {
                 const dataUrl = canvas.toDataURL('image/png');
                 
-                // Native programmatic simulated download link handler
+                // Construct file deployment handle
                 const downloadLink = document.createElement('a');
-                downloadLink.download = `business_card_${sideName}.png`;
+                downloadLink.download = `business_card_full_presentation.png`;
                 downloadLink.href = dataUrl;
                 document.body.appendChild(downloadLink);
                 downloadLink.click();
                 document.body.removeChild(downloadLink);
 
-                // Revert CTA string state
+                // Tear down temporary DOM variables
+                document.body.removeChild(tempWrapper);
+
+                // Re-evaluate button CTA control state strings
                 saveBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Save Card`;
                 saveBtn.disabled = false;
             }).catch(err => {
                 console.error("Render capture pipeline failure:", err);
+                if (document.body.contains(tempWrapper)) {
+                    document.body.removeChild(tempWrapper);
+                }
                 saveBtn.innerText = "Error Saving";
                 setTimeout(() => {
-                    saveBtn.innerText = "Save Card";
+                    saveBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Save Card`;
                     saveBtn.disabled = false;
                 }, 2000);
             });
