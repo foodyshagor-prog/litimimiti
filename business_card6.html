@@ -573,7 +573,6 @@
             
             reader.onload = function(e) {
                 const imgUrl = e.target.result;
-                // Update both front and back layout background states
                 document.getElementById('bg-front-canvas').style.backgroundImage = `url('${imgUrl}')`;
                 document.getElementById('bg-back-canvas').style.backgroundImage = `url('${imgUrl}')`;
             };
@@ -630,36 +629,87 @@
         document.getElementById('lbl-web').innerText = document.getElementById('input-web').value.toUpperCase();
     }
 
-    // HTML2Canvas high-resolution snapshot download processing logic block
+    // HTML2Canvas combined high-resolution layout download engine
     function exportCardImage() {
-        const activeCard = document.querySelector('.business-card.active');
-        const activeSideName = activeCard.id === 'card-front' ? 'front' : 'back';
-        
-        const originalBoxShadow = activeCard.style.boxShadow;
-        activeCard.style.boxShadow = "none";
+        const cardFront = document.getElementById('card-front');
+        const cardBack = document.getElementById('card-back');
 
-        html2canvas(activeCard, {
-            scale: 4, // Clean high-resolution pixel matrix matching premium device displays
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: null
-        }).then(canvas => {
-            activeCard.style.boxShadow = originalBoxShadow;
+        // Cache existing UI positioning properties to rollback clean states
+        const originalFrontDisplay = cardFront.style.display;
+        const originalBackDisplay = cardBack.style.display;
+        const originalFrontShadow = cardFront.style.boxShadow;
+        const originalBackShadow = cardBack.style.boxShadow;
+
+        // Force elements visible contextually for DOM parsing mechanics
+        cardFront.style.display = 'block';
+        cardBack.style.display = 'block';
+        cardFront.style.boxShadow = 'none';
+        cardBack.style.boxShadow = 'none';
+
+        const outputScale = 4; // High-density preview display matrix
+
+        Promise.all([
+            html2canvas(cardFront, { scale: outputScale, useCORS: true, allowTaint: true, backgroundColor: null }),
+            html2canvas(cardBack, { scale: outputScale, useCORS: true, allowTaint: true, backgroundColor: null })
+        ]).then(([canvasFront, canvasBack]) => {
+            // Instantly restore active states to match user's view context
+            cardFront.style.display = originalFrontDisplay;
+            cardBack.style.display = originalBackDisplay;
+            cardFront.style.boxShadow = originalFrontShadow;
+            cardBack.style.boxShadow = originalBackShadow;
+
+            // Presentation geometry configurations (scaled proportionately)
+            const outerPadding = 55 * outputScale; 
+            const verticalGap = 45 * outputScale;  
             
-            const imageURI = canvas.toDataURL("image/png");
-            
+            const cardW = canvasFront.width;
+            const cardH = canvasFront.height;
+
+            // Construct new compound master layout canvas matrix
+            const masterCanvas = document.createElement('canvas');
+            masterCanvas.width = cardW + (outerPadding * 2);
+            masterCanvas.height = (cardH * 2) + (outerPadding * 2) + verticalGap;
+
+            const ctx = masterCanvas.getContext('2d');
+
+            // 1. Fill presentation canvas base color (#f0f2f5)
+            ctx.fillStyle = '#f0f2f5';
+            ctx.fillRect(0, 0, masterCanvas.width, masterCanvas.height);
+
+            // 2. Generate premium display shadows for design presentation layers
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
+            ctx.shadowBlur = 16 * outputScale;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 10 * outputScale;
+
+            // 3. Draw Front Side (Centered horizontally)
+            const targetX = outerPadding;
+            const targetYFront = outerPadding;
+            ctx.drawImage(canvasFront, targetX, targetYFront);
+
+            // 4. Draw Back Side (Centered horizontally underneath)
+            const targetYBack = outerPadding + cardH + verticalGap;
+            ctx.drawImage(canvasBack, targetX, targetYBack);
+
+            // 5. Fire high-res data link stream download pipeline
+            const imageURI = masterCanvas.toDataURL("image/png");
             const downloadLink = document.createElement('a');
-            downloadLink.download = `business_card_${activeSideName}_preview.png`;
+            downloadLink.download = `premium_card_full_presentation.png`;
             downloadLink.href = imageURI;
             document.body.appendChild(downloadLink);
             downloadLink.click();
             document.body.removeChild(downloadLink);
+
         }).catch(err => {
-            console.error("Error generating image output asset matrix: ", err);
+            // Fail-safe protection layer to return UI structure if promise rejects
+            cardFront.style.display = originalFrontDisplay;
+            cardBack.style.display = originalBackDisplay;
+            cardFront.style.boxShadow = originalFrontShadow;
+            cardBack.style.boxShadow = originalBackShadow;
+            console.error("Error creating compiled display presentation asset matrix: ", err);
         });
     }
 
-    // Initialize formatting triggers on window load runtime cycles
     window.onload = function() {
         updateCardFields();
     };
