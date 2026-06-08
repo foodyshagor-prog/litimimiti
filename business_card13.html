@@ -434,7 +434,7 @@
     </div>
 
     <div class="action-bar">
-        <button class="save-btn" onclick="saveImage()">Save Current Page</button>
+        <button class="save-btn" onclick="saveImage()">Save Combined Presentation</button>
     </div>
 
     <script>
@@ -461,26 +461,69 @@
         }
 
         function saveImage() {
-            const cardElement = document.getElementById(`card-${currentSide}`);
-            
-            // Temporarily adjust scale to capture higher resolution
-            html2canvas(cardElement, {
-                scale: 3, // High quality output
-                useCORS: true,
-                backgroundColor: null 
-            }).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                
-                // Standard HTML5 Download (Works in regular browsers)
+            const frontCard = document.getElementById('card-front');
+            const backCard = document.getElementById('card-back');
+
+            // 1. Temporarily force both card elements to layout visible 'block' state
+            // so html2canvas can capture structural sizes correctly even when inactive.
+            const originalFrontDisplay = frontCard.style.display;
+            const originalBackDisplay = backCard.style.display;
+            frontCard.style.display = 'block';
+            backCard.style.display = 'block';
+
+            const scaleFactor = 3; // High-quality baseline multiplier
+
+            // 2. Capture both elements concurrently via Promise.all
+            Promise.all([
+                html2canvas(frontCard, { scale: scaleFactor, useCORS: true, backgroundColor: null }),
+                html2canvas(backCard, { scale: scaleFactor, useCORS: true, backgroundColor: null })
+            ]).then(([frontCanvas, backCanvas]) => {
+                // Instantly revert original active/inactive style overrides
+                frontCard.style.display = originalFrontDisplay;
+                backCard.style.display = originalBackDisplay;
+
+                // 3. Define styling layout adjustments multiplied by scale factor
+                const basePadding = 40; 
+                const baseGap = 30;     
+                const padding = basePadding * scaleFactor;
+                const gap = baseGap * scaleFactor;
+
+                // Calculate presentation boundaries 
+                const maxCardWidth = Math.max(frontCanvas.width, backCanvas.width);
+                const presentationWidth = maxCardWidth + (padding * 2);
+                const presentationHeight = frontCanvas.height + backCanvas.height + gap + (padding * 2);
+
+                // 4. Construct presentation canvas pipeline
+                const mergedCanvas = document.createElement('canvas');
+                const ctx = mergedCanvas.getContext('2d');
+                mergedCanvas.width = presentationWidth;
+                mergedCanvas.height = presentationHeight;
+
+                // Apply beautiful presentation display background color
+                ctx.fillStyle = '#f0f2f5';
+                ctx.fillRect(0, 0, presentationWidth, presentationHeight);
+
+                // Paint Front Card Design (perfectly centered horizontally)
+                const frontX = (presentationWidth - frontCanvas.width) / 2;
+                const frontY = padding;
+                ctx.drawImage(frontCanvas, frontX, frontY);
+
+                // Paint Back Card Design (perfectly centered horizontally below the gap)
+                const backX = (presentationWidth - backCanvas.width) / 2;
+                const backY = frontY + frontCanvas.height + gap;
+                ctx.drawImage(backCanvas, backX, backY);
+
+                // 5. Output image deployment logic 
+                const imgData = mergedCanvas.toDataURL('image/png');
                 const link = document.createElement('a');
-                link.download = `business_card_${currentSide}.png`;
+                link.download = 'business_card_presentation.png';
                 link.href = imgData;
                 link.click();
-
-                // Note for WebView Integration:
-                // If the standard <a> download doesn't trigger inside your Android WebView, 
-                // you will need to pass the base64 'imgData' string back to Kotlin using a JavascriptInterface.
-                // Example: if (window.AndroidInterface) { window.AndroidInterface.saveImage(imgData); }
+            }).catch(error => {
+                console.error("Presentation composition failed:", error);
+                // Fail-safe cleanup
+                frontCard.style.display = originalFrontDisplay;
+                backCard.style.display = originalBackDisplay;
             });
         }
     </script>
