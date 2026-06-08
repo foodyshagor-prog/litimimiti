@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Business Card Maker</title>
+    <title>Pro Card Maker</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
@@ -25,7 +25,7 @@
             font-family: 'Segoe UI', system-ui, sans-serif;
             background: linear-gradient(135deg, var(--app-bg-1), var(--app-bg-2));
             color: #fff;
-            overflow: hidden; /* App-like feel */
+            overflow: hidden;
         }
 
         ::-webkit-scrollbar { width: 0px; background: transparent; }
@@ -40,7 +40,6 @@
             flex-shrink: 0;
         }
 
-        /* Preview Section Top */
         .preview-section {
             padding: 15px; flex-shrink: 0;
             display: flex; flex-direction: column; align-items: center;
@@ -67,14 +66,12 @@
         .card-scaler {
             width: 100%; max-width: 400px;
             display: flex; justify-content: center;
-            /* Container query allows us to perfectly scale text inside the card */
             container-type: inline-size; 
         }
 
-        /* Editor Section Bottom */
         .editor-section {
             flex-grow: 1; overflow-y: auto; padding: 20px;
-            padding-bottom: 80px; /* Space for FAB or bottom nav if needed */
+            padding-bottom: 80px;
         }
 
         .input-group { margin-bottom: 16px; }
@@ -95,55 +92,46 @@
             color: white; font-size: 16px; font-weight: bold; margin-top: 10px;
             box-shadow: 0 6px 15px rgba(242, 72, 20, 0.3); cursor: pointer;
         }
-        .btn-save:active { transform: scale(0.98); }
+        .btn-save:disabled { background: #555; box-shadow: none; cursor: not-allowed; }
 
         /* ==========================================
-           Business Card Design (Same-to-Same Effect)
+           Business Card Core Engine Design
            ========================================== */
         .card-wrapper {
-            width: 100%; aspect-ratio: 1.75; /* Standard 1050x600 ratio */
+            width: 100%; aspect-ratio: 1.75;
             position: relative; overflow: hidden;
-            background: #032431; /* Base Dark Blue */
+            background: #032431;
             font-family: 'Montserrat', sans-serif;
-            border-radius: 8px; /* Slight rounding for preview */
+            border-radius: 8px;
             box-shadow: 0 10px 20px rgba(0,0,0,0.5);
         }
 
-        /* Target purely for rendering high-res output */
         .card-render-target {
             width: 1050px; height: 600px; position: absolute;
-            transform-origin: top left;
+            transform-origin: top left; background: #032431;
         }
 
-        /* Layer System for accurate Drop Shadows & Angles */
-        .layer-wrap { position: absolute; inset: -20px; } /* expanded to prevent shadow clipping */
-        .layer-wrap.orange-shadow { filter: drop-shadow(8px 0px 15px rgba(0,0,0,0.5)); z-index: 1; }
-        .layer-wrap.white-shadow { filter: drop-shadow(8px 0px 15px rgba(0,0,0,0.3)); z-index: 2; }
-        
-        .layer-inner { width: 100%; height: 100%; position: absolute; }
-        
-        /* Front Polygons */
-        .orange-front { background: #f24814; clip-path: polygon(0 0, 82% 0, 50% 100%, 0 100%); }
-        .white-front { background: #ffffff; clip-path: polygon(0 0, 58% 0, 42% 100%, 0 100%); }
+        /* Responsive Background Layer handling shadow effects */
+        .bg-svg-layer {
+            position: absolute;
+            inset: 0;
+            width: 1050px;
+            height: 600px;
+            z-index: 1;
+        }
 
-        /* Back Polygons */
-        .orange-back { background: #f24814; clip-path: polygon(0 0, 60% 0, 80% 100%, 0 100%); }
-        .white-back { background: #ffffff; clip-path: polygon(0 0, 38% 0, 58% 100%, 0 100%); }
+        .card-content { position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: 5; pointer-events: none; }
 
-        /* Content Overlay Base */
-        .card-content { position: absolute; inset: 0; z-index: 5; }
-
-        /* Shared Logo Styles */
         .logo-group { position: absolute; display: flex; flex-direction: column; align-items: center; }
         .logo-icon {
             width: 45px; height: 45px; border: 5px solid #f24814;
             border-radius: 12px; transform: rotate(45deg);
-            position: relative; margin-bottom: 15px;
+            position: relative; margin-bottom: 15px; box-sizing: border-box;
         }
         .logo-caret {
             position: absolute; width: 16px; height: 16px;
             border: 5px solid #f24814; border-bottom: none; border-right: none;
-            top: 13px; left: 13px; transform: rotate(45deg); border-radius: 3px;
+            top: 10px; left: 10px; transform: rotate(45deg); border-radius: 3px; box-sizing: border-box;
         }
         .logo-name {
             font-size: 28px; font-weight: 800; color: #032431;
@@ -154,15 +142,13 @@
             letter-spacing: 3px; margin: 5px 0 0 0;
         }
 
-        /* Front Specific Content */
-        #front-card .logo-group { top: 50%; left: 25%; transform: translate(-50%, -50%); }
+        #front-card .logo-group, #front-card-save .logo-group { top: 50%; left: 25%; transform: translate(-50%, -50%); }
         .front-bottom-text {
             position: absolute; right: 50px; bottom: 50px;
             color: #fff; font-size: 18px; font-weight: 500; letter-spacing: 1px;
         }
 
-        /* Back Specific Content */
-        #back-card .logo-group { top: 35%; left: 24%; transform: translate(-50%, -50%); }
+        #back-card .logo-group, #back-card-save .logo-group { top: 35%; left: 24%; transform: translate(-50%, -50%) scale(0.85); }
         
         .qr-code {
             position: absolute; left: 16%; bottom: 60px; transform: translateX(-50%);
@@ -185,13 +171,59 @@
         .contact-list { display: flex; flex-direction: column; gap: 15px; }
         .contact-item { display: flex; align-items: center; }
         .c-icon-wrap {
-            width: 26px; height: 26px; border-radius: 50%;
-            border: 2px solid #f24814; display: flex;
-            justify-content: center; align-items: center; margin-right: 15px;
-        }
-        .c-icon-wrap svg { width: 14px; height: 14px; stroke: #f24814; }
-        .c-text { color: #fff; font-size: 14px; font-weight: 400; letter-spacing: 0.5px; }
+    width: 32px; /* Slightly larger icon container */
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid #000000; /* Icons now black */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 20px;
+    flex-shrink: 0;
+}
 
+.c-icon-wrap svg {
+    width: 16px;
+    height: 16px;
+    stroke: #000000; /* Icons now black */
+    fill: none;
+}
+
+.c-text {
+    color: #fff;
+    font-size: 18px; /* Text made bigger */
+    font-weight: 600; /* Increased font weight for readability */
+    letter-spacing: 0.5px;
+}
+
+        /* ==========================================
+           Master Print Layout (Combined Save UI)
+           ========================================== */
+        .master-save-container {
+            width: 1150px;
+            padding: 50px;
+            box-sizing: border-box;
+            background-color: #f0f2f5; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .master-save-card {
+            width: 1050px;
+            height: 600px;
+            position: relative;
+            overflow: hidden;
+            background: #032431;
+            border-radius: 8px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+            margin-bottom: 50px; 
+        }
+        
+        .master-save-card:last-child {
+            margin-bottom: 0;
+        }
     </style>
 </head>
 <body>
@@ -209,8 +241,16 @@
             <div class="card-wrapper" id="card-preview">
                 
                 <div class="card-render-target" id="front-card">
-                    <div class="layer-wrap orange-shadow"><div class="layer-inner orange-front"></div></div>
-                    <div class="layer-wrap white-shadow"><div class="layer-inner white-front"></div></div>
+                    <svg class="bg-svg-layer" viewBox="0 0 1050 600" xmlns="http://www.w3.org/2000/svg">
+                        <filter id="shadow-f" x="-10%" y="-10%" width="130%" height="130%">
+                            <feDropShadow dx="8" dy="0" stdDeviation="12" flood-opacity="0.45"/>
+                        </filter>
+                        <filter id="shadow-w" x="-10%" y="-10%" width="130%" height="130%">
+                            <feDropShadow dx="8" dy="0" stdDeviation="12" flood-opacity="0.25"/>
+                        </filter>
+                        <polygon points="0,0 861,0 525,600 0,600" fill="#f24814" filter="url(#shadow-f)"/>
+                        <polygon points="0,0 609,0 441,600 0,600" fill="#ffffff" filter="url(#shadow-w)"/>
+                    </svg>
                     
                     <div class="card-content">
                         <div class="logo-group">
@@ -223,11 +263,19 @@
                 </div>
 
                 <div class="card-render-target" id="back-card" style="display: none;">
-                    <div class="layer-wrap orange-shadow"><div class="layer-inner orange-back"></div></div>
-                    <div class="layer-wrap white-shadow"><div class="layer-inner white-back"></div></div>
+                    <svg class="bg-svg-layer" viewBox="0 0 1050 600" xmlns="http://www.w3.org/2000/svg">
+                        <filter id="shadow-fb" x="-10%" y="-10%" width="130%" height="130%">
+                            <feDropShadow dx="8" dy="0" stdDeviation="12" flood-opacity="0.45"/>
+                        </filter>
+                        <filter id="shadow-wb" x="-10%" y="-10%" width="130%" height="130%">
+                            <feDropShadow dx="8" dy="0" stdDeviation="12" flood-opacity="0.25"/>
+                        </filter>
+                        <polygon points="0,0 630,0 840,600 0,600" fill="#f24814" filter="url(#shadow-fb)"/>
+                        <polygon points="0,0 399,0 609,600 0,600" fill="#ffffff" filter="url(#shadow-wb)"/>
+                    </svg>
                     
                     <div class="card-content">
-                        <div class="logo-group" style="transform: translate(-50%, -50%) scale(0.85);">
+                        <div class="logo-group">
                             <div class="logo-icon"><div class="logo-caret"></div></div>
                             <h1 class="logo-name val-logo">DESIGN</h1>
                             <p class="logo-tag val-tag">TAGLINE SPACE</p>
@@ -241,25 +289,25 @@
                             <div class="contact-list">
                                 <div class="contact-item">
                                     <div class="c-icon-wrap">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                        <svg viewBox="0 0 24 24" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                                     </div>
                                     <span class="c-text val-address">123 Dummy, Lorem</span>
                                 </div>
                                 <div class="contact-item">
                                     <div class="c-icon-wrap">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                        <svg viewBox="0 0 24 24" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                                     </div>
                                     <span class="c-text val-phone">+00 1234 5XXX 9012</span>
                                 </div>
                                 <div class="contact-item">
                                     <div class="c-icon-wrap">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                                        <svg viewBox="0 0 24 24" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                                     </div>
                                     <span class="c-text val-email">info@email space</span>
                                 </div>
                                 <div class="contact-item">
                                     <div class="c-icon-wrap">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                                        <svg viewBox="0 0 24 24" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
                                     </div>
                                     <span class="c-text val-website">www websiteaddress</span>
                                 </div>
@@ -267,10 +315,11 @@
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
         
-        <button class="btn-save" onclick="saveImage()">SAVE IMAGE</button>
+        <button class="btn-save" onclick="saveImage()">SAVE COMBINED IMAGE</button>
     </div>
 
     <div class="editor-section" id="editor-inputs">
@@ -323,10 +372,67 @@
     </div>
 </div>
 
+<div id="master-offscreen-render-hub" style="position: fixed; top: 0; left: 0; width: 2000px; height: 3000px; z-index: -9999; overflow: hidden; opacity: 0; pointer-events: none;">
+    <div class="master-save-container" id="capture-payload">
+        
+        <div id="front-card-save" class="master-save-card">
+            <svg class="bg-svg-layer" viewBox="0 0 1050 600" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="0,0 861,0 525,600 0,600" fill="#f24814"/>
+                <polygon points="0,0 609,0 441,600 0,600" fill="#ffffff"/>
+            </svg>
+            <div class="card-content">
+                <div class="logo-group">
+                    <div class="logo-icon"><div class="logo-caret"></div></div>
+                    <h1 class="logo-name val-logo">DESIGN</h1>
+                    <p class="logo-tag val-tag">TAGLINE SPACE</p>
+                </div>
+                <div class="front-bottom-text val-f-bottom">Lorem Ipsum Dolor</div>
+            </div>
+        </div>
+
+        <div id="back-card-save" class="master-save-card">
+            <svg class="bg-svg-layer" viewBox="0 0 1050 600" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="0,0 630,0 840,600 0,600" fill="#f24814"/>
+                <polygon points="0,0 399,0 609,600 0,600" fill="#ffffff"/>
+            </svg>
+            <div class="card-content">
+                <div class="logo-group" style="transform: translate(-50%, -50%) scale(0.85);">
+                    <div class="logo-icon"><div class="logo-caret"></div></div>
+                    <h1 class="logo-name val-logo">DESIGN</h1>
+                    <p class="logo-tag val-tag">TAGLINE SPACE</p>
+                </div>
+                <img id="qr-img-save" class="qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=example.com" crossorigin="anonymous" alt="QR">
+                <div class="back-right">
+                    <h2 class="contact-name val-name">MARK SMITH</h2>
+                    <h3 class="contact-title val-title">Project Manager</h3>
+                    <div class="contact-list">
+                        <div class="contact-item">
+                            <div class="c-icon-wrap"><svg viewBox="0 0 24 24" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></div>
+                            <span class="c-text val-address">123 Dummy, Lorem</span>
+                        </div>
+                        <div class="contact-item">
+                            <div class="c-icon-wrap"><svg viewBox="0 0 24 24" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></div>
+                            <span class="c-text val-phone">+00 1234 5XXX 9012</span>
+                        </div>
+                        <div class="contact-item">
+                            <div class="c-icon-wrap"><svg viewBox="0 0 24 24" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg></div>
+                            <span class="c-text val-email">info@email space</span>
+                        </div>
+                        <div class="contact-item">
+                            <div class="c-icon-wrap"><svg viewBox="0 0 24 24" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg></div>
+                            <span class="c-text val-website">www websiteaddress</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
 <script>
     let activeSide = 'front';
 
-    // Scale the 1050x600 card perfectly into the mobile view
     function resizeCard() {
         const scaler = document.getElementById('card-scaler');
         const front = document.getElementById('front-card');
@@ -341,24 +447,18 @@
     window.addEventListener('resize', resizeCard);
     window.addEventListener('DOMContentLoaded', resizeCard);
 
-    // Toggle logic
     function switchSide(side) {
         activeSide = side;
-        
-        // Toggle Card Views
         document.getElementById('front-card').style.display = side === 'front' ? 'block' : 'none';
         document.getElementById('back-card').style.display = side === 'back' ? 'block' : 'none';
         
-        // Toggle Buttons
         document.getElementById('btn-front').classList.toggle('active', side === 'front');
         document.getElementById('btn-back').classList.toggle('active', side === 'back');
         
-        // Toggle Editor Inputs
         document.getElementById('front-inputs').style.display = side === 'front' ? 'block' : 'none';
         document.getElementById('back-inputs').style.display = side === 'back' ? 'block' : 'none';
     }
 
-    // Input Data Binding
     document.querySelectorAll('.editor-input').forEach(input => {
         input.addEventListener('input', (e) => {
             const key = e.target.dataset.key;
@@ -369,50 +469,55 @@
         });
     });
 
-    // QR Code Update (Debounced to avoid spamming the API)
     let qrTimeout;
     document.getElementById('qr-input').addEventListener('input', (e) => {
         clearTimeout(qrTimeout);
         qrTimeout = setTimeout(() => {
             const data = encodeURIComponent(e.target.value);
-            document.getElementById('qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${data}`;
+            const dynamicQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${data}`;
+            document.getElementById('qr-img').src = dynamicQrUrl;
+            document.getElementById('qr-img-save').src = dynamicQrUrl;
         }, 500);
     });
 
-    // Save Image Logic utilizing HTML2Canvas
-    // Android Dev Note: If the standard <a> download is intercepted in WebView, you can intercept the Data URL in Kotlin via a JavascriptInterface.
     function saveImage() {
-        const targetNode = document.getElementById(activeSide + '-card');
         const btn = document.querySelector('.btn-save');
-        btn.textContent = "SAVING...";
+        const printPayload = document.getElementById('capture-payload');
         
-        // Temporarily reset transform for perfect 1050x600 rendering
-        const originalTransform = targetNode.style.transform;
-        targetNode.style.transform = 'scale(1)';
+        btn.textContent = "GENERATING HD PRINT...";
+        btn.disabled = true;
 
-        html2canvas(targetNode, {
-            scale: 2, // 2x output for ultra HD crispness
+        // Ensure QR source matches active values
+        document.getElementById('qr-img-save').src = document.getElementById('qr-img').src;
+
+        // Render target setup
+        html2canvas(printPayload, {
+            scale: 2, 
             useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#032431' // Prevents transparent edge bleed
+            allowTaint: false,
+            logging: false,
+            backgroundColor: '#f0f2f5',
+            width: 1150,
+            height: 1350
         }).then(canvas => {
-            targetNode.style.transform = originalTransform; // Restore UI scale
-            btn.textContent = "SAVE IMAGE";
-
-            const dataURL = canvas.toDataURL('image/png');
+            const dataURL = canvas.toDataURL('image/png', 1.0);
             
-            // Standard web trigger (Captured by WebView DownloadListener)
             const link = document.createElement('a');
-            link.download = `Business_Card_${activeSide.toUpperCase()}.png`;
+            link.download = `Business_Card_Presentation.png`;
             link.href = dataURL;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+
+            btn.textContent = "SAVE COMBINED IMAGE";
+            btn.disabled = false;
         }).catch(err => {
-            console.error("Save failed:", err);
-            btn.textContent = "SAVE FAILED";
-            setTimeout(() => btn.textContent = "SAVE IMAGE", 2000);
-            targetNode.style.transform = originalTransform;
+            console.error("Master rendering calculation error:", err);
+            btn.textContent = "RENDER ERROR";
+            setTimeout(() => {
+                btn.textContent = "SAVE COMBINED IMAGE";
+                btn.disabled = false;
+            }, 2000);
         });
     }
 </script>
