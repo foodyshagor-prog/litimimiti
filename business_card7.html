@@ -32,9 +32,10 @@
         .front-view .card-stripe { left: 45px; }
         .back-view .card-stripe { right: 45px; }
 
-        .circle-frame { position: absolute; top: 50%; transform: translateY(-50%); width: 125px; height: 125px; border-radius: 50%; border: 3px solid #ffffff; overflow: hidden; box-shadow: 0 0 0 6px rgba(67, 100, 247, 0.4); background: #111; }
-        .front-view .circle-frame { left: 18px; }
-        .back-view .circle-frame { right: 18px; }
+        /* FIX: Replaced top:50%/transform with standard absolute centering for perfect html2canvas exports */
+        .circle-frame { position: absolute; top: 0; bottom: 0; margin: auto; width: 125px; height: 125px; border-radius: 50%; border: 3px solid #ffffff; overflow: hidden; box-shadow: 0 0 0 6px rgba(67, 100, 247, 0.4); background: #111; }
+        .front-view .circle-frame { left: 18px; right: auto; }
+        .back-view .circle-frame { right: 18px; left: auto; }
         .circle-frame img { width: 100%; height: 100%; object-fit: cover; }
 
         .front-content { display: none; height: 100%; padding-left: 160px; flex-direction: column; justify-content: center; }
@@ -60,7 +61,7 @@
         .input-group { display: flex; flex-direction: column; gap: 4px; }
         .input-group label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
         .input-group input { background: var(--input-bg); border: 1px solid var(--input-border); color: white; padding: 10px; border-radius: 8px; }
-        .save-btn { background: var(--electric-blue); color: white; border: none; padding: 15px; border-radius: 10px; font-weight: bold; margin-top: 10px; }
+        .save-btn { background: var(--electric-blue); color: white; border: none; padding: 15px; border-radius: 10px; font-weight: bold; margin-top: 10px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -73,7 +74,7 @@
         <div class="card-wrapper">
             <div class="biz-card front-view" id="businessCard">
                 <div class="card-stripe"></div>
-                <div class="circle-frame"><img id="cardImage" src="https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=600&auto=format&fit=cover"></div>
+                <div class="circle-frame"><img id="cardImage" src="https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=600&auto=format&fit=cover" crossorigin="anonymous"></div>
                 
                 <div class="front-content">
                     <div class="logo-text" id="lblLogo">YOUR <span>LOGO</span></div>
@@ -123,8 +124,9 @@
         }
 
         function updateCard() {
-            // Front Sync
-            document.getElementById('lblLogo').innerText = document.getElementById('inLogo').value;
+            // Front Sync with brand color preservation
+            const logoParts = document.getElementById('inLogo').value.split(' ');
+            document.getElementById('lblLogo').innerHTML = (logoParts[0] || '') + ' <span>' + (logoParts.slice(1).join(' ') || '') + '</span>';
             document.getElementById('lblTagline').innerText = document.getElementById('inTagline').value;
             document.getElementById('lblWebFront').innerText = document.getElementById('inWebsite').value;
 
@@ -144,11 +146,54 @@
         }
 
         function saveImage() {
-            html2canvas(card, {scale: 3}).then(canvas => {
+            // 1. Create a temporary staging container for the showcase presentation
+            const printArea = document.createElement('div');
+            printArea.style.position = 'fixed';
+            printArea.style.top = '-9999px';
+            printArea.style.left = '-9999px';
+            printArea.style.width = '450px'; // Leaves clear horizontal margins around 350px card
+            printArea.style.backgroundColor = '#f0f2f5'; // Light gray background presentation
+            printArea.style.padding = '40px'; // Outer margins
+            printArea.style.display = 'flex';
+            printArea.style.flexDirection = 'column';
+            printArea.style.alignItems = 'center';
+            printArea.style.gap = '35px'; // Perfect vertical gap between cards
+            printArea.style.boxSizing = 'border-box';
+
+            // 2. Build the explicit front-view node clone
+            const frontClone = card.cloneNode(true);
+            frontClone.className = "biz-card front-view";
+            frontClone.style.width = '350px';
+            frontClone.style.height = '200px';
+
+            // 3. Build the explicit back-view node clone
+            const backClone = card.cloneNode(true);
+            backClone.className = "biz-card back-view";
+            backClone.style.width = '350px';
+            backClone.style.height = '200px';
+
+            // Assemble components to DOM
+            printArea.appendChild(frontClone);
+            printArea.appendChild(backClone);
+            document.body.appendChild(printArea);
+
+            // 4. Render with cross-origin imagery rules active
+            html2canvas(printArea, {
+                scale: 3, // Ultra-high resolution output definition
+                useCORS: true,
+                allowTaint: false,
+                logging: false
+            }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = 'business-card.png';
-                link.href = canvas.toDataURL();
+                link.download = 'business-card-presentation.png';
+                link.href = canvas.toDataURL('image/png');
                 link.click();
+                
+                // Cleanup DOM
+                document.body.removeChild(printArea);
+            }).catch(err => {
+                console.error("Rendering failed:", err);
+                document.body.removeChild(printArea);
             });
         }
     </script>
