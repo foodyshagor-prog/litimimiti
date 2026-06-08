@@ -564,11 +564,10 @@
 
         // High-Quality Asset Capture & Export Setup
         function saveCardImage() {
-            // Target the currently visible side container
-            const activeCard = document.querySelector('.business-card.active');
+            const frontCard = document.getElementById('card-front');
+            const backCard = document.getElementById('card-back');
             
-            // Render settings optimized for mobile layout scaling
-            const options = {
+            const baseOptions = {
                 scale: 3, // Multiplies canvas definition scale for sharp high-res export
                 useCORS: true,
                 backgroundColor: null,
@@ -577,8 +576,51 @@
                 height: 200
             };
 
-            html2canvas(activeCard, options).then(canvas => {
-                const base64Image = canvas.toDataURL('image/png');
+            // Inject layout style changes safely inside the cloned sandbox document window 
+            // to capture hidden sides correctly without jarring layout shifts on screen
+            const frontOptions = {
+                ...baseOptions,
+                onclone: (clonedDoc) => {
+                    clonedDoc.getElementById('card-front').style.display = 'block';
+                }
+            };
+
+            const backOptions = {
+                ...baseOptions,
+                onclone: (clonedDoc) => {
+                    clonedDoc.getElementById('card-back').style.display = 'block';
+                }
+            };
+
+            // Concurrently capture clean graphic assets for both sides
+            Promise.all([
+                html2canvas(frontCard, frontOptions),
+                html2canvas(backCard, backOptions)
+            ]).then(([canvasFront, canvasBack]) => {
+                const scale = baseOptions.scale;
+                
+                // Outer framing metrics scaled symmetrically
+                const padding = 40 * scale; 
+                const gap = 30 * scale;     
+
+                // Build a unified structural canvas container layout block
+                const finalCanvas = document.createElement('canvas');
+                finalCanvas.width = canvasFront.width + (padding * 2);
+                finalCanvas.height = canvasFront.height + canvasBack.height + gap + (padding * 2);
+
+                const ctx = finalCanvas.getContext('2d');
+
+                // Render clean application presentation layer background accent
+                ctx.fillStyle = '#f0f2f5';
+                ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+
+                // Draw front side centered graphic layout assets
+                ctx.drawImage(canvasFront, padding, padding);
+
+                // Draw back side centered graphic layout assets shifted down past vertical gap separation
+                ctx.drawImage(canvasBack, padding, padding + canvasFront.height + gap);
+
+                const base64Image = finalCanvas.toDataURL('image/png');
                 
                 // Native Bridge Trigger for Android Kotlin/Java WebViews
                 if (window.Android && window.Android.saveImage) {
@@ -587,7 +629,7 @@
                     // Standard Web Browser Fallback Method
                     const downloadLink = document.createElement('a');
                     downloadLink.href = base64Image;
-                    downloadLink.download = `BusinessCard_${Date.now()}.png`;
+                    downloadLink.download = `BusinessCard_Combined_${Date.now()}.png`;
                     document.body.appendChild(downloadLink);
                     downloadLink.click();
                     document.body.removeChild(downloadLink);
