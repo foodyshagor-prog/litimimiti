@@ -86,7 +86,7 @@
             margin-bottom: 8px;
         }
 
-        /* Business Card Layout Design (Same to Same Effect) */
+        /* Business Card Layout Design */
         .business-card {
             width: 350px;
             height: 200px;
@@ -447,9 +447,9 @@
     </div>
 
     <div class="action-area">
-        <button class="save-btn" onclick="exportCardImage()">
+        <button class="save-btn" onclick="exportCombinedCardImage()">
             <svg style="width:20px;height:20px;fill:currentColor" viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
-            Save Active Side Image
+            Save Full Presentation Image
         </button>
     </div>
 </div>
@@ -461,9 +461,11 @@
     function switchSide(side) {
         currentSide = side;
         
-        // Dynamic Toggle Buttons
-        document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
-        event.target.classList.add('active');
+        // Dynamic Toggle Buttons (Refactored to avoid unreliable global event hooks)
+        const toggleButtons = document.querySelectorAll('.toggle-btn');
+        toggleButtons.forEach(btn => btn.classList.remove('active'));
+        if(side === 'front') toggleButtons[0].classList.add('active');
+        else toggleButtons[1].classList.add('active');
 
         // Toggle Preview Frames
         document.getElementById('cardFront').classList.remove('active');
@@ -487,33 +489,62 @@
         document.getElementById(elementId).innerText = text;
     }
 
-    // High-Fidelity Image Export Engine
-    function exportCardImage() {
-        const targetElementId = currentSide === 'front' ? 'cardFront' : 'cardBack';
-        const element = document.getElementById(targetElementId);
+    // High-Fidelity Combined Presentation Image Export Engine
+    function exportCombinedCardImage() {
+        // 1. Create a transient container styled exactly for the requested showcase display layout
+        const renderWrapper = document.createElement('div');
+        renderWrapper.style.position = 'fixed';
+        renderWrapper.style.left = '-9999px';
+        renderWrapper.style.top = '-9999px';
+        renderWrapper.style.display = 'flex';
+        renderWrapper.style.flexDirection = 'column';
+        renderWrapper.style.alignItems = 'center';
+        renderWrapper.style.justifyContent = 'center';
+        renderWrapper.style.backgroundColor = '#f0f2f5'; // Light gray presentation background
+        renderWrapper.style.padding = '35px';             // Elegant outer margins
+        renderWrapper.style.gap = '24px';                 // Balanced vertical gap between designs
 
-        // Pre-rendering configuration adjustments for high resolution outputs inside mobile environments
-        html2canvas(element, {
+        // 2. Clone the live interactive nodes to retain ongoing user customizations
+        const frontClone = document.getElementById('cardFront').cloneNode(true);
+        const backClone = document.getElementById('cardBack').cloneNode(true);
+
+        // 3. Force rendering states visible inside the layout architecture pipeline
+        frontClone.style.display = 'block';
+        backClone.style.display = 'block';
+        frontClone.style.boxShadow = '0 6px 16px rgba(0,0,0,0.15)';
+        backClone.style.boxShadow = '0 6px 16px rgba(0,0,0,0.15)';
+
+        // 4. Assemble workspace and append to Document Body context
+        renderWrapper.appendChild(frontClone);
+        renderWrapper.appendChild(backClone);
+        document.body.appendChild(renderWrapper);
+
+        // 5. Execute high-definition compilation
+        html2canvas(renderWrapper, {
             useCORS: true,
-            scale: 3, // Upscales to sharp print-ready layout standard
-            backgroundColor: null,
+            scale: 3, // Upscales to high-density print-ready standard
+            backgroundColor: '#f0f2f5',
             logging: false
         }).then(canvas => {
             const dataUrl = canvas.toDataURL('image/png');
             
-            // Native platform callback bridge injection
+            // Teardown layout pipeline DOM structure immediately
+            document.body.removeChild(renderWrapper);
+            
+            // Native environment platform routing switch
             if (window.Android && window.Android.saveImage) {
-                // Calls Android interface if configured within app source wrapper
                 window.Android.saveImage(dataUrl);
             } else {
-                // Fallback implementation for direct web browser execution environments
                 const link = document.createElement('a');
-                link.download = `${currentSide}_business_card.png`;
+                link.download = `business_card_presentation.png`;
                 link.href = dataUrl;
                 link.click();
             }
         }).catch(err => {
-            console.error('An error occurred during image canvas compilation: ', err);
+            console.error('An error occurred during combined canvas packaging: ', err);
+            if (document.body.contains(renderWrapper)) {
+                document.body.removeChild(renderWrapper);
+            }
         });
     }
 </script>
