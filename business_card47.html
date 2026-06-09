@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Business Card Editor Tool</title>
-    <!-- html2canvas for high quality image export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
@@ -271,15 +270,15 @@
             right: 20px;
             background: repeating-linear-gradient(45deg, transparent, transparent 2px, #e8edf2 2px, #e8edf2 4px);
         }
+        
         .back-logo-badge {
             position: absolute;
             width: 115px;
             height: 115px;
             background: #ffffff;
             border-radius: 50%;
-            top: 50%;
-            left: 32%;
-            transform: translate(-50%, -50%);
+            top: calc(50% - 57.5px);
+            left: calc(32% - 57.5px);
             box-shadow: 0 6px 16px rgba(0,0,0,0.12);
             z-index: 5;
             display: flex;
@@ -349,7 +348,6 @@
             right: 0;
             width: 58%;
             height: 100%;
-            /* Increased padding-left to 35px to shift ALL texts and icons uniformly */
             padding: 30px 15px 20px 35px; 
             display: flex;
             flex-direction: column;
@@ -456,11 +454,18 @@
         .action-button:active {
             transform: scale(0.98);
         }
+
+        /* Hidden processing canvas anchor */
+        /* REMOVED layout restrictions so child containers can expand naturally */
+        #render-sandbox {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+        }
     </style>
 </head>
 <body>
 
-    <!-- Top Sticky Preview Section -->
     <div id="preview-container">
         <div class="toggle-wrapper">
             <button class="toggle-btn active" id="btn-front" onclick="setView('front')">Front Side</button>
@@ -470,7 +475,6 @@
         <div class="viewport-card-wrapper" id="card-viewport">
             <div class="card-perspective-inner">
                 
-                <!-- Front Side Canvas -->
                 <div class="card-canvas front" id="render-target-front">
                     <div class="pattern-dot-top-left"></div>
                     <div class="pattern-circle-top-mid"></div>
@@ -489,7 +493,6 @@
                     </div>
                 </div>
 
-                <!-- Back Side Canvas -->
                 <div class="card-canvas back" id="render-target-back">
                     <div class="back-left-cluster">
                         <div class="cluster-teal"></div>
@@ -538,7 +541,6 @@
         </div>
     </div>
 
-    <!-- Bottom Scrollable Editor Section -->
     <div id="editor-container">
         <div class="input-group">
             <label for="input-company">Company Name</label>
@@ -573,11 +575,12 @@
             <svg style="width:20px;height:20px" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" />
             </svg>
-            Save High-Res Image
+            Save High-Res Combined Image
         </button>
     </div>
 
-    <!-- Dynamic Live Processing Logic -->
+    <div id="render-sandbox"></div>
+
     <script>
         let currentView = 'front';
 
@@ -599,7 +602,6 @@
         }
 
         function updateFields() {
-            // Fetch raw element values
             const company = document.getElementById('input-company').value;
             const firstName = document.getElementById('input-firstname').value;
             const lastName = document.getElementById('input-lastname').value;
@@ -608,7 +610,6 @@
             const address = document.getElementById('input-address').value;
             const email = document.getElementById('input-email').value;
 
-            // Sync structural bindings to Front and Back canvases instantly
             const companyElements = document.querySelectorAll('.UI-bind-company');
             companyElements.forEach(el => el.innerText = company);
 
@@ -620,29 +621,72 @@
         }
 
         function exportCardImage() {
-            // Target the canvas element currently active in viewport view
-            const activeTargetId = currentView === 'front' ? 'render-target-front' : 'render-target-back';
-            const element = document.getElementById(activeTargetId);
+            const sandbox = document.getElementById('render-sandbox');
+            
+            // Clear sandbox completely
+            sandbox.innerHTML = '';
+            
+            // Create elegant display presentation wrapper layout container
+            const presentationContainer = document.createElement('div');
+            presentationContainer.style.background = '#f0f2f5';
+            presentationContainer.style.padding = '40px';
+            presentationContainer.style.display = 'flex';
+            presentationContainer.style.flexDirection = 'column';
+            presentationContainer.style.alignItems = 'center';
+            presentationContainer.style.gap = '30px';
+            presentationContainer.style.width = '430px'; // 350px card + 40px left padding + 40px right padding
+            
+            // Clone Front Side Element
+            const originalFront = document.getElementById('render-target-front');
+            const clonedFront = originalFront.cloneNode(true);
+            clonedFront.style.transform = 'none';
+            clonedFront.style.webkitTransform = 'none';
+            clonedFront.style.position = 'relative';
+            clonedFront.style.width = '350px';
+            clonedFront.style.height = '200px'; // 1.75 standard design ratio aspect constraint
+            clonedFront.style.left = '0';
+            clonedFront.style.top = '0';
+            clonedFront.style.boxShadow = '0 6px 18px rgba(0,0,0,0.08)'; // Premium presentation styling dropshadow
+            
+            // Clone Back Side Element
+            const originalBack = document.getElementById('render-target-back');
+            const clonedBack = originalBack.cloneNode(true);
+            clonedBack.style.transform = 'none';
+            clonedBack.style.webkitTransform = 'none';
+            clonedBack.style.position = 'relative';
+            clonedBack.style.width = '350px';
+            clonedBack.style.height = '200px';
+            clonedBack.style.left = '0';
+            clonedBack.style.top = '0';
+            clonedBack.style.boxShadow = '0 6px 18px rgba(0,0,0,0.08)';
 
-            // Execute export logic using optimal rendering specs for device screens
-            html2canvas(element, {
-                scale: 3, // Multiplies resolution scale for crisp print outputs
+            // Build structural hierarchy layout tree in the target viewport DOM anchor element
+            presentationContainer.appendChild(clonedFront);
+            presentationContainer.appendChild(clonedBack);
+            sandbox.appendChild(presentationContainer);
+
+            // Export using standard HTML canvas raster processing
+            html2canvas(presentationContainer, {
+                scale: 3, // Premium ultra high-res print quality resolution setup
                 useCORS: true,
                 allowTaint: true,
-                backgroundColor: null,
+                backgroundColor: '#f0f2f5',
                 logging: false
             }).then(canvas => {
                 const base64Image = canvas.toDataURL('image/png');
                 
-                // Native mobile storage fallback trigger via simple HTML virtual anchor anchor link injection
                 const downloadLink = document.createElement('a');
                 downloadLink.href = base64Image;
-                downloadLink.download = `${currentView}_business_card.png`;
+                downloadLink.download = `combined_business_card.png`;
                 document.body.appendChild(downloadLink);
                 downloadLink.click();
                 document.body.removeChild(downloadLink);
+                
+                // Clear node tree buffer elements clean
+                sandbox.innerHTML = '';
             }).catch(err => {
                 console.error("Canvas raster generation failed: ", err);
+                sandbox.innerHTML = '';
             });
         }
     </script>
