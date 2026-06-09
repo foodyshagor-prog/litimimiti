@@ -37,7 +37,8 @@
     body {
       background: linear-gradient(180deg, var(--bg-dark-start) 0%, var(--bg-dark-end) 100%);
       color: #f1f5f9;
-      min-height: 100vh;
+      height: 100vh;
+      height: 100dvh; /* Resolves mobile viewport height sizing bugs */
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -54,6 +55,7 @@
       border-bottom: 1px solid #2d3548;
       box-shadow: 0 4px 30px rgba(0,0,0,0.4);
       z-index: 10;
+      flex-shrink: 0;
     }
 
     /* Toggle Switch Style */
@@ -109,49 +111,14 @@
       display: block;
     }
 
-    /* --- GEOMETRIC LAYER EFFECTS (FRONT) --- */
-    .front .layer-yellow {
+    /* SVG Background Scaling Core Rules */
+    .card-bg-svg {
       position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: var(--card-yellow);
-      clip-path: polygon(0 0, 16% 0, 0 42%);
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       z-index: 1;
-    }
-
-    .front .layer-green {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: var(--card-green);
-      clip-path: polygon(0 41.5%, 28% 34%, 100% 45%, 100% 100%, 0 100%);
-      filter: drop-shadow(0px -4px 8px rgba(0,0,0,0.35));
-      z-index: 2;
-    }
-
-    /* --- GEOMETRIC LAYER EFFECTS (BACK) --- */
-    .back .layer-green {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: var(--card-green);
-      clip-path: polygon(0 0, 4.5% 0, 19% 100%, 0 100%);
-      z-index: 1;
-    }
-
-    .back .layer-coral {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: var(--card-coral);
-      clip-path: polygon(4.2% 0, 72% 0, 24.5% 63.5%, 0 54%);
-      filter: drop-shadow(4px 4px 8px rgba(0,0,0,0.3));
-      z-index: 2;
-    }
-
-    .back .layer-yellow {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: var(--card-yellow);
-      clip-path: polygon(18.8% 100%, 100% 100%, 100% 86%, 24.5% 63%);
-      filter: drop-shadow(0px -4px 8px rgba(0,0,0,0.3));
-      z-index: 2;
     }
 
     /* --- CARD CONTENT LAYOUTS --- */
@@ -306,7 +273,7 @@
       border-top-left-radius: 24px;
       border-top-right-radius: 24px;
       padding: 20px;
-      overflow-y: auto;
+      overflow-y: auto; /* Handles interior panel dynamic scrolling correctly */
       display: flex;
       flex-direction: column;
       gap: 20px;
@@ -391,8 +358,12 @@
 
     <div class="card-viewport">
       <div id="card-front" class="business-card front active">
-        <div class="layer-yellow"></div>
-        <div class="layer-green"></div>
+        <svg class="card-bg-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <rect width="100" height="100" fill="var(--card-black)" />
+          <polygon points="0,0 16,0 0,42" fill="var(--card-yellow)" />
+          <polygon points="0,41.5 28,34 100,45 100,100 0,100" fill="var(--card-green)" />
+        </svg>
+        
         <div class="card-content">
           <div class="front-brand">
             <svg class="main-logo" viewBox="0 0 100 100">
@@ -407,9 +378,13 @@
       </div>
 
       <div id="card-back" class="business-card back">
-        <div class="layer-green"></div>
-        <div class="layer-coral"></div>
-        <div class="layer-yellow"></div>
+        <svg class="card-bg-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <rect width="100" height="100" fill="var(--card-black)" />
+          <polygon points="0,0 4.5,0 19,100 0,100" fill="var(--card-green)" />
+          <polygon points="4.2,0 72,0 24.5,63.5 0,54" fill="var(--card-coral)" />
+          <polygon points="18.8,100 100,100 100,86 24.5,63" fill="var(--card-yellow)" />
+        </svg>
+
         <div class="card-content">
           <div class="back-profile">
             <div class="avatar-wrap">
@@ -532,7 +507,7 @@
     <div class="action-container">
       <button class="save-button" onclick="saveCardAsset()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Export Active Side
+        Export Presentation Deck
       </button>
     </div>
   </div>
@@ -580,29 +555,86 @@
     syncElementText('input-phone-1', 'node-phone-1');
     syncElementText('input-phone-2', 'node-phone-2');
 
-    // High Resolution Image Generation Function
+    // High Resolution Combined Presentation Generator
     function saveCardAsset() {
-      // Find the currently visible active side card element
-      const activeCard = document.querySelector('.business-card.active');
+      // Create a temporary layout staging container offscreen
+      const renderContainer = document.createElement('div');
       
-      // Request high density rendering configurations (ideal for mobile display quality metrics)
+      // Apply clean presentation styles matching requested configuration properties exactly
+      renderContainer.style.position = 'fixed';
+      renderContainer.style.top = '-9999px';
+      renderContainer.style.left = '-9999px';
+      renderContainer.style.backgroundColor = '#f0f2f5'; // Light gray background
+      renderContainer.style.padding = '45px';            // Presentation outer padding margins
+      renderContainer.style.display = 'flex';
+      renderContainer.style.flexDirection = 'column';    // Vertically aligned stacks
+      renderContainer.style.alignItems = 'center';       // Centered structural alignment
+      renderContainer.style.gap = '35px';                // Balanced vertical separation element gap
+      renderContainer.style.width = '440px';             // Explicit capture canvas space boundary
+
+      // Clone original design elements to safely inherit dynamic user text inputs
+      const frontClone = document.getElementById('card-front').cloneNode(true);
+      const backClone = document.getElementById('card-back').cloneNode(true);
+
+      // Enforce absolute visibility blocks and explicit snapshot dimension mappings
+      frontClone.style.display = 'block';
+      frontClone.style.position = 'relative';
+      frontClone.style.width = '350px';
+      frontClone.style.height = '200px';
+
+      backClone.style.display = 'block';
+      backClone.style.position = 'relative';
+      backClone.style.width = '350px';
+      backClone.style.height = '200px';
+
+      // Advanced Optimizer: Stripping transitions/animations/opacities to prevent snapshot canvas bugs
+      const optimizeSnapshotElements = (element) => {
+        element.style.transition = 'none';
+        element.style.animation = 'none';
+        element.style.transform = 'none';
+        element.style.opacity = '1';
+        element.querySelectorAll('*').forEach(child => {
+          child.style.transition = 'none';
+          child.style.animation = 'none';
+          child.style.transform = 'none';
+          child.style.opacity = '1';
+        });
+      };
+      optimizeSnapshotElements(frontClone);
+      optimizeSnapshotElements(backClone);
+
+      // Mount cloned layouts inside staging field
+      renderContainer.appendChild(frontClone);
+      renderContainer.appendChild(backClone);
+      document.body.appendChild(renderContainer);
+
+      // Explicitly forcing a fresh browser engine layout recalculation pass before snapshotting
+      renderContainer.offsetHeight;
+
+      // Render configuration setup (4x density asset scaling for crisp typography prints)
       const options = {
-        scale: 4, // Multiplies canvas layout resolution by 4x for crystal clear rendering
+        scale: 4, 
         useCORS: true,
-        backgroundColor: null,
+        backgroundColor: '#f0f2f5',
         logging: false
       };
 
-      html2canvas(activeCard, options).then(canvas => {
+      html2canvas(renderContainer, options).then(canvas => {
         const imageURI = canvas.toDataURL('image/png');
         
-        // Trigger file safe downloader mechanism inside default system platforms
+        // Trigger automated presentation safe downloader
         const downloadAnchor = document.createElement('a');
         downloadAnchor.href = imageURI;
-        downloadAnchor.download = activeCard.id + '_render.png';
+        downloadAnchor.download = 'business_card_presentation.png';
         document.body.appendChild(downloadAnchor);
         downloadAnchor.click();
+        
+        // Purge memory loops and staging area out of DOM space completely
         document.body.removeChild(downloadAnchor);
+        document.body.removeChild(renderContainer);
+      }).catch(err => {
+        console.error("Snapshot pipeline encountered an internal generation error:", err);
+        document.body.removeChild(renderContainer);
       });
     }
   </script>
