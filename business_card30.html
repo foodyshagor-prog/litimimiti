@@ -336,7 +336,6 @@
         }
 
         function drawFrontDecoration(ctx) {
-            // Replicating original right side pattern cluster
             drawDiamond(ctx, 800, 100, 40, colors.shapes[4]);
             drawDiamond(ctx, 770, 180, 100, colors.shapes[0]);
             drawDiamond(ctx, 880, 240, 170, colors.shapes[1]);
@@ -349,14 +348,12 @@
         }
 
         function drawBackDecoration(ctx) {
-            // Replicating original Top-Right cluster
             drawDiamond(ctx, 920, 80, 90, colors.shapes[3]);
             drawDiamond(ctx, 1000, 120, 140, colors.shapes[1]);
             drawDiamond(ctx, 850, 110, 60, colors.shapes[2]);
             drawDiamond(ctx, 895, 155, 45, colors.shapes[4]);
             drawDiamond(ctx, 950, 210, 110, colors.shapes[0]);
 
-            // Replicating original Bottom-Left cluster
             drawDiamond(ctx, 120, 480, 130, colors.shapes[1]);
             drawDiamond(ctx, 230, 520, 90, colors.shapes[2]);
             drawDiamond(ctx, 195, 445, 45, colors.shapes[4]);
@@ -365,15 +362,12 @@
         }
 
         function updateCard() {
-            // Clear canvas base background
             ctx.fillStyle = colors.bg;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             if (currentView === 'front') {
-                // Background Geometric Shapes
                 drawFrontDecoration(ctx);
 
-                // Target Text Inputs
                 const name = document.getElementById('inputName').value;
                 const title = document.getElementById('inputTitle').value;
                 const phone = document.getElementById('inputPhone').value;
@@ -381,17 +375,14 @@
                 const email = document.getElementById('inputEmail').value;
                 const loc = document.getElementById('inputLocation').value;
 
-                // Render Name
                 ctx.fillStyle = colors.primaryText;
                 ctx.font = 'bold 52px sans-serif';
                 ctx.fillText(name, 90, 170);
 
-                // Render Title
                 ctx.fillStyle = colors.subText;
                 ctx.font = '24px sans-serif';
                 ctx.fillText(title, 95, 215);
 
-                // Render Info list rows (Icons + Text alignment)
                 const startX = 110;
                 let startY = 310;
                 const rowSpacing = 65;
@@ -412,42 +403,71 @@
                 });
 
             } else {
-                // Background Geometric Shapes
                 drawBackDecoration(ctx);
 
-                // Monogram Branding Customization
                 const primaryInitial = document.getElementById('inputLogoPrimary').value;
                 const secondaryInitial = document.getElementById('inputLogoSecondary').value;
 
                 const centerX = canvas.width / 2;
                 const centerY = canvas.height / 2 + 30;
 
-                // Structural background letter layout
                 ctx.textAlign = 'center';
                 ctx.fillStyle = 'rgba(128, 14, 158, 0.3)';
                 ctx.font = 'italic bold 210px Georgia, serif';
                 ctx.fillText(secondaryInitial, centerX - 25, centerY);
 
-                // Foreground accented focal letter layout
                 ctx.fillStyle = colors.primaryText;
                 ctx.font = 'italic 230px Georgia, serif';
                 ctx.fillText(primaryInitial, centerX + 15, centerY - 10);
                 
-                // Reset text alignment orientation rules safely
                 ctx.textAlign = 'left';
             }
         }
 
+        // Combines both card sides into a structured vertical layout
         function saveCardImage() {
-            // Generate clean image conversion output link
-            const dataUrl = canvas.toDataURL('image/png');
+            const padding = 60;       // Margin around the cards
+            const gap = 50;           // Space between front and back sides
+            const cardW = canvas.width;
+            const cardH = canvas.height;
+
+            const exportWidth = cardW + (padding * 2);
+            const exportHeight = (cardH * 2) + (padding * 2) + gap;
+
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = exportWidth;
+            tempCanvas.height = exportHeight;
+            const tCtx = tempCanvas.getContext('2d');
+
+            // Set showcase background color
+            tCtx.fillStyle = '#f0f2f5';
+            tCtx.fillRect(0, 0, exportWidth, exportHeight);
+
+            // Save user's original selection state
+            const initialView = currentView;
+
+            // Render and copy Front view
+            currentView = 'front';
+            updateCard();
+            tCtx.drawImage(canvas, padding, padding);
+
+            // Render and copy Back view
+            currentView = 'back';
+            updateCard();
+            tCtx.drawImage(canvas, padding, padding + cardH + gap);
+
+            // Generate image file download
+            const dataUrl = tempCanvas.toDataURL('image/png');
             const link = document.createElement('a');
-            link.download = `${currentView}_business_card.png`;
+            link.download = `showcase_business_card.png`;
             link.href = dataUrl;
             link.click();
+
+            // Revert workspace back to original state
+            currentView = initialView;
+            updateCard();
         }
 
-        // Initialize display execution
         window.onload = () => {
             updateCard();
         };
