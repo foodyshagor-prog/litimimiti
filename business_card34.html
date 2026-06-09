@@ -612,28 +612,72 @@
             }
         }
 
-        // High-Quality Bitmap Generation & Download Engine
+        // High-Quality Bitmap Generation, Combining & Download Engine
         function exportCardImage() {
-            const targetID = visibleSide === 'front' ? 'render-front' : 'render-back';
-            const nodeElement = document.getElementById(targetID);
+            const frontElement = document.getElementById('render-front');
+            const backElement = document.getElementById('render-back');
 
-            // Temporarily standardizing scale parameters to prevent low resolution artifact bugs on dynamic ViewPorts
-            html2canvas(nodeElement, {
-                scale: 3, // Upscaling output definition matrix size
-                useCORS: true,
-                backgroundColor: null,
-                logging: false
-            }).then(canvas => {
-                const dataUrlRepresentation = canvas.toDataURL("image/png");
-                
-                // Dynamic clean pipeline processing safe virtual anchor execution
+            // Force display properties temporarily to allow html2canvas to capture both nodes accurately
+            const originalFrontStyle = frontElement.style.display;
+            const originalBackStyle = backElement.style.display;
+            frontElement.style.display = 'block';
+            backElement.style.display = 'block';
+
+            const captureScale = 3; // Upscaling output definition matrix size
+
+            // Capture both sides as separate individual canvas instances
+            const captureFront = html2canvas(frontElement, { scale: captureScale, useCORS: true, logging: false });
+            const captureBack = html2canvas(backElement, { scale: captureScale, useCORS: true, logging: false });
+
+            Promise.all([captureFront, captureBack]).then(([canvasFront, canvasBack]) => {
+                // Restore original UI layout display visibility states
+                frontElement.style.display = originalFrontStyle;
+                backElement.style.display = originalBackStyle;
+
+                // Establish presentation canvas structure configurations
+                const cardWidth = canvasFront.width;
+                const cardHeight = canvasFront.height;
+
+                const paddingX = 40 * captureScale;  // Presentation outer horizontal margin
+                const paddingY = 50 * captureScale;  // Presentation outer vertical margin
+                const cardGap = 30 * captureScale;   // Balanced gap between front and back elements
+
+                const combinedWidth = cardWidth + (paddingX * 2);
+                const combinedHeight = (cardHeight * 2) + (paddingY * 2) + cardGap;
+
+                // Create the master composite virtual display canvas
+                const compositeCanvas = document.createElement('canvas');
+                compositeCanvas.width = combinedWidth;
+                compositeCanvas.height = combinedHeight;
+                const ctx = compositeCanvas.getContext('2d');
+
+                // 1. Draw the clean presentation layout background frame (#f0f2f5)
+                ctx.fillStyle = '#f0f2f5';
+                ctx.fillRect(0, 0, combinedWidth, combinedHeight);
+
+                // 2. Render Front Side Card (Centered vertically aligned)
+                const frontX = paddingX;
+                const frontY = paddingY;
+                ctx.drawImage(canvasFront, frontX, frontY);
+
+                // 3. Render Back Side Card (Positioned directly beneath the front layout)
+                const backX = paddingX;
+                const backY = paddingY + cardHeight + cardGap;
+                ctx.drawImage(canvasBack, backX, backY);
+
+                // Compile down to high-res PNG and trigger download execution pipeline
+                const dataUrlRepresentation = compositeCanvas.toDataURL("image/png");
                 const executionAnchor = document.createElement('a');
-                executionAnchor.download = `BusinessCard_${visibleSide}_${Date.now()}.png`;
+                executionAnchor.download = `BusinessCard_Presentation_${Date.now()}.png`;
                 executionAnchor.href = dataUrlRepresentation;
                 document.body.appendChild(executionAnchor);
                 executionAnchor.click();
                 document.body.removeChild(executionAnchor);
+
             }).catch(err => {
+                // Safely restore UI states in case of rendering crashes
+                frontElement.style.display = originalFrontStyle;
+                backElement.style.display = originalBackStyle;
                 console.error("Canvas output execution failure exception stack: ", err);
                 alert("Failed to compile image layout layer graphics components processing exception.");
             });
