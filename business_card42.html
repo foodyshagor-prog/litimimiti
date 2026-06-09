@@ -17,7 +17,7 @@
         body {
             background: linear-gradient(135deg, #111115 0%, #1a1a24 100%);
             color: #e2e8f0;
-            min-height: 100vh;
+            height: 100vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -34,18 +34,25 @@
             font-weight: 600;
             letter-spacing: 0.5px;
             color: #f8fafc;
+            flex-shrink: 0;
         }
 
-        /* Preview Top Area */
+        /* Preview Top Area Locked */
         .preview-section {
-            background: rgba(10, 10, 14, 0.4);
+            background: rgba(10, 10, 14, 0.6);
+            backdrop-filter: blur(12px);
             padding: 20px 12px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             gap: 16px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            flex-shrink: 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         }
 
         /* Toggle Control & Action Buttons */
@@ -111,6 +118,7 @@
             align-items: center;
             gap: 6px;
             box-shadow: 0 4px 12px rgba(0, 180, 219, 0.3);
+            cursor: pointer;
         }
 
         /* --- Business Card Live Canvas Canvas/DOM Engine --- */
@@ -161,7 +169,7 @@
 
         .front-content {
             position: relative;
-            z-index: 2;
+            z-index: 4;
             width: 100%;
             height: 100%;
             display: flex;
@@ -174,6 +182,7 @@
         .brand-logo-container {
             text-align: center;
             margin-top: -5px;
+            z-index: 5;
         }
 
         .brand-main-title {
@@ -214,6 +223,7 @@
             width: 82px;
             transform: rotate(-5deg);
             filter: drop-shadow(2px 4px 5px rgba(0,0,0,0.25));
+            z-index: 2;
         }
 
         .chutney-asset {
@@ -222,6 +232,21 @@
             top: 28px;
             width: 58px;
             filter: drop-shadow(2px 3px 4px rgba(0,0,0,0.2));
+            z-index: 2;
+        }
+
+        /* Custom Dynamic Uploaded Logo Element */
+        .custom-uploaded-asset {
+            position: absolute;
+            left: 50%;
+            top: 22%;
+            transform: translate(-50%, -50%);
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+            z-index: 3;
+            display: none;
+            pointer-events: none;
         }
 
         /* --- Card Back Design Elements --- */
@@ -356,7 +381,7 @@
             display: block;
         }
 
-        /* --- Bottom Editor Console Panel --- */
+        /* --- Scrollable Bottom Editor Console Panel --- */
         .editor-section {
             flex-grow: 1;
             overflow-y: auto;
@@ -405,7 +430,8 @@
             text-transform: uppercase;
         }
 
-        .input-group input {
+        .input-group input[type="text"],
+        .input-group input[type="file"] {
             width: 100%;
             background: #13131a;
             border: 1px solid #334155;
@@ -416,9 +442,49 @@
             transition: border-color 0.2s;
         }
 
+        .input-group input[type="file"] {
+            padding: 8px;
+            cursor: pointer;
+        }
+
         .input-group input:focus {
             outline: none;
             border-color: #ff5722;
+        }
+
+        .range-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .range-container input[type="range"] {
+            flex-grow: 1;
+            accent-color: #ff5722;
+        }
+
+        .range-val {
+            font-size: 12px;
+            color: #f8fafc;
+            min-width: 32px;
+            text-align: right;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #94a3b8;
+            user-select: none;
+            margin-top: 4px;
+        }
+
+        .checkbox-container input {
+            accent-color: #ff5722;
+            width: 15px;
+            height: 15px;
         }
 
         /* Hidden export container setup */
@@ -455,7 +521,7 @@
                         <path d="M280,35 Q300,15 315,35 Q295,45 280,35" fill="#4caf50" opacity="0.8"/>
                     </svg>
 
-                    <div class="dosa-asset">
+                    <div class="dosa-asset" id="dom-dosa">
                         <svg viewBox="0 0 100 40">
                             <rect x="5" y="15" width="90" height="15" rx="7" fill="#e5a93c"/>
                             <rect x="8" y="17" width="84" height="11" rx="5" fill="#f5c26b"/>
@@ -463,7 +529,7 @@
                             <path d="M12,25 L12,28 M25,24 L25,28 M45,26 L45,29 M70,24 L70,27" stroke="#388e3c" stroke-width="3" stroke-linecap="round"/>
                         </svg>
                     </div>
-                    <div class="chutney-asset">
+                    <div class="chutney-asset" id="dom-chutney">
                         <svg viewBox="0 0 60 40">
                             <circle cx="18" cy="20" r="12" fill="#e0e0e0"/>
                             <circle cx="18" cy="20" r="10" fill="#d84315"/>
@@ -471,6 +537,8 @@
                             <circle cx="42" cy="24" r="9" fill="#4caf50"/>
                         </svg>
                     </div>
+
+                    <img id="dom-custom-img" class="custom-uploaded-asset" src="" alt="Custom Graphic">
 
                     <div class="front-content">
                         <div class="brand-logo-container">
@@ -520,7 +588,7 @@
                                 <div class="social-icon" style="background:#e1306c;"><svg viewBox="0 0 24 24"><path d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9M18.5,4.75A1.25,1.25 0 1,0 19.75,6A1.25,1.25 0 0,0 18.5,4.75Z"/></svg></div>
                                 <div class="social-icon" style="background:#3b5998;"><svg viewBox="0 0 24 24"><path d="M5,3H19A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3M18,5H15.5A3.5,3.5 0 0,0 12,8.5V11H10V14H12V21H15V14H18V11H15V9A1,1 0 0,1 16,8H18V5Z"/></svg></div>
                                 <div class="social-icon" style="background:#00acee;"><svg viewBox="0 0 24 24"><path d="M22.46,6C21.69,6.35 20.86,6.58 20,6.69C20.88,6.16 21.56,5.32 21.88,4.31C21.05,4.81 20.13,5.16 19.16,5.36C18.37,4.5 17.26,4 16,4C13.59,4 11.64,5.95 11.64,8.35C11.64,8.69 11.67,9.03 11.75,9.36C8.12,9.18 4.91,7.44 2.75,4.81C2.37,5.46 2.15,6.22 2.15,7C2.15,8.5 2.91,9.83 4.07,10.6C3.37,10.58 2.71,10.39 2.13,10.07C2.13,10.08 2.13,10.1 2.13,10.12C2.13,12.23 3.63,13.92 5.61,14.32C5.25,14.41 4.87,14.47 4.48,14.47C4.21,14.47 3.94,14.44 3.68,14.39C4.24,16.12 5.85,17.37 7.76,17.4C6.27,18.57 4.38,19.27 2.33,19.27C1.98,19.27 1.63,19.25 1.29,19.21C3.22,20.45 5.51,21.17 8,21.17C16.09,21.17 20.51,14.47 20.51,8.65C20.51,8.46 20.51,8.27 20.5,8.08C21.36,7.47 22.1,6.7 22.46,6Z"/></svg></div>
-                                <div class="social-icon" style="background:#c4302b;"><svg viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></div>
+                                <div class="social-icon" style="background:#c4302b;"><svg viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93$.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></div>
                             </div>
                         </div>
 
@@ -567,6 +635,22 @@
                 <label>Company Tagline / Motto</label>
                 <input type="text" id="txt-tagline" value="Taste That Feels Like Home" oninput="syncData()">
             </div>
+            
+            <div class="input-group" style="border-top: 1px solid rgba(255,255,255,0.08); padding-top:14px; margin-top:14px;">
+                <label>Upload Custom Brand Logo</label>
+                <input type="file" id="input-brand-image" accept="image/*" onchange="processUploadedImage(this)">
+                <label class="checkbox-container">
+                    <input type="checkbox" id="chk-show-presets" checked onchange="syncData()">
+                    <span>Keep default food illustrations visible</span>
+                </label>
+            </div>
+            <div class="input-group" id="group-image-scale" style="display: none;">
+                <label>Custom Graphic Scale</label>
+                <div class="range-container">
+                    <input type="range" id="input-image-scale" min="20" max="180" value="100" oninput="syncData()">
+                    <span class="range-val" id="val-image-scale">100%</span>
+                </div>
+            </div>
         </div>
 
         <div class="editor-card" id="panel-back">
@@ -598,6 +682,7 @@
 
     <script>
         let currentView = 'front';
+        let customImageObject = null;
 
         function setView(view) {
             currentView = view;
@@ -627,8 +712,23 @@
             }
         }
 
+        function processUploadedImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    customImageObject = new Image();
+                    customImageObject.onload = function() {
+                        document.getElementById('dom-custom-img').src = e.target.result;
+                        document.getElementById('group-image-scale').style.display = 'block';
+                        syncData();
+                    };
+                    customImageObject.src = e.target.result;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
         function syncData() {
-            // Live synchronizing inputs to elements
             document.getElementById('lbl-title').innerText = document.getElementById('txt-title').value;
             document.getElementById('lbl-subtitle').innerText = document.getElementById('txt-subtitle').value;
             document.getElementById('lbl-tagline').innerText = document.getElementById('txt-tagline').value;
@@ -638,145 +738,1337 @@
             document.getElementById('lbl-phone').innerText = document.getElementById('txt-phone').value;
             document.getElementById('lbl-address').innerText = document.getElementById('txt-address').value;
             document.getElementById('lbl-email').innerText = document.getElementById('txt-email').value;
+
+            const showPresets = document.getElementById('chk-show-presets').checked;
+            document.getElementById('dom-dosa').style.display = showPresets ? 'block' : 'none';
+            document.getElementById('dom-chutney').style.display = showPresets ? 'block' : 'none';
+
+            const customImgEl = document.getElementById('dom-custom-img');
+            if(customImageObject) {
+                customImgEl.style.display = 'block';
+                const scaleValue = document.getElementById('input-image-scale').value;
+                document.getElementById('val-image-scale').innerText = scaleValue + '%';
+                customImgEl.style.width = (70 * (scaleValue / 100)) + 'px';
+                customImgEl.style.height = (70 * (scaleValue / 100)) + 'px';
+            } else {
+                customImgEl.style.display = 'none';
+            }
         }
 
-        // Programmatic High-Resolution Canvas Export Module (Completely Native and Independent)
-        function generateHighResExport() {
-            const width = 1050; // High-resolution standard business card width
-            const height = 600;
-            
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
+        function drawFrontSide(ctx, width, height) {
+            // Background Base
+            ctx.fillStyle = "#fffdf9";
+            ctx.fillRect(0, 0, width, height);
 
-            if (currentView === 'front') {
-                // Background Clean Render Block
-                ctx.fillStyle = "#fffdf9";
-                ctx.fillRect(0, 0, width, height);
+            // Re-rendering Background wave gradients programmatically 
+            let grad = ctx.createLinearGradient(0, 0, width, height);
+            grad.addColorStop(0, '#ff9100');
+            grad.addColorStop(0.5, '#ff3d00');
+            grad.addColorStop(1, '#b71c1c');
 
-                // Re-rendering Background wave gradients programmatically 
-                let grad = ctx.createLinearGradient(0, 0, width, height);
-                grad.addColorStop(0, '#ff9100');
-                grad.addColorStop(0.5, '#ff3d00');
-                grad.addColorStop(1, '#b71c1c');
+            // TOP WAVE DESIGN (Path 1)
+            ctx.save();
+            ctx.fillStyle = grad;
+            ctx.globalAlpha = 0.15;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(width, 0);
+            ctx.lineTo(width, 150);
+            ctx.bezierCurveTo(840, 360, 600, 180, 360, 390);
+            ctx.bezierCurveTo(150, 570, 0, 420, 0, 600);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
 
-                ctx.fillStyle = grad;
+            // BOTTOM MAIN WAVE DESIGN (Path 2)
+            ctx.save();
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.moveTo(0, 390);
+            ctx.bezierCurveTo(240, 300, 450, 540, 720, 420);
+            ctx.bezierCurveTo(930, 330, 1050, 450, 1050, 600);
+            ctx.lineTo(0, 600);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+
+            // BOTTOM OVERLAPPING DEEP WAVE DESIGN (Path 3)
+            ctx.save();
+            ctx.fillStyle = '#b71c1c';
+            ctx.globalAlpha = 0.4;
+            ctx.beginPath();
+            ctx.moveTo(0, 450);
+            ctx.bezierCurveTo(270, 390, 390, 585, 660, 480);
+            ctx.bezierCurveTo(870, 390, 1050, 525, 1050, 600);
+            ctx.lineTo(0, 600);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+
+            // TOP LEFT ACCENT CIRCLE 1
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(105, 120, 36, 0, Math.PI * 2);
+            ctx.fillStyle = "#ff9100";
+            ctx.globalAlpha = 0.6;
+            ctx.fill();
+            ctx.restore();
+
+            // TOP LEFT ACCENT CIRCLE 2
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(210, 75, 18, 0, Math.PI * 2);
+            ctx.fillStyle = "#ffea00";
+            ctx.globalAlpha = 0.7;
+            ctx.fill();
+            ctx.restore();
+
+            // TOP LEFT ABSTRACT LEAF/DESIGN SHAPE
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(45, 45);
+            ctx.quadraticCurveTo(90, 75, 75, 135);
+            ctx.quadraticCurveTo(30, 105, 45, 45);
+            ctx.closePath();
+            ctx.fillStyle = "#ff6d00";
+            ctx.fill();
+            ctx.restore();
+
+            // TOP RIGHT ABSTRACT LEAF/DESIGN SHAPE
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(840, 105);
+            ctx.quadraticCurveTo(900, 45, 945, 105);
+            ctx.quadraticCurveTo(885, 135, 840, 105);
+            ctx.closePath();
+            ctx.fillStyle = "#4caf50";
+            ctx.globalAlpha = 0.8;
+            ctx.fill();
+            ctx.restore();
+
+            const showPresets = document.getElementById('chk-show-presets').checked;
+            if(showPresets) {
+                // --- DOSA ILLUSTRATION (BOTTOM LEFT) ---
+                ctx.save();
+                ctx.shadowColor = 'rgba(0,0,0,0.25)';
+                ctx.shadowBlur = 15;
+                ctx.translate(24, 429.6);
+                ctx.rotate(-5 * Math.PI / 180);
+                ctx.scale(2.46, 2.46);
+                
+                ctx.fillStyle = "#e5a93c";
                 ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.lineTo(width, 0);
-                ctx.lineTo(width, height * 0.25);
-                ctx.bezierCurveTo(width * 0.8, height * 0.6, width * 0.57, height * 0.3, width * 0.34, height * 0.65);
-                ctx.bezierCurveTo(width * 0.14, height * 0.95, 0, height * 0.7, 0, height);
-                ctx.closePath();
+                ctx.roundRect(5, 15, 90, 15, 7);
                 ctx.fill();
-
-                // Secondary overlapping deep shadow wave block
-                ctx.fillStyle = '#b71c1c';
+                
+                ctx.fillStyle = "#f5c26b";
+                ctx.beginPath();
+                ctx.roundRect(8, 17, 84, 11, 5);
+                ctx.fill();
+                
+                ctx.strokeStyle = "#b07314";
+                ctx.lineWidth = 2;
                 ctx.globalAlpha = 0.4;
                 ctx.beginPath();
-                ctx.moveTo(0, height * 0.75);
-                ctx.bezierCurveTo(width * 0.25, height * 0.65, width * 0.37, height * 0.97, width * 0.62, height * 0.8);
-                ctx.bezierCurveTo(width * 0.82, height * 0.65, width, height * 0.87, width, height);
-                ctx.lineTo(0, height);
-                ctx.closePath();
-                ctx.fill();
+                ctx.moveTo(5, 22);
+                ctx.bezierCurveTo(20, 10, 40, 30, 65, 12);
+                ctx.bezierCurveTo(80, 25, 90, 15, 95, 22);
+                ctx.stroke();
+                
+                ctx.strokeStyle = "#388e3c";
+                ctx.lineWidth = 3;
                 ctx.globalAlpha = 1.0;
+                ctx.lineCap = "round";
+                ctx.beginPath(); ctx.moveTo(12, 25); ctx.lineTo(12, 28); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(25, 24); ctx.lineTo(25, 28); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(45, 26); ctx.lineTo(45, 29); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(70, 24); ctx.lineTo(70, 27); ctx.stroke();
+                ctx.restore();
 
-                // Accents rendering
-                ctx.fillStyle = "#ff6d00";
-                ctx.beginPath();
-                ctx.arc(width * 0.1, height * 0.2, 36, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Dynamic Typography Rendering
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
+                // --- CHUTNEY ILLUSTRATION (TOP RIGHT) ---
+                ctx.save();
+                ctx.shadowColor = 'rgba(0,0,0,0.2)';
+                ctx.shadowBlur = 12;
+                ctx.translate(840, 84);
+                ctx.scale(2.9, 2.9);
                 
-                // Main Logo
-                ctx.font = 'italic bold 110px Georgia';
-                ctx.fillStyle = '#d50000';
-                ctx.fillText(document.getElementById('txt-title').value, width / 2, height / 2 - 30);
-                
-                // Business sub title text
-                ctx.font = '800 36px Helvetica';
-                ctx.fillStyle = '#4a0e00';
-                ctx.fillText(document.getElementById('txt-subtitle').value, width / 2, height / 2 + 50);
-
-                // Tagline text line decoration
-                ctx.font = 'italic 500 24px Georgia';
-                ctx.fillStyle = '#d84315';
-                ctx.fillText(document.getElementById('txt-tagline').value, width / 2, height / 2 + 110);
-
-            } else {
-                // Back Side Render Engine Block
-                ctx.fillStyle = "#ffffff";
-                ctx.fillRect(0, 0, width, height);
-
-                ctx.fillStyle = "rgba(255, 109, 0, 0.1)";
-                ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.bezierCurveTo(width * 0.3, height * 0.2, width * 0.7, -height * 0.05, width, height * 0.15);
-                ctx.lineTo(width, 0);
-                ctx.lineTo(0, 0);
-                ctx.closePath();
-                ctx.fill();
-
-                ctx.fillStyle = "rgba(255, 61, 0, 0.4)";
-                ctx.beginPath();
-                ctx.moveTo(0, height * 0.87);
-                ctx.bezierCurveTo(width * 0.31, height * 0.8, width * 0.57, height * 0.97, width, height * 0.85);
-                ctx.lineTo(width, height);
-                ctx.lineTo(0, height);
-                ctx.closePath();
-                ctx.fill();
-
-                // Profile Name details
-                ctx.textAlign = 'left';
-                ctx.fillStyle = '#e65100';
-                ctx.font = '800 42px Helvetica';
-                ctx.fillText(document.getElementById('txt-name').value, 60, 100);
-
-                ctx.fillStyle = '#546e7a';
-                ctx.font = '600 24px Helvetica';
-                ctx.fillText(document.getElementById('txt-role').value.toUpperCase(), 60, 145);
-
-                // Contact Lines Text rendering logic block
-                ctx.fillStyle = '#37474f';
-                ctx.font = '600 21px Helvetica';
-                ctx.fillText("Phone: " + document.getElementById('txt-phone').value, 60, 260);
-                ctx.fillText("Email: " + document.getElementById('txt-email').value, 60, 320);
-                
-                // Wrap address safely on canvas context
-                let addressText = document.getElementById('txt-address').value;
-                ctx.fillText("Address: " + addressText.substring(0, 45), 60, 380);
-                if(addressText.length > 45) {
-                    ctx.fillText(addressText.substring(45), 148, 410);
-                }
-
-                // Render Mock Stylized high res layout QR Code block matching design framework
-                ctx.fillStyle = '#263238';
-                let qrSize = 140;
-                let qrX = width - 220;
-                let qrY = height / 2 - 70;
-                ctx.fillRect(qrX, qrY, qrSize, qrSize);
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(qrX + 10, qrY + 10, qrSize - 20, qrSize - 20);
-                
-                // Add mini visual elements to mock internal QR architecture safely
-                ctx.fillStyle = '#263238';
-                ctx.fillRect(qrX + 20, qrY + 20, 35, 35);
-                ctx.fillRect(qrX + qrSize - 55, qrY + 20, 35, 35);
-                ctx.fillRect(qrX + 20, qrY + qrSize - 55, 35, 35);
-                ctx.fillRect(qrX + 50, qrY + 70, 45, 45);
+                ctx.fillStyle = "#e0e0e0";
+                ctx.beginPath(); ctx.arc(18, 20, 12, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = "#d84315";
+                ctx.beginPath(); ctx.arc(18, 20, 10, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = "#e0e0e0";
+                ctx.beginPath(); ctx.arc(42, 24, 11, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = "#4caf50";
+                ctx.beginPath(); ctx.arc(42, 24, 9, 0, Math.PI*2); ctx.fill();
+                ctx.restore();
             }
 
-            // Export logic pipeline to application interface context
-            let imageURI = canvas.toDataURL('image/png');
+            // Custom Graphic Handling Injection Engine Module
+            if(customImageObject) {
+                ctx.save();
+                const scaleFactor = document.getElementById('input-image-scale').value / 100;
+                const baseSize = 210; 
+                const targetSize = baseSize * scaleFactor;
+                const imgX = (width / 2) - (targetSize / 2);
+                const imgY = (height * 0.22) - (targetSize / 2);
+                ctx.drawImage(customImageObject, imgX, imgY, targetSize, targetSize);
+                ctx.restore();
+            }
+
+            // Typography Generation
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
             
-            // Native platform callback anchor routine initialization
+            ctx.font = 'italic bold 110px Georgia';
+            ctx.fillStyle = '#d50000';
+            ctx.fillText(document.getElementById('txt-title').value, width / 2, height / 2 - 30);
+            
+            ctx.font = '800 36px Helvetica';
+            ctx.fillStyle = '#4a0e00';
+            ctx.fillText(document.getElementById('txt-subtitle').value, width / 2, height / 2 + 50);
+
+            ctx.font = 'italic 500 24px Georgia';
+            ctx.fillStyle = '#d84315';
+            ctx.fillText(document.getElementById('txt-tagline').value, width / 2, height / 2 + 110);
+        }
+
+        function drawBackSide(ctx, width, height) {
+            // Back Side Render Engine Block
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.fillStyle = "rgba(255, 109, 0, 0.1)";
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.bezierCurveTo(300, 120, 750, -30, 1050, 90);
+            ctx.lineTo(1050, 0);
+            ctx.lineTo(0, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = "rgba(255, 109, 0, 0.2)";
+            ctx.beginPath();
+            ctx.moveTo(0, 480);
+            ctx.bezierCurveTo(270, 420, 660, 570, 1050, 450);
+            ctx.lineTo(1050, 600);
+            ctx.lineTo(0, 600);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = "rgba(255, 61, 0, 0.4)";
+            ctx.beginPath();
+            ctx.moveTo(0, 525);
+            ctx.bezierCurveTo(330, 480, 600, 585, 1050, 510);
+            ctx.lineTo(1050, 600);
+            ctx.lineTo(0, 600);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillStyle = '#e65100';
+            ctx.font = '800 42px Helvetica';
+            ctx.fillText(document.getElementById('txt-name').value, 60, 100);
+
+            ctx.fillStyle = '#546e7a';
+            ctx.font = '600 24px Helvetica';
+            ctx.fillText(document.getElementById('txt-role').value.toUpperCase(), 60, 145);
+
+            ctx.fillStyle = '#37474f';
+            ctx.font = '600 21px Helvetica';
+            ctx.fillText("Phone: " + document.getElementById('txt-phone').value, 60, 260);
+            ctx.fillText("Email: " + document.getElementById('txt-email').value, 60, 320);
+            
+            let addressText = document.getElementById('txt-address').value;
+            ctx.fillText("Address: " + addressText.substring(0, 45), 60, 380);
+            if(addressText.length > 45) {
+                ctx.fillText(addressText.substring(45), 148, 410);
+            }
+
+            ctx.fillStyle = '#263238';
+            let qrSize = 140;
+            let qrX = width - 220;
+            let qrY = height / 2 - 70;
+            ctx.fillRect(qrX, qrY, qrSize, qrSize);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(qrX + 10, qrY + 10, qrSize - 20, qrSize - 20);
+            
+            ctx.fillStyle = '#263238';
+            ctx.fillRect(qrX + 20, qrY + 20, 35, 35);
+            ctx.fillRect(qrX + qrSize - 55, qrY + 20, 35, 35);
+            ctx.fillRect(qrX + 20, qrY + qrSize - 55, 35, 35);
+            ctx.fillRect(qrX + 50, qrY + 70, 45, 45);
+        }
+
+        // Programmatic High-Resolution Canvas Export Module (Unified Combo Layout)
+        function generateHighResExport() {
+            const cardWidth = 1050; // 350 * 3
+            const cardHeight = 600; // 200 * 3
+            const gap = 40; // Clean layout border separator
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = cardWidth;
+            canvas.height = (cardHeight * 2) + gap;
+            const ctx = canvas.getContext('2d');
+
+            // Render modern showcase canvas workspace background
+            ctx.fillStyle = "#16161f";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Card Front Side
+            ctx.save();
+            ctx.translate(0, 0);
+            drawFrontSide(ctx, cardWidth, cardHeight);
+            ctx.restore();
+
+            // Draw Card Back Side
+            ctx.save();
+            ctx.translate(0, cardHeight + gap);
+            drawBackSide(ctx, cardWidth, cardHeight);
+            ctx.restore();
+
+            let imageURI = canvas.toDataURL('image/png');
             let downloadLink = document.createElement('a');
-            downloadLink.download = currentView + '_business_card.png';
+            downloadLink.download = 'combined_business_card.png';
+            downloadLink.href = imageURI;
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Business Card Maker</title>
+    <style>
+        /* Modern Dark Gradient UI Framework */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(135deg, #111115 0%, #1a1a24 100%);
+            color: #e2e8f0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Fixed App Header */
+        .app-header {
+            padding: 14px 16px;
+            background: rgba(20, 20, 27, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+            text-align: center;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: #f8fafc;
+            flex-shrink: 0;
+        }
+
+        /* Preview Top Area Locked */
+        .preview-section {
+            background: rgba(10, 10, 14, 0.6);
+            backdrop-filter: blur(12px);
+            padding: 20px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            flex-shrink: 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        /* Toggle Control & Action Buttons */
+        .control-row {
+            display: flex;
+            width: 100%;
+            max-width: 360px;
+            gap: 10px;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .toggle-container {
+            background: #27273a;
+            padding: 4px;
+            border-radius: 30px;
+            display: flex;
+            position: relative;
+            width: 180px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 8px 0;
+            font-size: 12px;
+            font-weight: 600;
+            color: #94a3b8;
+            background: transparent;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            z-index: 2;
+            transition: color 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            color: #ffffff;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 86px;
+            height: 30px;
+            background: linear-gradient(135deg, #ff5722 0%, #ff9800 100%);
+            border-radius: 25px;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1;
+            box-shadow: 0 2px 8px rgba(255, 87, 34, 0.4);
+        }
+
+        .action-btn {
+            background: linear-gradient(135deg, #00b4db 0%, #0083b0 100%);
+            color: #fff;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 25px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(0, 180, 219, 0.3);
+            cursor: pointer;
+        }
+
+        /* --- Business Card Live Canvas Canvas/DOM Engine --- */
+        .card-view-wrapper {
+            width: 100%;
+            max-width: 360px;
+            aspect-ratio: 1.75 / 1;
+            perspective: 1000px;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 12px;
+        }
+
+        .card-inner.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        /* --- Card Front Design Elements --- */
+        .card-front {
+            background: #fffdf9;
+        }
+
+        .fluid-bg-front {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .front-content {
+            position: relative;
+            z-index: 4;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        .brand-logo-container {
+            text-align: center;
+            margin-top: -5px;
+            z-index: 5;
+        }
+
+        .brand-main-title {
+            font-family: 'Georgia', serif;
+            font-size: 42px;
+            font-weight: 900;
+            font-style: italic;
+            background: linear-gradient(to bottom, #ff3d00 30%, #d50000 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: -4px;
+            filter: drop-shadow(1px 2px 2px rgba(0,0,0,0.15));
+        }
+
+        .brand-sub-title {
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: #4a0e00;
+            text-transform: uppercase;
+        }
+
+        .brand-tagline {
+            font-size: 10px;
+            font-style: italic;
+            color: #d84315;
+            margin-top: 6px;
+            font-weight: 500;
+            border-top: 1px solid rgba(216, 67, 21, 0.3);
+            padding-top: 2px;
+        }
+
+        /* Food illustration layers */
+        .dosa-asset {
+            position: absolute;
+            left: 8px;
+            bottom: 24px;
+            width: 82px;
+            transform: rotate(-5deg);
+            filter: drop-shadow(2px 4px 5px rgba(0,0,0,0.25));
+            z-index: 2;
+        }
+
+        .chutney-asset {
+            position: absolute;
+            right: 12px;
+            top: 28px;
+            width: 58px;
+            filter: drop-shadow(2px 3px 4px rgba(0,0,0,0.2));
+            z-index: 2;
+        }
+
+        /* Custom Dynamic Uploaded Logo Element */
+        .custom-uploaded-asset {
+            position: absolute;
+            left: 50%;
+            top: 22%;
+            transform: translate(-50%, -50%);
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+            z-index: 3;
+            display: none;
+            pointer-events: none;
+        }
+
+        /* --- Card Back Design Elements --- */
+        .card-back {
+            transform: rotateY(180deg);
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 16px;
+        }
+
+        .fluid-bg-back {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .back-content {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .back-left-panel {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            justify-content: space-between;
+            max-width: 65%;
+        }
+
+        .profile-block {
+            margin-bottom: 8px;
+        }
+
+        .owner-name {
+            font-size: 15px;
+            font-weight: 800;
+            color: #e65100;
+            letter-spacing: 0.3px;
+        }
+
+        .owner-role {
+            font-size: 10px;
+            font-weight: 600;
+            color: #546e7a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .contact-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 8px;
+            color: #37474f;
+            font-weight: 600;
+            word-break: break-word;
+        }
+
+        .contact-icon {
+            width: 13px;
+            height: 13px;
+            background: #d84315;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .contact-icon svg {
+            width: 7px;
+            height: 7px;
+            fill: #fff;
+        }
+
+        .social-row {
+            display: flex;
+            gap: 5px;
+            margin-top: 4px;
+        }
+
+        .social-icon {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .social-icon svg {
+            width: 8px;
+            height: 8px;
+            fill: white;
+        }
+
+        .back-right-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: center;
+            height: 100%;
+            width: 30%;
+        }
+
+        .qr-wrapper {
+            background: white;
+            padding: 4px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border: 1px solid #f1f5f9;
+        }
+
+        .qr-wrapper svg {
+            display: block;
+        }
+
+        /* --- Scrollable Bottom Editor Console Panel --- */
+        .editor-section {
+            flex-grow: 1;
+            overflow-y: auto;
+            background: #16161f;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            padding: 20px 16px;
+        }
+
+        .editor-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #94a3b8;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .editor-card {
+            background: #1f1f2e;
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            display: none;
+        }
+
+        .editor-card.active-panel {
+            display: block;
+        }
+
+        .input-group {
+            margin-bottom: 14px;
+        }
+
+        .input-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .input-group input[type="text"],
+        .input-group input[type="file"] {
+            width: 100%;
+            background: #13131a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: #f8fafc;
+            font-size: 13px;
+            transition: border-color 0.2s;
+        }
+
+        .input-group input[type="file"] {
+            padding: 8px;
+            cursor: pointer;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #ff5722;
+        }
+
+        .range-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .range-container input[type="range"] {
+            flex-grow: 1;
+            accent-color: #ff5722;
+        }
+
+        .range-val {
+            font-size: 12px;
+            color: #f8fafc;
+            min-width: 32px;
+            text-align: right;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #94a3b8;
+            user-select: none;
+            margin-top: 4px;
+        }
+
+        .checkbox-container input {
+            accent-color: #ff5722;
+            width: 15px;
+            height: 15px;
+        }
+
+        /* Hidden export container setup */
+        #export-sandbox {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-header">Premium Business Card Suite</div>
+
+    <div class="preview-section">
+        <div class="card-view-wrapper">
+            <div class="card-inner" id="interactive-card">
+                
+                <div class="card-face card-front">
+                    <svg class="fluid-bg-front" viewBox="0 0 350 200" preserveAspectRatio="none">
+                        <defs>
+                            <linearGradient id="warmGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#ff9100"/>
+                                <stop offset="50%" stop-color="#ff3d00"/>
+                                <stop offset="100%" stop-color="#b71c1c"/>
+                            </linearGradient>
+                        </defs>
+                        <path d="M 0 0 L 350 0 L 350 50 C 280 120, 200 60, 120 130 C 50 190, 0 140, 0 200 Z" fill="url(#warmGrad)" opacity="0.15"/>
+                        <path d="M 0 130 C 80 100, 150 180, 240 140 C 310 110, 350 150, 350 200 L 0 200 Z" fill="url(#warmGrad)"/>
+                        <path d="M 0 150 C 90 130, 130 195, 220 160 C 290 130, 350 175, 350 200 L 0 200 Z" fill="#b71c1c" opacity="0.4"/>
+                        <circle cx="35" cy="40" r="12" fill="#ff9100" opacity="0.6"/>
+                        <circle cx="70" cy="25" r="6" fill="#ffea00" opacity="0.7"/>
+                        <path d="M15,15 Q30,25 25,45 Q10,35 15,15" fill="#ff6d00"/>
+                        <path d="M280,35 Q300,15 315,35 Q295,45 280,35" fill="#4caf50" opacity="0.8"/>
+                    </svg>
+
+                    <div class="dosa-asset" id="dom-dosa">
+                        <svg viewBox="0 0 100 40">
+                            <rect x="5" y="15" width="90" height="15" rx="7" fill="#e5a93c"/>
+                            <rect x="8" y="17" width="84" height="11" rx="5" fill="#f5c26b"/>
+                            <path d="M5,22 C20,10 40,30 65,12 C80,25 90,15 95,22" stroke="#b07314" stroke-width="2" fill="none" opacity="0.4"/>
+                            <path d="M12,25 L12,28 M25,24 L25,28 M45,26 L45,29 M70,24 L70,27" stroke="#388e3c" stroke-width="3" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="chutney-asset" id="dom-chutney">
+                        <svg viewBox="0 0 60 40">
+                            <circle cx="18" cy="20" r="12" fill="#e0e0e0"/>
+                            <circle cx="18" cy="20" r="10" fill="#d84315"/>
+                            <circle cx="42" cy="24" r="11" fill="#e0e0e0"/>
+                            <circle cx="42" cy="24" r="9" fill="#4caf50"/>
+                        </svg>
+                    </div>
+
+                    <img id="dom-custom-img" class="custom-uploaded-asset" src="" alt="Custom Graphic">
+
+                    <div class="front-content">
+                        <div class="brand-logo-container">
+                            <div class="brand-main-title" id="lbl-title">Anshu</div>
+                            <div class="brand-sub-title" id="lbl-subtitle">DOSA CENTER</div>
+                            <div class="brand-tagline" id="lbl-tagline">Taste That Feels Like Home</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-face card-back">
+                    <svg class="fluid-bg-back" viewBox="0 0 350 200" preserveAspectRatio="none">
+                        <path d="M 0 0 C 100 40, 250 -10, 350 30 L 350 0 L 0 0 Z" fill="#ff6d00" opacity="0.1"/>
+                        <path d="M 0 160 C 90 140, 220 190, 350 150 L 350 200 L 0 200 Z" fill="#ff6d00" opacity="0.2"/>
+                        <path d="M 0 175 C 110 160, 200 195, 350 170 L 350 200 L 0 200 Z" fill="#ff3d00" opacity="0.4"/>
+                    </svg>
+
+                    <div class="back-content">
+                        <div class="back-left-panel">
+                            <div class="profile-block">
+                                <div class="owner-name" id="lbl-name">Anshu Yadav</div>
+                                <div class="owner-role" id="lbl-role">Owner</div>
+                            </div>
+                            
+                            <div class="contact-list">
+                                <div class="contact-item">
+                                    <div class="contact-icon">
+                                        <svg viewBox="0 0 24 24"><path d="M6.62,10.79C8.06,13.62 10.38,15.93 13.21,17.38L15.41,15.18C15.69,14.9 16.08,14.82 16.43,14.93C17.55,15.3 18.75,15.5 20,15.5A1,1 0 0,1 21,16.5V20A1,1 0 0,1 20,21A17,17 0 0,1 3,4A1,1 0 0,1 4,3H7.5A1,1 0 0,1 8.5,4C8.5,5.25 8.7,6.45 9.07,7.57C9.18,7.92 9.1,8.31 8.82,8.59L6.62,10.79Z"/></svg>
+                                    </div>
+                                    <span id="lbl-phone">+91 98765 43210</span>
+                                </div>
+                                <div class="contact-item">
+                                    <div class="contact-icon">
+                                        <svg viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4M12,18c-2.67,0-8,1.34-8,4v-2c0-2.66 5.33-4 8-4s8,1.34 8,4v2C20,19.34 14.67,18 12,18Z"/></svg>
+                                    </div>
+                                    <span id="lbl-address">Shop No. 12, MG Road, Sitabuldi, Nagpur, Maharashtra 440012</span>
+                                </div>
+                                <div class="contact-item">
+                                    <div class="contact-icon">
+                                        <svg viewBox="0 0 24 24"><path d="M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 20,18V6C20,4.89 19.1,4 18,4M18,8L12,12L6,8V6L12,10L18,6V8Z"/></svg>
+                                    </div>
+                                    <span id="lbl-email">anshudosacenter@gmail.com</span>
+                                </div>
+                            </div>
+
+                            <div class="social-row">
+                                <div class="social-icon" style="background:#e1306c;"><svg viewBox="0 0 24 24"><path d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9M18.5,4.75A1.25,1.25 0 1,0 19.75,6A1.25,1.25 0 0,0 18.5,4.75Z"/></svg></div>
+                                <div class="social-icon" style="background:#3b5998;"><svg viewBox="0 0 24 24"><path d="M5,3H19A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3M18,5H15.5A3.5,3.5 0 0,0 12,8.5V11H10V14H12V21H15V14H18V11H15V9A1,1 0 0,1 16,8H18V5Z"/></svg></div>
+                                <div class="social-icon" style="background:#00acee;"><svg viewBox="0 0 24 24"><path d="M22.46,6C21.69,6.35 20.86,6.58 20,6.69C20.88,6.16 21.56,5.32 21.88,4.31C21.05,4.81 20.13,5.16 19.16,5.36C18.37,4.5 17.26,4 16,4C13.59,4 11.64,5.95 11.64,8.35C11.64,8.69 11.67,9.03 11.75,9.36C8.12,9.18 4.91,7.44 2.75,4.81C2.37,5.46 2.15,6.22 2.15,7C2.15,8.5 2.91,9.83 4.07,10.6C3.37,10.58 2.71,10.39 2.13,10.07C2.13,10.08 2.13,10.1 2.13,10.12C2.13,12.23 3.63,13.92 5.61,14.32C5.25,14.41 4.87,14.47 4.48,14.47C4.21,14.47 3.94,14.44 3.68,14.39C4.24,16.12 5.85,17.37 7.76,17.4C6.27,18.57 4.38,19.27 2.33,19.27C1.98,19.27 1.63,19.25 1.29,19.21C3.22,20.45 5.51,21.17 8,21.17C16.09,21.17 20.51,14.47 20.51,8.65C20.51,8.46 20.51,8.27 20.5,8.08C21.36,7.47 22.1,6.7 22.46,6Z"/></svg></div>
+                                <div class="social-icon" style="background:#c4302b;"><svg viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93$.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></div>
+                            </div>
+                        </div>
+
+                        <div class="back-right-panel">
+                            <div class="qr-wrapper">
+                                <svg width="55" height="55" viewBox="0 0 29 29" shape-rendering="crispEdges" fill="#263238">
+                                    <path d="M0 0h7v7H0zM1 1h5v5H1z M2 2h3v3H2z M22 0h7v7h-7zM23 1h5v5h-5z M24 2h3v3h-2z M0 22h7v7H0zM1 23h5v5H1z M2 24h3v3H2z M9 0h2v2H9z M12 1h3v1h-3z M17 0h2v3h-2z M9 4h4v1H9z M14 3h2v3h-2z M12 6h5v1h-5z M20 9h3v2h-3z M25 8h2v3h-2z M9 9h2v2H9z M13 10h4v2h-4z M0 9h7v1H0z M2 11h4v2H2z M0 14h2v3H0z M3 15h3v2H3z M9 14h2v4H9z M13 16h2v2h-2z M17 14h5v2h-5z M24 13h4v2h-4z M23 16h5v2h-5z M9 20h2v3H9z M13 19h5v2h-5z M20 21h3v2h-3z M25 19h4v2h-4z M12 23h3v2h-3z M17 24h4v2h-4z M24 23h3v4h-3z M28 26h1v3h-1z M19 28h4v1h-4z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="control-row">
+            <div class="toggle-container">
+                <div class="toggle-slider" id="slider"></div>
+                <button class="toggle-btn active" onclick="setView('front')">FRONT</button>
+                <button class="toggle-btn" onclick="setView('back')">BACK</button>
+            </div>
+            <button class="action-btn" onclick="generateHighResExport()">
+                <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg>
+                SAVE CARD
+            </button>
+        </div>
+    </div>
+
+    <div class="editor-section">
+        
+        <div class="editor-title" id="panel-title-indicator">Front Side Configurations</div>
+        
+        <div class="editor-card active-panel" id="panel-front">
+            <div class="input-group">
+                <label>Brand Header/Name</label>
+                <input type="text" id="txt-title" value="Anshu" oninput="syncData()">
+            </div>
+            <div class="input-group">
+                <label>Business Type Tag</label>
+                <input type="text" id="txt-subtitle" value="DOSA CENTER" oninput="syncData()">
+            </div>
+            <div class="input-group">
+                <label>Company Tagline / Motto</label>
+                <input type="text" id="txt-tagline" value="Taste That Feels Like Home" oninput="syncData()">
+            </div>
+            
+            <div class="input-group" style="border-top: 1px solid rgba(255,255,255,0.08); padding-top:14px; margin-top:14px;">
+                <label>Upload Custom Brand Logo</label>
+                <input type="file" id="input-brand-image" accept="image/*" onchange="processUploadedImage(this)">
+                <label class="checkbox-container">
+                    <input type="checkbox" id="chk-show-presets" checked onchange="syncData()">
+                    <span>Keep default food illustrations visible</span>
+                </label>
+            </div>
+            <div class="input-group" id="group-image-scale" style="display: none;">
+                <label>Custom Graphic Scale</label>
+                <div class="range-container">
+                    <input type="range" id="input-image-scale" min="20" max="180" value="100" oninput="syncData()">
+                    <span class="range-val" id="val-image-scale">100%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="editor-card" id="panel-back">
+            <div class="input-group">
+                <label>Full Executive Name</label>
+                <input type="text" id="txt-name" value="Anshu Yadav" oninput="syncData()">
+            </div>
+            <div class="input-group">
+                <label>Professional Title</label>
+                <input type="text" id="txt-role" value="Owner" oninput="syncData()">
+            </div>
+            <div class="input-group">
+                <label>Contact Telephone Number</label>
+                <input type="text" id="txt-phone" value="+91 98765 43210" oninput="syncData()">
+            </div>
+            <div class="input-group">
+                <label>HQ/Shop Physical Address</label>
+                <input type="text" id="txt-address" value="Shop No. 12, MG Road, Sitabuldi, Nagpur, Maharashtra 440012" oninput="syncData()">
+            </div>
+            <div class="input-group">
+                <label>Corporate Email Address</label>
+                <input type="text" id="txt-email" value="anshudosacenter@gmail.com" oninput="syncData()">
+            </div>
+        </div>
+
+    </div>
+
+    <div id="export-sandbox"></div>
+
+    <script>
+        let currentView = 'front';
+        let customImageObject = null;
+
+        function setView(view) {
+            currentView = view;
+            const card = document.getElementById('interactive-card');
+            const slider = document.getElementById('slider');
+            const btns = document.querySelectorAll('.toggle-btn');
+            const panelFront = document.getElementById('panel-front');
+            const panelBack = document.getElementById('panel-back');
+            const titleIndicator = document.getElementById('panel-title-indicator');
+
+            if(view === 'front') {
+                card.classList.remove('flipped');
+                slider.style.transform = 'translateX(0px)';
+                btns[0].classList.add('active');
+                btns[1].classList.remove('active');
+                panelFront.classList.add('active-panel');
+                panelBack.classList.remove('active-panel');
+                titleIndicator.innerText = "Front Side Configurations";
+            } else {
+                card.classList.add('flipped');
+                slider.style.transform = 'translateX(86px)';
+                btns[0].classList.remove('active');
+                btns[1].classList.add('active');
+                panelFront.classList.remove('active-panel');
+                panelBack.classList.add('active-panel');
+                titleIndicator.innerText = "Back Side Configurations";
+            }
+        }
+
+        function processUploadedImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    customImageObject = new Image();
+                    customImageObject.onload = function() {
+                        document.getElementById('dom-custom-img').src = e.target.result;
+                        document.getElementById('group-image-scale').style.display = 'block';
+                        syncData();
+                    };
+                    customImageObject.src = e.target.result;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function syncData() {
+            document.getElementById('lbl-title').innerText = document.getElementById('txt-title').value;
+            document.getElementById('lbl-subtitle').innerText = document.getElementById('txt-subtitle').value;
+            document.getElementById('lbl-tagline').innerText = document.getElementById('txt-tagline').value;
+            
+            document.getElementById('lbl-name').innerText = document.getElementById('txt-name').value;
+            document.getElementById('lbl-role').innerText = document.getElementById('txt-role').value;
+            document.getElementById('lbl-phone').innerText = document.getElementById('txt-phone').value;
+            document.getElementById('lbl-address').innerText = document.getElementById('txt-address').value;
+            document.getElementById('lbl-email').innerText = document.getElementById('txt-email').value;
+
+            const showPresets = document.getElementById('chk-show-presets').checked;
+            document.getElementById('dom-dosa').style.display = showPresets ? 'block' : 'none';
+            document.getElementById('dom-chutney').style.display = showPresets ? 'block' : 'none';
+
+            const customImgEl = document.getElementById('dom-custom-img');
+            if(customImageObject) {
+                customImgEl.style.display = 'block';
+                const scaleValue = document.getElementById('input-image-scale').value;
+                document.getElementById('val-image-scale').innerText = scaleValue + '%';
+                customImgEl.style.width = (70 * (scaleValue / 100)) + 'px';
+                customImgEl.style.height = (70 * (scaleValue / 100)) + 'px';
+            } else {
+                customImgEl.style.display = 'none';
+            }
+        }
+
+        function drawFrontSide(ctx, width, height) {
+            // Background Base
+            ctx.fillStyle = "#fffdf9";
+            ctx.fillRect(0, 0, width, height);
+
+            // Re-rendering Background wave gradients programmatically 
+            let grad = ctx.createLinearGradient(0, 0, width, height);
+            grad.addColorStop(0, '#ff9100');
+            grad.addColorStop(0.5, '#ff3d00');
+            grad.addColorStop(1, '#b71c1c');
+
+            // TOP WAVE DESIGN (Path 1)
+            ctx.save();
+            ctx.fillStyle = grad;
+            ctx.globalAlpha = 0.15;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(width, 0);
+            ctx.lineTo(width, 150);
+            ctx.bezierCurveTo(840, 360, 600, 180, 360, 390);
+            ctx.bezierCurveTo(150, 570, 0, 420, 0, 600);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+
+            // BOTTOM MAIN WAVE DESIGN (Path 2)
+            ctx.save();
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.moveTo(0, 390);
+            ctx.bezierCurveTo(240, 300, 450, 540, 720, 420);
+            ctx.bezierCurveTo(930, 330, 1050, 450, 1050, 600);
+            ctx.lineTo(0, 600);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+
+            // BOTTOM OVERLAPPING DEEP WAVE DESIGN (Path 3)
+            ctx.save();
+            ctx.fillStyle = '#b71c1c';
+            ctx.globalAlpha = 0.4;
+            ctx.beginPath();
+            ctx.moveTo(0, 450);
+            ctx.bezierCurveTo(270, 390, 390, 585, 660, 480);
+            ctx.bezierCurveTo(870, 390, 1050, 525, 1050, 600);
+            ctx.lineTo(0, 600);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+
+            // TOP LEFT ACCENT CIRCLE 1
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(105, 120, 36, 0, Math.PI * 2);
+            ctx.fillStyle = "#ff9100";
+            ctx.globalAlpha = 0.6;
+            ctx.fill();
+            ctx.restore();
+
+            // TOP LEFT ACCENT CIRCLE 2
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(210, 75, 18, 0, Math.PI * 2);
+            ctx.fillStyle = "#ffea00";
+            ctx.globalAlpha = 0.7;
+            ctx.fill();
+            ctx.restore();
+
+            // TOP LEFT ABSTRACT LEAF/DESIGN SHAPE
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(45, 45);
+            ctx.quadraticCurveTo(90, 75, 75, 135);
+            ctx.quadraticCurveTo(30, 105, 45, 45);
+            ctx.closePath();
+            ctx.fillStyle = "#ff6d00";
+            ctx.fill();
+            ctx.restore();
+
+            // TOP RIGHT ABSTRACT LEAF/DESIGN SHAPE
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(840, 105);
+            ctx.quadraticCurveTo(900, 45, 945, 105);
+            ctx.quadraticCurveTo(885, 135, 840, 105);
+            ctx.closePath();
+            ctx.fillStyle = "#4caf50";
+            ctx.globalAlpha = 0.8;
+            ctx.fill();
+            ctx.restore();
+
+            const showPresets = document.getElementById('chk-show-presets').checked;
+            if(showPresets) {
+                // --- DOSA ILLUSTRATION (BOTTOM LEFT) ---
+                ctx.save();
+                ctx.shadowColor = 'rgba(0,0,0,0.25)';
+                ctx.shadowBlur = 15;
+                ctx.translate(24, 429.6);
+                ctx.rotate(-5 * Math.PI / 180);
+                ctx.scale(2.46, 2.46);
+                
+                ctx.fillStyle = "#e5a93c";
+                ctx.beginPath();
+                ctx.roundRect(5, 15, 90, 15, 7);
+                ctx.fill();
+                
+                ctx.fillStyle = "#f5c26b";
+                ctx.beginPath();
+                ctx.roundRect(8, 17, 84, 11, 5);
+                ctx.fill();
+                
+                ctx.strokeStyle = "#b07314";
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = 0.4;
+                ctx.beginPath();
+                ctx.moveTo(5, 22);
+                ctx.bezierCurveTo(20, 10, 40, 30, 65, 12);
+                ctx.bezierCurveTo(80, 25, 90, 15, 95, 22);
+                ctx.stroke();
+                
+                ctx.strokeStyle = "#388e3c";
+                ctx.lineWidth = 3;
+                ctx.globalAlpha = 1.0;
+                ctx.lineCap = "round";
+                ctx.beginPath(); ctx.moveTo(12, 25); ctx.lineTo(12, 28); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(25, 24); ctx.lineTo(25, 28); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(45, 26); ctx.lineTo(45, 29); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(70, 24); ctx.lineTo(70, 27); ctx.stroke();
+                ctx.restore();
+
+                // --- CHUTNEY ILLUSTRATION (TOP RIGHT) ---
+                ctx.save();
+                ctx.shadowColor = 'rgba(0,0,0,0.2)';
+                ctx.shadowBlur = 12;
+                ctx.translate(840, 84);
+                ctx.scale(2.9, 2.9);
+                
+                ctx.fillStyle = "#e0e0e0";
+                ctx.beginPath(); ctx.arc(18, 20, 12, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = "#d84315";
+                ctx.beginPath(); ctx.arc(18, 20, 10, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = "#e0e0e0";
+                ctx.beginPath(); ctx.arc(42, 24, 11, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = "#4caf50";
+                ctx.beginPath(); ctx.arc(42, 24, 9, 0, Math.PI*2); ctx.fill();
+                ctx.restore();
+            }
+
+            // Custom Graphic Handling Injection Engine Module
+            if(customImageObject) {
+                ctx.save();
+                const scaleFactor = document.getElementById('input-image-scale').value / 100;
+                const baseSize = 210; 
+                const targetSize = baseSize * scaleFactor;
+                const imgX = (width / 2) - (targetSize / 2);
+                const imgY = (height * 0.22) - (targetSize / 2);
+                ctx.drawImage(customImageObject, imgX, imgY, targetSize, targetSize);
+                ctx.restore();
+            }
+
+            // Typography Generation
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            ctx.font = 'italic bold 110px Georgia';
+            ctx.fillStyle = '#d50000';
+            ctx.fillText(document.getElementById('txt-title').value, width / 2, height / 2 - 30);
+            
+            ctx.font = '800 36px Helvetica';
+            ctx.fillStyle = '#4a0e00';
+            ctx.fillText(document.getElementById('txt-subtitle').value, width / 2, height / 2 + 50);
+
+            ctx.font = 'italic 500 24px Georgia';
+            ctx.fillStyle = '#d84315';
+            ctx.fillText(document.getElementById('txt-tagline').value, width / 2, height / 2 + 110);
+        }
+
+        function drawBackSide(ctx, width, height) {
+            // Back Side Render Engine Block
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.fillStyle = "rgba(255, 109, 0, 0.1)";
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.bezierCurveTo(300, 120, 750, -30, 1050, 90);
+            ctx.lineTo(1050, 0);
+            ctx.lineTo(0, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = "rgba(255, 109, 0, 0.2)";
+            ctx.beginPath();
+            ctx.moveTo(0, 480);
+            ctx.bezierCurveTo(270, 420, 660, 570, 1050, 450);
+            ctx.lineTo(1050, 600);
+            ctx.lineTo(0, 600);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = "rgba(255, 61, 0, 0.4)";
+            ctx.beginPath();
+            ctx.moveTo(0, 525);
+            ctx.bezierCurveTo(330, 480, 600, 585, 1050, 510);
+            ctx.lineTo(1050, 600);
+            ctx.lineTo(0, 600);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillStyle = '#e65100';
+            ctx.font = '800 42px Helvetica';
+            ctx.fillText(document.getElementById('txt-name').value, 60, 100);
+
+            ctx.fillStyle = '#546e7a';
+            ctx.font = '600 24px Helvetica';
+            ctx.fillText(document.getElementById('txt-role').value.toUpperCase(), 60, 145);
+
+            ctx.fillStyle = '#37474f';
+            ctx.font = '600 21px Helvetica';
+            ctx.fillText("Phone: " + document.getElementById('txt-phone').value, 60, 260);
+            ctx.fillText("Email: " + document.getElementById('txt-email').value, 60, 320);
+            
+            let addressText = document.getElementById('txt-address').value;
+            ctx.fillText("Address: " + addressText.substring(0, 45), 60, 380);
+            if(addressText.length > 45) {
+                ctx.fillText(addressText.substring(45), 148, 410);
+            }
+
+            ctx.fillStyle = '#263238';
+            let qrSize = 140;
+            let qrX = width - 220;
+            let qrY = height / 2 - 70;
+            ctx.fillRect(qrX, qrY, qrSize, qrSize);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(qrX + 10, qrY + 10, qrSize - 20, qrSize - 20);
+            
+            ctx.fillStyle = '#263238';
+            ctx.fillRect(qrX + 20, qrY + 20, 35, 35);
+            ctx.fillRect(qrX + qrSize - 55, qrY + 20, 35, 35);
+            ctx.fillRect(qrX + 20, qrY + qrSize - 55, 35, 35);
+            ctx.fillRect(qrX + 50, qrY + 70, 45, 45);
+        }
+
+        // Programmatic High-Resolution Canvas Export Module (Unified Combo Layout)
+        function generateHighResExport() {
+            const cardWidth = 1050; // 350 * 3
+            const cardHeight = 600; // 200 * 3
+            const gap = 40; // Clean layout border separator
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = cardWidth;
+            canvas.height = (cardHeight * 2) + gap;
+            const ctx = canvas.getContext('2d');
+
+            // Render modern showcase canvas workspace background
+            ctx.fillStyle = "#16161f";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Card Front Side
+            ctx.save();
+            ctx.translate(0, 0);
+            drawFrontSide(ctx, cardWidth, cardHeight);
+            ctx.restore();
+
+            // Draw Card Back Side
+            ctx.save();
+            ctx.translate(0, cardHeight + gap);
+            drawBackSide(ctx, cardWidth, cardHeight);
+            ctx.restore();
+
+            let imageURI = canvas.toDataURL('image/png');
+            let downloadLink = document.createElement('a');
+            downloadLink.download = 'combined_business_card.png';
             downloadLink.href = imageURI;
             document.body.appendChild(downloadLink);
             downloadLink.click();
