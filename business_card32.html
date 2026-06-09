@@ -99,6 +99,7 @@
             left: 0;
             display: none;
             box-sizing: border-box;
+            background: linear-gradient(135deg, #252c3d 0%, #151924 100%);
         }
 
         .card-view.active {
@@ -225,7 +226,7 @@
         .node-phone { top: -11px; left: 49px; }
         .text-phone { 
             top: 14px; 
-            left: 80px; /* Aligns perfectly with the center of the ring */
+            left: 80px; 
             transform: translateX(-50%); 
             font-size: 7px; 
             color: rgba(255,255,255,0.4); 
@@ -334,6 +335,7 @@
             gap: 8px;
             margin-top: 10px;
             box-shadow: 0 6px 15px rgba(255,157,34,0.3);
+            cursor: pointer;
         }
 
         .save-btn:active {
@@ -445,7 +447,7 @@
 
         <button class="save-btn" onclick="exportCardImage()">
             <svg style="width:20px;height:20px;fill:currentColor" viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
-            Save Card Image
+            Save Presentation Image
         </button>
         
     </div>
@@ -504,11 +506,24 @@
         setupLiveSync('input-email', '.id-display-email');
         setupLiveSync('input-address', '.id-display-address');
 
-        function exportCardImage() {
-            const element = document.getElementById('capture-target');
-            const activeSide = document.getElementById('btn-front').classList.contains('active') ? 'front' : 'back';
+        async function exportCardImage() {
+            const frontElement = document.getElementById('view-front');
+            const backElement = document.getElementById('view-back');
             
-            const options = {
+            // 1. Cache current dynamic styling state to safely restore later
+            const originalFrontDisplay = frontElement.style.display;
+            const originalBackDisplay = backElement.style.display;
+
+            // 2. Clear layouts temporarily to allow direct script snapshot access
+            frontElement.style.display = 'block';
+            backElement.style.display = 'block';
+
+            // Trigger structural layout pass updates across rendering engines
+            frontElement.offsetHeight; 
+            backElement.offsetHeight;
+
+            // 3. Configuration properties setup for high-res output snapshots
+            const html2canvasOptions = {
                 scale: 3, 
                 backgroundColor: null,
                 useCORS: true,
@@ -516,17 +531,84 @@
                 logging: false
             };
 
-            html2canvas(element, options).then(canvas => {
-                const imageURI = canvas.toDataURL("image/png");
+            try {
+                // Generate isolated image elements via synchronous promises
+                const [frontCanvas, backCanvas] = await Promise.all([
+                    html2canvas(frontElement, html2canvasOptions),
+                    html2canvas(backElement, html2canvasOptions)
+                ]);
+
+                // 4. Initialize structural measurements for combined canvas setup
+                const padding = 40 * 3;  // Margins scaled matching canvas resolution
+                const gap = 30 * 3;      // Gap spacing scaled matching canvas resolution
+                const cardWidth = frontCanvas.width;
+                const cardHeight = frontCanvas.height;
+
+                const finalCanvasWidth = cardWidth + (padding * 2);
+                const finalCanvasHeight = (cardHeight * 2) + (padding * 2) + gap;
+
+                // Create clean virtual container element
+                const presentationCanvas = document.createElement('canvas');
+                presentationCanvas.width = finalCanvasWidth;
+                presentationCanvas.height = finalCanvasHeight;
+                const ctx = presentationCanvas.getContext('2d');
+
+                // Fill with elegant, flat studio background color
+                ctx.fillStyle = '#f0f2f5';
+                ctx.fillRect(0, 0, finalCanvasWidth, finalCanvasHeight);
+
+                // 5. Draw rounded shadow wrappers for aesthetic depth
+                function drawCardWithShadow(canvasObj, x, y, w, h, radius) {
+                    ctx.save();
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
+                    ctx.shadowBlur = 25 * 3;
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = 8 * 3;
+                    
+                    // Create rounded path mask context layer
+                    ctx.beginPath();
+                    ctx.moveTo(x + radius, y);
+                    ctx.lineTo(x + w - radius, y);
+                    ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+                    ctx.lineTo(x + w, y + h - radius);
+                    ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+                    ctx.lineTo(x + radius, y + h);
+                    ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+                    ctx.lineTo(x, y + radius);
+                    ctx.quadraticCurveTo(x, y, x + radius, y);
+                    ctx.closePath();
+                    
+                    ctx.fill();
+                    ctx.clip();
+                    ctx.drawImage(canvasObj, x, y, w, h);
+                    ctx.restore();
+                }
+
+                const borderRadiusScaled = 14 * 3;
+                const targetX = padding;
+                const frontTargetY = padding;
+                const backTargetY = padding + cardHeight + gap;
+
+                // Render component renders onto target canvas coordinates
+                drawCardWithShadow(frontCanvas, targetX, frontTargetY, cardWidth, cardHeight, borderRadiusScaled);
+                drawCardWithShadow(backCanvas, targetX, backTargetY, cardWidth, cardHeight, borderRadiusScaled);
+
+                // 6. Execute direct system file download streams
+                const imageURI = presentationCanvas.toDataURL("image/png");
                 const downloadLink = document.createElement('a');
-                downloadLink.download = `business_card_${activeSide}_${Date.now()}.png`;
+                downloadLink.download = `business_card_presentation_${Date.now()}.png`;
                 downloadLink.href = imageURI;
                 document.body.appendChild(downloadLink);
                 downloadLink.click();
                 document.body.removeChild(downloadLink);
-            }).catch(err => {
-                console.error("Capture runtime error:", err);
-            });
+
+            } catch (err) {
+                console.error("Presentation output rendering failed:", err);
+            } finally {
+                // Restore active viewport status values dynamically
+                frontElement.style.display = originalFrontDisplay;
+                backElement.style.display = originalBackDisplay;
+            }
         }
     </script>
 </body>
