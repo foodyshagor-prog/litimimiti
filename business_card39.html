@@ -60,6 +60,7 @@
             font-size: 0.85rem;
             box-shadow: 0 4px 12px rgba(223, 172, 28, 0.3);
             transition: transform 0.1s ease;
+            cursor: pointer;
         }
 
         .btn-save:active {
@@ -352,41 +353,82 @@
             }
         }
 
-        // Native High-Resolution Image Compilation Core (100% Offline Compatible)
+        // High-Resolution Presentation Renderer (Combines both sides vertically)
         function exportCardImage() {
-            const activeSvg = currentView === 'front' ? document.getElementById('card-front') : document.getElementById('card-back');
+            const frontSvg = document.getElementById('card-front');
+            const backSvg = document.getElementById('card-back');
             
-            // Serialize SVG structure safely
-            const svgString = new XMLSerializer().serializeToString(activeSvg);
-            const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+            // Dimensions for each card
+            const cardWidth = 1050;
+            const cardHeight = 600;
+            
+            // Presentation padding variables
+            const paddingX = 100;
+            const paddingY = 100;
+            const separationGap = 80;
+
+            // Compute total display surface boundaries
+            const canvasWidth = cardWidth + (paddingX * 2);
+            const canvasHeight = (cardHeight * 2) + (paddingY * 2) + separationGap;
+
+            // Serialize vector elements safely
+            const frontString = new XMLSerializer().serializeToString(frontSvg);
+            const backString = new XMLSerializer().serializeToString(backSvg);
+
+            const frontBlob = new Blob([frontString], { type: 'image/svg+xml;charset=utf-8' });
+            const backBlob = new Blob([backString], { type: 'image/svg+xml;charset=utf-8' });
+
             const URL = window.URL || window.webkitURL || window;
-            const blobUrl = URL.createObjectURL(svgBlob);
-            
-            // Construct offscreen render canvas
-            const imageContainer = new Image();
-            imageContainer.onload = function () {
-                const compileCanvas = document.createElement('canvas');
-                compileCanvas.width = 1050;
-                compileCanvas.height = 600;
-                const context = compileCanvas.getContext('2d');
-                
-                // Rasterize clean vector paths directly onto canvas context
-                context.drawImage(imageContainer, 0, 0, 1050, 600);
-                
-                // Compress canvas matrix safely down to high res download stream
-                const outputUrl = compileCanvas.toDataURL('image/png');
-                
-                const triggerLink = document.createElement('a');
-                triggerLink.download = `BusinessCard_${currentView}_Side.png`;
-                triggerLink.href = outputUrl;
-                document.body.appendChild(triggerLink);
-                triggerLink.click();
-                document.body.removeChild(triggerLink);
-                
-                URL.revokeObjectURL(blobUrl);
-            };
-            
-            imageContainer.src = blobUrl;
+            const frontUrl = URL.createObjectURL(frontBlob);
+            const backUrl = URL.createObjectURL(backBlob);
+
+            let loadedCount = 0;
+            const imgFront = new Image();
+            const imgBack = new Image();
+
+            function checkAndCompile() {
+                loadedCount++;
+                if (loadedCount === 2) {
+                    const compileCanvas = document.createElement('canvas');
+                    compileCanvas.width = canvasWidth;
+                    compileCanvas.height = canvasHeight;
+                    const context = compileCanvas.getContext('2d');
+
+                    // 1. Fill base presentation viewport color (#f0f2f5)
+                    context.fillStyle = '#f0f2f5';
+                    context.fillRect(0, 0, canvasWidth, canvasHeight);
+
+                    // 2. Draw Front Side (Centered, Top half)
+                    const frontX = paddingX;
+                    const frontY = paddingY;
+                    context.drawImage(imgFront, frontX, frontY, cardWidth, cardHeight);
+
+                    // 3. Draw Back Side (Centered, Bottom half)
+                    const backX = paddingX;
+                    const backY = paddingY + cardHeight + separationGap;
+                    context.drawImage(imgBack, backX, backY, cardWidth, cardHeight);
+
+                    // 4. Transform composite drawing into downstream download stream
+                    const outputUrl = compileCanvas.toDataURL('image/png');
+                    
+                    const triggerLink = document.createElement('a');
+                    triggerLink.download = 'BusinessCard_Full_Presentation.png';
+                    triggerLink.href = outputUrl;
+                    document.body.appendChild(triggerLink);
+                    triggerLink.click();
+                    document.body.removeChild(triggerLink);
+
+                    // Clean allocated memory links safely
+                    URL.revokeObjectURL(frontUrl);
+                    URL.revokeObjectURL(backUrl);
+                }
+            }
+
+            imgFront.onload = checkAndCompile;
+            imgBack.onload = checkAndCompile;
+
+            imgFront.src = frontUrl;
+            imgBack.src = backUrl;
         }
     </script>
 </body>
