@@ -565,7 +565,7 @@
         </div>
     </div>
 
-    <canvas id="export-canvas" width="1050" height="600"></canvas>
+    <canvas id="export-canvas"></canvas>
 
     <script>
         let currentActiveSide = 'front';
@@ -593,171 +593,194 @@
 
         /**
          * Independent High Fidelity Canvas Export Engine
-         * Built explicitly using native canvas drawing routines to ensure instant 
-         * offline execution in standard Android/iOS WebViews without external library assets.
+         * Combines both front and back into a clean, presentation-ready presentation.
          */
         function exportCardToImage() {
             const canvas = document.getElementById('export-canvas');
             const ctx = canvas.getContext('2d');
             
-            // Clear current canvas space state
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Layout Specifications
+            const cardW = 1050; 
+            const cardH = 600;  
+            const padding = 60; // Outer layout border spacing
+            const gap = 50;     // Vertical spacing gap between cards
+            
+            // Dynamically dimension canvas to combine both surfaces centered vertically
+            canvas.width = cardW + (padding * 2);
+            canvas.height = (cardH * 2) + (padding * 2) + gap;
+            
+            // 1. Draw presentation showcase background layer
+            ctx.fillStyle = "#f0f2f5";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.textBaseline = 'top';
 
-            if (currentActiveSide === 'front') {
-                // Draw Card Base Surface
-                ctx.fillStyle = "#ffffff";
-                ctx.fillRect(0, 0, 1050, 600);
+            // Gather values directly out of current active view bindings
+            const nameText = document.getElementById('preview-name').innerText;
+            const titleText = document.getElementById('preview-title').innerText;
+            const brandTop = document.getElementById('preview-logo-1').innerText;
+            const brandBottom = document.getElementById('preview-logo-2').innerText;
+            const addr1 = document.getElementById('preview-address-1').innerText;
+            const addr2 = document.getElementById('preview-address-2').innerText;
+            const phone = document.getElementById('preview-phone').innerText;
+            const email = document.getElementById('preview-email').innerText;
+            const web = document.getElementById('preview-web').innerText;
 
-                // Setup Green Linear Wave Gradient Accent
-                let gradient = ctx.createLinearGradient(0, 0, 1050, 600);
-                gradient.addColorStop(0, '#6be37b');
-                gradient.addColorStop(1, '#227034');
+            // ----------------------------------------------------
+            // RENDER BLOCK 1: FRONT SIDE (TOP ELEMENT)
+            // ----------------------------------------------------
+            ctx.save();
+            ctx.translate(padding, padding); // Translate coordinates to top card layout zone
+            
+            // Draw Card Background Surface
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, cardW, cardH);
 
-                // Draw Wave Vector
-                ctx.fillStyle = gradient;
-                ctx.beginPath();
-                ctx.moveTo(480, 600);
-                ctx.bezierCurveTo(690, 510, 600, 180, 1050, 135);
-                ctx.lineTo(1050, 600);
-                ctx.closePath();
-                ctx.fill();
+            // Setup Green Linear Wave Gradient Accent
+            let gradient = ctx.createLinearGradient(0, 0, cardW, cardH);
+            gradient.addColorStop(0, '#6be37b');
+            gradient.addColorStop(1, '#227034');
 
-                // Structural Wave Stroke Layout Layer 1
-                ctx.strokeStyle = "#ffffff";
-                ctx.lineWidth = 9;
-                ctx.beginPath();
-                ctx.moveTo(435, 600);
-                ctx.bezierCurveTo(645, 504, 555, 174, 1050, 120);
-                ctx.stroke();
+            // Draw Wave Vector
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.moveTo(480, 600);
+            ctx.bezierCurveTo(690, 510, 600, 180, 1050, 135);
+            ctx.lineTo(1050, 600);
+            ctx.closePath();
+            ctx.fill();
 
-                // Structural Wave Stroke Layout Layer 2
-                ctx.strokeStyle = "rgba(169, 243, 181, 0.6)";
-                ctx.lineWidth = 4;
-                ctx.beginPath();
-                ctx.moveTo(405, 600);
-                ctx.bezierCurveTo(615, 495, 525, 165, 1050, 102);
-                ctx.stroke();
+            // Structural Wave Stroke Layout Layer 1
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 9;
+            ctx.beginPath();
+            ctx.moveTo(435, 600);
+            ctx.bezierCurveTo(645, 504, 555, 174, 1050, 120);
+            ctx.stroke();
 
-                // Pull Data Safely from User Interface Bindings
-                const nameText = document.getElementById('preview-name').innerText;
-                const titleText = document.getElementById('preview-title').innerText;
-                const brandTop = document.getElementById('preview-logo-1').innerText;
-                const brandBottom = document.getElementById('preview-logo-2').innerText;
+            // Structural Wave Stroke Layout Layer 2
+            ctx.strokeStyle = "rgba(169, 243, 181, 0.6)";
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(405, 600);
+            ctx.bezierCurveTo(615, 495, 525, 165, 1050, 102);
+            ctx.stroke();
 
-                // Render Name Text Block
-                ctx.fillStyle = "#1a3020";
-                ctx.font = "bold 38px sans-serif";
-                ctx.fillText(nameText, 480, 50);
+            // Render Name Text Block
+            ctx.fillStyle = "#1a3020";
+            ctx.font = "bold 38px sans-serif";
+            ctx.fillText(nameText, 480, 50);
 
-                // Render Title Text Block
-                ctx.fillStyle = "#555555";
-                ctx.font = "500 24px sans-serif";
-                ctx.fillText(titleText, 480, 100);
+            // Render Title Text Block
+            ctx.fillStyle = "#555555";
+            ctx.font = "500 24px sans-serif";
+            ctx.fillText(titleText, 480, 100);
 
-                // Drawing Orange Logo Accent Outlines
-                ctx.strokeStyle = "#e67e22";
-                ctx.lineWidth = 4;
-                ctx.strokeRect(50, 430, 65, 65);
+            // Drawing Orange Logo Accent Outlines
+            ctx.strokeStyle = "#e67e22";
+            ctx.lineWidth = 4;
+            ctx.strokeRect(50, 430, 65, 65);
 
-                // Draw Nested Graphic Placeholder
-                ctx.fillStyle = "#e67e22";
-                ctx.beginPath();
-                ctx.arc(82, 462, 14, 0, Math.PI * 2);
-                ctx.fill();
+            // Draw Nested Graphic Placeholder
+            ctx.fillStyle = "#e67e22";
+            ctx.beginPath();
+            ctx.arc(82, 462, 14, 0, Math.PI * 2);
+            ctx.fill();
 
-                // Logo Brand Labeling
-                ctx.fillStyle = "#27853c";
-                ctx.font = "italic bold 48px Georgia, serif";
-                ctx.fillText(brandTop, 135, 415);
+            // Logo Brand Labeling
+            ctx.fillStyle = "#27853c";
+            ctx.font = "italic bold 48px Georgia, serif";
+            ctx.fillText(brandTop, 135, 415);
 
-                ctx.fillStyle = "#34495e";
-                ctx.font = "800 40px sans-serif";
-                ctx.fillText(brandBottom, 155, 465);
+            ctx.fillStyle = "#34495e";
+            ctx.font = "800 40px sans-serif";
+            ctx.fillText(brandBottom, 155, 465);
+            
+            ctx.restore(); // Terminate front translation bounds
 
-            } else {
-                // BACK SIDE HIGH RES GENERATION
-                ctx.fillStyle = "#e2f3e5";
-                ctx.fillRect(0, 0, 1050, 600);
+            // ----------------------------------------------------
+            // RENDER BLOCK 2: BACK SIDE (BOTTOM ELEMENT)
+            // ----------------------------------------------------
+            ctx.save();
+            ctx.translate(padding, padding + cardH + gap); // Translate coordinates to bottom zone
+            
+            // Base Background
+            ctx.fillStyle = "#e2f3e5";
+            ctx.fillRect(0, 0, cardW, cardH);
 
-                // Lower Dark Shape Gradient
-                let backGradient = ctx.createLinearGradient(0, 0, 1050, 600);
-                backGradient.addColorStop(0, '#3d8c55');
-                backGradient.addColorStop(1, '#1d4d2b');
+            // Lower Dark Shape Gradient
+            let backGradient = ctx.createLinearGradient(0, 0, cardW, cardH);
+            backGradient.addColorStop(0, '#3d8c55');
+            backGradient.addColorStop(1, '#1d4d2b');
 
-                ctx.fillStyle = backGradient;
-                ctx.beginPath();
-                ctx.moveTo(0, 330);
-                ctx.bezierCurveTo(360, 480, 660, 270, 1050, 405);
-                ctx.lineTo(1050, 600);
-                ctx.lineTo(0, 600);
-                ctx.closePath();
-                ctx.fill();
+            ctx.fillStyle = backGradient;
+            ctx.beginPath();
+            ctx.moveTo(0, 330);
+            ctx.bezierCurveTo(360, 480, 660, 270, 1050, 405);
+            ctx.lineTo(1050, 600);
+            ctx.lineTo(0, 600);
+            ctx.closePath();
+            ctx.fill();
 
-                // Secondary Accent Layer
-                ctx.fillStyle = "#225933";
-                ctx.beginPath();
-                ctx.moveTo(0, 375);
-                ctx.bezierCurveTo(390, 510, 630, 315, 1050, 441);
-                ctx.lineTo(1050, 600);
-                ctx.lineTo(0, 600);
-                ctx.closePath();
-                ctx.fill();
+            // Secondary Accent Layer
+            ctx.fillStyle = "#225933";
+            ctx.beginPath();
+            ctx.moveTo(0, 375);
+            ctx.bezierCurveTo(390, 510, 630, 315, 1050, 441);
+            ctx.lineTo(1050, 600);
+            ctx.lineTo(0, 600);
+            ctx.closePath();
+            ctx.fill();
 
-                // Pull Values
-                const addr1 = document.getElementById('preview-address-1').innerText;
-                const addr2 = document.getElementById('preview-address-2').innerText;
-                const phone = document.getElementById('preview-phone').innerText;
-                const email = document.getElementById('preview-email').innerText;
-                const web = document.getElementById('preview-web').innerText;
+            // Render Contact Block Text Data
+            ctx.fillStyle = "#2d4030";
+            ctx.font = "bold 22px sans-serif";
 
-                // Render Contact Block
-                ctx.fillStyle = "#2d4030";
-                ctx.font = "bold 22px sans-serif";
+            // Address context strings
+            ctx.fillText("📍 " + addr1, 60, 180);
+            ctx.fillText("   " + addr2, 60, 215);
 
-                // Address info text blocks
-                ctx.fillText("📍 " + addr1, 60, 180);
-                ctx.fillText("   " + addr2, 60, 215);
+            // Phone & Mail Text Info Block
+            ctx.fillText("📞 " + phone, 520, 430);
+            ctx.fillText("✉️ " + email, 520, 475);
 
-                // Phone & Mail Text Info Block
-                ctx.fillText("📞 " + phone, 520, 430);
-                ctx.fillText("✉️ " + email, 520, 475);
+            // Lower Layout Website Address Label Rendering
+            ctx.fillStyle = "#d5ebd9";
+            ctx.font = "500 20px sans-serif";
+            ctx.fillText("🌐 " + web, 750, 550);
 
-                // Lower Layout Website Address Label Rendering
-                ctx.fillStyle = "#d5ebd9";
-                ctx.font = "500 20px sans-serif";
-                ctx.fillText("🌐 " + web, 750, 550);
+            // Generate Clean Isolated Mock QR Shape Blocks
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(60, 410, 140, 140);
+            
+            ctx.fillStyle = "#225933";
+            // Outer anchoring square structures
+            ctx.fillRect(75, 425, 45, 45);
+            ctx.fillStyle = "#ffffff"; ctx.fillRect(85, 435, 25, 25);
+            ctx.fillStyle = "#225933"; ctx.fillRect(92, 442, 11, 11);
 
-                // Generate Clean Isolated Mock QR Shape Blocks
-                ctx.fillStyle = "#ffffff";
-                ctx.fillRect(60, 410, 140, 140);
-                
-                ctx.fillStyle = "#225933";
-                // Outer anchoring square structures
-                ctx.fillRect(75, 425, 45, 45);
-                ctx.fillStyle = "#ffffff"; ctx.fillRect(85, 435, 25, 25);
-                ctx.fillStyle = "#225933"; ctx.fillRect(92, 442, 11, 11);
+            ctx.fillRect(140, 425, 45, 45);
+            ctx.fillStyle = "#ffffff"; ctx.fillRect(150, 435, 25, 25);
+            ctx.fillStyle = "#225933"; ctx.fillRect(157, 442, 11, 11);
 
-                ctx.fillRect(140, 425, 45, 45);
-                ctx.fillStyle = "#ffffff"; ctx.fillRect(150, 435, 25, 25);
-                ctx.fillStyle = "#225933"; ctx.fillRect(157, 442, 11, 11);
+            ctx.fillRect(75, 490, 45, 45);
+            ctx.fillStyle = "#ffffff"; ctx.fillRect(85, 500, 25, 25);
+            ctx.fillStyle = "#225933"; ctx.fillRect(92, 507, 11, 11);
+            
+            // Add scattered noise blocks to simulate modern nested QR profiles
+            ctx.fillRect(140, 490, 15, 15);
+            ctx.fillRect(165, 510, 20, 25);
+            ctx.fillRect(145, 530, 15, 10);
+            
+            ctx.restore(); // Terminate back side layout rules cleanly
 
-                ctx.fillRect(75, 490, 45, 45);
-                ctx.fillStyle = "#ffffff"; ctx.fillRect(85, 500, 25, 25);
-                ctx.fillStyle = "#225933"; ctx.fillRect(92, 507, 11, 11);
-                
-                // Add scattered noise blocks to simulate modern nested QR profiles
-                ctx.fillRect(140, 490, 15, 15);
-                ctx.fillRect(165, 510, 20, 25);
-                ctx.fillRect(145, 530, 15, 10);
-            }
-
-            // Extract canvas stream data URL directly out to runtime native download triggers
+            // ----------------------------------------------------
+            // IMAGE EXPORT PROCESS PIPELINE
+            // ----------------------------------------------------
             const dataUrl = canvas.toDataURL("image/png");
             
-            // Trigger local device system file downloading routines cleanly
+            // Fire local standard asset device downstream download trigger
             const linkDownload = document.createElement('a');
-            linkDownload.download = `BusinessCard_${currentActiveSide}.png`;
+            linkDownload.download = `BusinessCard_Showcase.png`;
             linkDownload.href = dataUrl;
             linkDownload.click();
         }
