@@ -580,7 +580,7 @@
             </div>
 
             <button class="btn-save" onclick="exportCardImage()">
-                <i class="fa-solid fa-circle-down"></i> Save Current Side to Device
+                <i class="fa-solid fa-circle-down"></i> Save Combined Presentation Layout
             </button>
         </div>
     </div>
@@ -632,41 +632,93 @@
             document.getElementById(`output-${suffix}2`).innerText = value;
         }
 
-        // Canvas Snapshot Export Processor 
+        // Combined Canvas Presentation Snapshot Export Processor 
         function exportCardImage() {
-            const activeCardId = currentSide === 1 ? 'card-side1' : 'card-side2';
-            const targetNode = document.getElementById(activeCardId);
+            const side1 = document.getElementById('card-side1');
+            const side2 = document.getElementById('card-side2');
             
-            // Temporary resetting transformation scales to extract natural pixel sizing flawlessly
-            const historicalTransform = targetNode.style.transform;
-            targetNode.style.transform = 'none';
-            targetNode.style.display = 'block';
+            // Temporary capture configurations state values
+            const historicalTransform1 = side1.style.transform;
+            const historicalTransform2 = side2.style.transform;
+            const historicalDisplay1 = side1.style.display;
+            const historicalDisplay2 = side2.style.display;
 
-            html2canvas(targetNode, {
-                width: 1050,
-                height: 600,
-                scale: 2, // High resolution printable canvas buffer upscale feature
-                useCORS: true,
-                logging: false
-            }).then(canvas => {
-                // Revert visual transforms seamlessly back to operational mobile size layout rules
-                targetNode.style.transform = historicalTransform;
-                if(currentSide === 1) {
-                    document.getElementById('card-side2').style.display = 'none';
-                } else {
-                    document.getElementById('card-side1').style.display = 'none';
-                }
+            // Unscale and fully open displays so html2canvas extracts actual natural 1050x600 pixels layout frame data
+            side1.style.transform = 'none';
+            side1.style.display = 'block';
+            side2.style.transform = 'none';
+            side2.style.display = 'block';
 
-                // Generates downloadable URI asset logic chain
-                const convertedImageURI = canvas.toDataURL("image/png");
+            // Capture both sides asynchronously simultaneously 
+            Promise.all([
+                html2canvas(side1, {
+                    width: 1050,
+                    height: 600,
+                    scale: 2, // High resolution printable canvas buffer upscale
+                    useCORS: true,
+                    logging: false
+                }),
+                html2canvas(side2, {
+                    width: 1050,
+                    height: 600,
+                    scale: 2,
+                    useCORS: true,
+                    logging: false
+                })
+            ]).then(([canvas1, canvas2]) => {
+                // Revert visual inline overrides back immediately to restore current view context rules
+                side1.style.transform = historicalTransform1;
+                side1.style.display = historicalDisplay1;
+                side2.style.transform = historicalTransform2;
+                side2.style.display = historicalDisplay2;
+                
+                // Securely fix viewport scale
+                structureResponsiveScale();
+
+                // Build background presentation composition matrix variables
+                const combinedCanvas = document.createElement('canvas');
+                const ctx = combinedCanvas.getContext('2d');
+
+                const cardW = canvas1.width;
+                const cardH = canvas1.height;
+
+                // Margins & gaps boundaries dynamically multiplied matching high-res scale engine ratios
+                const paddingX = 100; // 50px presentation margin space
+                const paddingY = 100; // 50px presentation margin space
+                const gapY = 80;      // 40px elegant layout row gap
+
+                const targetTotalWidth = cardW + (paddingX * 2);
+                const targetTotalHeight = (cardH * 2) + (paddingY * 2) + gapY;
+
+                combinedCanvas.width = targetTotalWidth;
+                combinedCanvas.height = targetTotalHeight;
+
+                // 1. Fill beautiful light gray canvas workspace presentation background 
+                ctx.fillStyle = '#f0f2f5';
+                ctx.fillRect(0, 0, targetTotalWidth, targetTotalHeight);
+
+                // 2. Draw Front Side Card on Top Layout Row
+                ctx.drawImage(canvas1, paddingX, paddingY);
+
+                // 3. Draw Back Side Card Directly Underneath aligned vertically with gap
+                ctx.drawImage(canvas2, paddingX, paddingY + cardH + gapY);
+
+                // 4. Generate download trigger link anchor chain
+                const presentationURI = combinedCanvas.toDataURL("image/png");
                 const hiddenAnchor = document.createElement('a');
-                hiddenAnchor.download = `BusinessCard_Side${currentSide}.png`;
-                hiddenAnchor.href = convertedImageURI;
+                hiddenAnchor.download = `BusinessCard_Combined_Presentation.png`;
+                hiddenAnchor.href = presentationURI;
                 document.body.appendChild(hiddenAnchor);
                 hiddenAnchor.click();
                 document.body.removeChild(hiddenAnchor);
             }).catch(err => {
-                console.error("Error exporting image asset data line matrix: ", err);
+                console.error("Error generating combined card canvas frame matrix: ", err);
+                // Fail-safe restoration
+                side1.style.transform = historicalTransform1;
+                side1.style.display = historicalDisplay1;
+                side2.style.transform = historicalTransform2;
+                side2.style.display = historicalDisplay2;
+                structureResponsiveScale();
             });
         }
 
