@@ -446,47 +446,107 @@
             targets.forEach(target => target.innerText = inputEl.value);
         }
 
-        // Save Functionality using html2canvas
+        // Combined Stack Save Functionality using html2canvas
         function saveCard() {
             const saveButton = document.getElementById('save-btn');
-            const activeCardId = (currentPage === 1) ? 'front-card' : 'back-card';
-            const elementToCapture = document.getElementById(activeCardId);
 
-            // Temporarily update UI to show processing
-            saveButton.innerText = "Processing...";
+            // Temporarily update UI to show processing status
+            saveButton.innerText = "Processing Combined Image...";
             saveButton.style.background = "#aaaaaa";
             saveButton.disabled = true;
 
-            // Use html2canvas to render the specific active card div.
-            // We use standard options that work in typical WebViews.
-            html2canvas(elementToCapture, {
-                scale: 3, // Upscale for high resolution (print ready)
-                useCORS: true, // Attempt to load cross-origin SVGs if used
-                allowTaint: true,
-                backgroundColor: null // Maintain transparency outside the card if desired
-            }).then(canvas => {
-                // Generate a data URL and create a download link.
-                // In an Android WebView, this might require permission handling or bridge code
-                // to open the standard download dialogue.
-                const dataUrl = canvas.toDataURL('image/png');
-                const link = document.createElement('a');
-                link.download = `BusinessCard_Page${currentPage}_${Date.now()}.png`;
-                link.href = dataUrl;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+            // 1. Setup off-screen high-fidelity staging container
+            const renderContainer = document.createElement('div');
+            renderContainer.style.position = 'absolute';
+            renderContainer.style.top = '-9999px';
+            renderContainer.style.left = '-9999px';
+            renderContainer.style.width = '430px'; // 350px width + 40px left padding + 40px right padding
+            renderContainer.style.backgroundColor = '#f0f2f5'; // Light gray presentation canvas background
+            renderContainer.style.padding = '40px'; // Elegant margins
+            renderContainer.style.boxSizing = 'border-box';
+            renderContainer.style.display = 'block';
 
-                // Reset Button
-                saveButton.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>Save Card Image`;
-                saveButton.style.background = "var(--accent-color)";
-                saveButton.disabled = false;
-            }).catch(err => {
-                console.error("Rendering failed:", err);
-                alert("Could not generate image. Standard WebView security may be blocking capture.");
-                // Reset Button
-                saveButton.innerText = "Retry Save";
-                saveButton.style.background = "#f44336";
-                saveButton.disabled = false;
+            // 2. Clone and prepare Front Card element inside custom isolated wrapper bounds
+            const frontWrapper = document.createElement('div');
+            frontWrapper.style.width = '350px';
+            frontWrapper.style.height = '200px';
+            frontWrapper.style.position = 'relative';
+            frontWrapper.style.borderRadius = '12px';
+            frontWrapper.style.overflow = 'hidden';
+            frontWrapper.style.boxShadow = '0 10px 25px rgba(0,0,0,0.12)';
+            frontWrapper.style.margin = '0 auto 40px auto'; // Center aligned horizontally + balanced vertical gap
+
+            const frontClone = document.getElementById('front-card').cloneNode(true);
+            frontClone.style.position = 'absolute';
+            frontClone.style.top = '0';
+            frontClone.style.left = '0';
+            frontClone.style.width = '100%';
+            frontClone.style.height = '100%';
+            frontClone.style.display = 'grid'; // Maintain core layout configuration template
+            frontWrapper.appendChild(frontClone);
+
+            // 3. Clone and prepare Back Card element inside custom isolated wrapper bounds
+            const backWrapper = document.createElement('div');
+            backWrapper.style.width = '350px';
+            backWrapper.style.height = '200px';
+            backWrapper.style.position = 'relative';
+            backWrapper.style.borderRadius = '12px';
+            backWrapper.style.overflow = 'hidden';
+            backWrapper.style.boxShadow = '0 10px 25px rgba(0,0,0,0.12)';
+            backWrapper.style.margin = '0 auto 0 auto'; // Center aligned horizontally
+
+            const backClone = document.getElementById('back-card').cloneNode(true);
+            backClone.style.position = 'absolute';
+            backClone.style.top = '0';
+            backClone.style.left = '0';
+            backClone.style.width = '100%';
+            backClone.style.height = '100%';
+            backClone.style.display = 'flex'; // Maintain core layout configuration template
+            backWrapper.appendChild(backClone);
+
+            // 4. Assemble presentation staging tree structure into body tree safely
+            renderContainer.appendChild(frontWrapper);
+            renderContainer.appendChild(backWrapper);
+            document.body.appendChild(renderContainer);
+
+            // 5. Fire high-res execution pipeline inside structured animation framework frames
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    html2canvas(renderContainer, {
+                        scale: 3, // High resolution upscale layer parameters
+                        useCORS: true,
+                        allowTaint: true,
+                        backgroundColor: '#f0f2f5'
+                    }).then(canvas => {
+                        // Generate cross-platform download trigger elements
+                        const dataUrl = canvas.toDataURL('image/png');
+                        const link = document.createElement('a');
+                        link.download = `BusinessCard_Presentation_${Date.now()}.png`;
+                        link.href = dataUrl;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+
+                        // Reset tool action buttons interfaces layout 
+                        saveButton.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>Save Card Image`;
+                        saveButton.style.background = "var(--accent-color)";
+                        saveButton.disabled = false;
+
+                        // Cleanup temporary staging container DOM tree structure
+                        document.body.removeChild(renderContainer);
+                    }).catch(err => {
+                        console.error("Rendering failed:", err);
+                        alert("Could not generate presentation image layout.");
+                        
+                        saveButton.innerText = "Retry Save";
+                        saveButton.style.background = "#f44336";
+                        saveButton.disabled = false;
+                        
+                        if (document.body.contains(renderContainer)) {
+                            document.body.removeChild(renderContainer);
+                        }
+                    });
+                }, 50); // Small timeout to ensure DOM recalculations are ready
             });
         }
     </script>
