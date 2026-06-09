@@ -122,7 +122,7 @@
             align-items: center;
         }
         .logo-circle::after {
-            content: "W"; /* Placeholder for the glyph in image */
+            content: "W"; 
             color: var(--primary-orange);
             font-weight: 900;
             font-size: 22px;
@@ -140,7 +140,7 @@
             height: 120px;
             background: var(--primary-orange);
             margin: 0 20px;
-            border-radius: 50% / 10%; /* Creates the tapered look */
+            border-radius: 50% / 10%; 
         }
 
         .info-section {
@@ -234,6 +234,7 @@
             font-size: 16px;
             margin-top: 10px;
             box-shadow: 0 4px 15px rgba(243, 142, 33, 0.3);
+            cursor: pointer;
         }
     </style>
 </head>
@@ -246,7 +247,6 @@
         </div>
 
         <div id="capture-target">
-            <!-- Front Card -->
             <div id="card-front" class="card active">
                 <div class="leaf-top"></div>
                 <div class="black-shape-left"></div>
@@ -279,7 +279,6 @@
                 </div>
             </div>
 
-            <!-- Back Card -->
             <div id="card-back" class="card">
                 <div class="back-card" style="height: 100%;">
                     <div class="logo-circle"></div>
@@ -352,16 +351,67 @@
         }
 
         function saveCard() {
-            const activeCard = document.querySelector('.card.active');
-            html2canvas(activeCard, {
-                scale: 3, // Higher resolution
-                useCORS: true,
-                backgroundColor: null
-            }).then(canvas => {
+            const frontCard = document.getElementById('card-front');
+            const backCard = document.getElementById('card-back');
+
+            // Store current visibility state
+            const frontWasActive = frontCard.classList.contains('active');
+            const backWasActive = backCard.classList.contains('active');
+
+            // Temporarily force both elements to display block for html2canvas compilation
+            frontCard.style.display = 'block';
+            backCard.style.display = 'block';
+
+            const opts = { scale: 3, useCORS: true, backgroundColor: null };
+
+            // Render both canvases concurrently
+            Promise.all([
+                html2canvas(frontCard, opts),
+                html2canvas(backCard, opts)
+            ]).then(([frontCanvas, backCanvas]) => {
+                // Restore original UI visibility states
+                frontCard.style.display = frontWasActive ? 'block' : 'none';
+                backCard.style.display = backWasActive ? 'block' : 'none';
+
+                // Configuration setup for rendering context
+                const padding = 40 * 3;     // Outer padding (multiplied by scale)
+                const cardGap = 30 * 3;     // Vertical structural split gap
+                const cardWidth = frontCanvas.width;
+                const cardHeight = frontCanvas.height;
+
+                // Calculate complete bounding sheet canvas constraints
+                const finalWidth = cardWidth + (padding * 2);
+                const finalHeight = (cardHeight * 2) + cardGap + (padding * 2);
+
+                // Build destination compilation canvas
+                const resultCanvas = document.createElement('canvas');
+                resultCanvas.width = finalWidth;
+                resultCanvas.height = finalHeight;
+                const ctx = resultCanvas.getContext('2d');
+
+                // 1. Draw presentation showcase background layer (#f0f2f5)
+                ctx.fillStyle = '#f0f2f5';
+                ctx.fillRect(0, 0, finalWidth, finalHeight);
+
+                // 2. Compute centralized grid coordinates
+                const xOffset = padding;
+                const frontYOffset = padding;
+                const backYOffset = padding + cardHeight + cardGap;
+
+                // 3. Composite original assets down to target coordinate points
+                ctx.drawImage(frontCanvas, xOffset, frontYOffset);
+                ctx.drawImage(backCanvas, xOffset, backYOffset);
+
+                // 4. Initialize download routine pipeline
                 const link = document.createElement('a');
-                link.download = 'business-card.png';
-                link.href = canvas.toDataURL("image/png");
+                link.download = 'business-card-presentation.png';
+                link.href = resultCanvas.toDataURL("image/png");
                 link.click();
+            }).catch(err => {
+                console.error("Error generating display image layout: ", err);
+                // Fallback cleanup execution in case rendering fails
+                frontCard.style.display = frontWasActive ? 'block' : 'none';
+                backCard.style.display = backWasActive ? 'block' : 'none';
             });
         }
     </script>
