@@ -504,7 +504,7 @@
             </div>
             <div class="form-group">
                 <label>Brand Slogan</label>
-                <input type="text" id="inp-slogan" value="YOUR SOLOGAN HERE">
+                <input type="text" id="inp-slogan" value="YOUR SLOGAN HERE">
             </div>
         </div>
 
@@ -573,7 +573,6 @@
 
         // Special handlers for matching multi-face values and line breaks
         document.getElementById('inp-address').addEventListener('input', (e) => {
-            // Converts commas dynamically into elegant card linebreaks
             let formatted = e.target.value.replace(',', '<br>');
             document.getElementById('view-address').innerHTML = formatted;
         });
@@ -588,36 +587,76 @@
             document.getElementById('view-slogan2').innerText = e.target.value;
         });
 
-        // High-fidelity rendering module via canvas transformation
+        // Combined vertical layout presentation engine
         function exportCard() {
-            // Target currently viewed face element
-            const targetId = currentSide === 'front' ? 'render-front' : 'render-back';
-            const element = document.getElementById(targetId);
+            // Create a transient offscreen layout framework for the showcase display presentation
+            const showcaseWrapper = document.createElement('div');
+            showcaseWrapper.style.position = 'fixed';
+            showcaseWrapper.style.left = '-9999px';
+            showcaseWrapper.style.top = '0';
+            showcaseWrapper.style.background = '#f0f2f5'; // Light gray presentation background
+            showcaseWrapper.style.padding = '40px';        // Balanced elegant margins
+            showcaseWrapper.style.display = 'flex';
+            showcaseWrapper.style.flexDirection = 'column';
+            showcaseWrapper.style.alignItems = 'center';   // Centered alignment
+            showcaseWrapper.style.gap = '30px';            // Balanced vertical spacing gap
 
-            // Execute html2canvas rendering calculations with specific scaling for clean output
-            html2canvas(element, {
-                scale: 3, // Upscales resolution perfectly for crisp mobile sharing
+            // Isolate front and back nodes from live tree
+            const originalFront = document.getElementById('render-front');
+            const originalBack = document.getElementById('render-back');
+
+            // Clone layers down into the detached offscreen engine
+            const frontClone = originalFront.cloneNode(true);
+            const backClone = originalBack.cloneNode(true);
+
+            // Clean 3D transforms off clones to eliminate html2canvas layout mirroring glitches
+            const normalizeCardLayout = (element) => {
+                element.style.position = 'relative';
+                element.style.width = '350px';
+                element.style.height = '200px';
+                element.style.transform = 'none';
+                element.style.backfaceVisibility = 'visible';
+                element.style.left = 'auto';
+                element.style.top = 'auto';
+                element.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.15)'; // Modern soft aesthetic drop-shadow
+            };
+
+            normalizeCardLayout(frontClone);
+            normalizeCardLayout(backClone);
+
+            // Build layout structure inside the DOM tree for parsing pipeline execution
+            showcaseWrapper.appendChild(frontClone);
+            showcaseWrapper.appendChild(backClone);
+            document.body.appendChild(showcaseWrapper);
+
+            // Trigger structural rendering sequence via high-fidelity snapshot rules
+            html2canvas(showcaseWrapper, {
+                scale: 3, // Scaled for high DPI displays and flawless mobile sharing outputs
                 useCORS: true,
                 logging: false,
-                backgroundColor: null
+                backgroundColor: '#f0f2f5'
             }).then(canvas => {
                 const dataUrl = canvas.toDataURL('image/png');
                 
-                // Native Mobile App Integration Handler:
-                // If running inside a custom WebView, you can intercept this base64 image data directly
+                // Immediately teardown transient structures
+                document.body.removeChild(showcaseWrapper);
+                
+                // Route target blob payload through native mobile web interfaces or standard fallbacks
                 if (window.WebKit && window.WebKit.messageHandlers && window.WebKit.messageHandlers.imageSaved) {
                     window.WebKit.messageHandlers.imageSaved.postMessage(dataUrl);
                 } else if (window.AndroidBridge && window.AndroidBridge.saveImage) {
                     window.AndroidBridge.saveImage(dataUrl);
                 } else {
-                    // Standard fallback web architecture download hook
                     const link = document.createElement('a');
-                    link.download = `BusinessCard_${currentSide}_${Date.now()}.png`;
+                    link.download = `BusinessCard_Presentation_${Date.now()}.png`;
                     link.href = dataUrl;
                     link.click();
                 }
             }).catch(err => {
-                console.error("Rendering error encountered:", err);
+                if (document.body.contains(showcaseWrapper)) {
+                    document.body.removeChild(showcaseWrapper);
+                }
+                console.error("Rendering engine compilation failure:", err);
             });
         }
     </script>
