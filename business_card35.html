@@ -113,7 +113,7 @@
       display: block;
     }
 
-    /* --- FRONT CARD STYLES (MATCHING PROVIDED IMAGE) --- */
+    /* --- FRONT CARD STYLES --- */
     .card-front {
       background: var(--card-white);
     }
@@ -241,14 +241,9 @@
       padding-left: 4px;
     }
 
-    /* --- BACK CARD STYLES (MATCHING PROVIDED IMAGE) --- */
+    /* --- BACK CARD STYLES --- */
     .card-back {
       background: var(--card-white);
-      display: none;
-    }
-
-    .card-back.active {
-      display: block;
     }
 
     .back-center {
@@ -295,18 +290,6 @@
       font-size: 9px;
       color: var(--card-dark-green);
       font-weight: 600;
-    }
-
-    .back-fold-left {
-      position: absolute;
-      bottom: 0;
-      left: calc(50% - 82px);
-      width: 6px;
-      height: 6px;
-      background: var(--card-fold-olive);
-      border-radius: 3px 3px 0 0;
-      z-index: 4;
-      display: none; /* Auto-managed fallback sizing if needed */
     }
 
     /* --- BOTTOM EDITOR SECTION --- */
@@ -524,22 +507,15 @@
 
     // Live Reflection Logic
     function updatePreview() {
-      // Name
       document.querySelectorAll('.data-name').forEach(el => el.innerText = inputs.name.value);
-      // Designation
       document.querySelectorAll('.data-title').forEach(el => el.innerText = inputs.title.value);
-      // Company name handles both targets
       document.querySelectorAll('.data-company').forEach(el => el.innerText = inputs.company.value);
-      // Phone
       document.querySelectorAll('.data-phone').forEach(el => el.innerText = inputs.phone.value);
-      // Web URLs
       document.querySelectorAll('.data-web').forEach(el => el.innerText = inputs.web.value);
       
-      // Sanitized clean web output for back banner layout
       const cleanWeb = inputs.web.value.replace(/^(https?:\/\/)?(www\.)?/, '');
       document.querySelectorAll('.data-web-clean').forEach(el => el.innerText = cleanWeb);
       
-      // Address
       document.querySelectorAll('.data-address').forEach(el => el.innerText = inputs.address.value);
     }
 
@@ -568,29 +544,80 @@
       }
     }
 
-    // High-Resolution Rendering and Export Action
+    // High-Resolution Multi-Side Combined Rendering and Export Action
     function exportCardImage() {
-      const activeCardId = currentSide === 'front' ? 'card-front-view' : 'card-back-view';
-      const targetElement = document.getElementById(activeCardId);
+      const frontCard = document.getElementById('card-front-view');
+      const backCard = document.getElementById('card-back-view');
 
-      // Scale multiplier set to 4x for crystal clear asset generation
-      html2canvas(targetElement, {
-        scale: 4,
+      // Save initial active display states to restore later
+      const isFrontActive = frontCard.classList.contains('active');
+      const isBackActive = backCard.classList.contains('active');
+
+      // Make both cards temporarily block-visible for flawless html2canvas processing
+      frontCard.style.display = 'block';
+      backCard.style.display = 'block';
+
+      const options = {
+        scale: 4, // 4x multiplier for high-definition asset generation
         useCORS: true,
         logging: false,
         backgroundColor: null
-      }).then(canvas => {
-        const imageURL = canvas.toDataURL('image/png');
-        
-        // Native Webview fallback download approach
-        const downloadLink = document.createElement('a');
-        downloadLink.download = `${inputs.name.value.replace(/\s+/g, '_')}_card_${currentSide}.png`;
-        downloadLink.href = imageURL;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
+      };
+
+      // Render Front Side Canvas
+      html2canvas(frontCard, options).then(frontCanvas => {
+        // Render Back Side Canvas
+        html2canvas(backCard, options).then(backCanvas => {
+          
+          // Revert element presentation styles back to safe application workflow states
+          frontCard.style.display = '';
+          backCard.style.display = '';
+
+          // Configuration metrics matching specifications
+          const cardWidth = frontCanvas.width;
+          const cardHeight = frontCanvas.height;
+          
+          const paddingX = 60 * options.scale; 
+          const paddingY = 80 * options.scale; 
+          const verticalGap = 50 * options.scale; 
+
+          // Composite Display Canvas Sizing calculations
+          const combinedCanvas = document.createElement('canvas');
+          combinedCanvas.width = cardWidth + (paddingX * 2);
+          combinedCanvas.height = (cardHeight * 2) + (paddingY * 2) + verticalGap;
+
+          const ctx = combinedCanvas.getContext('2d');
+
+          // 1. Draw elegant custom presentation background (#f0f2f5)
+          ctx.fillStyle = '#f0f2f5';
+          ctx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
+
+          // 2. Draw perfectly centered Front Side Canvas entry
+          const frontX = paddingX;
+          const frontY = paddingY;
+          ctx.drawImage(frontCanvas, frontX, frontY);
+
+          // 3. Draw perfectly centered Back Side Canvas entry underneath
+          const backX = paddingX;
+          const backY = frontY + cardHeight + verticalGap;
+          ctx.drawImage(backCanvas, backX, backY);
+
+          // Convert unified presentation layout canvas to final output data asset
+          const imageURL = combinedCanvas.toDataURL('image/png');
+          
+          // Native Webview fallback anchor link engine download executor
+          const downloadLink = document.createElement('a');
+          downloadLink.download = `${inputs.name.value.replace(/\s+/g, '_')}_combined_presentation.png`;
+          downloadLink.href = imageURL;
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+        });
       }).catch(err => {
-        console.error("Error standardizing image export: ", err);
+        console.error("Error generating composite business card layout asset: ", err);
+        // Clean up display styles in case of errors
+        frontCard.style.display = '';
+        backCard.style.display = '';
       });
     }
 
