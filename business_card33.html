@@ -607,7 +607,7 @@
   <!-- --- CONSOLE ACTION ACCELERATOR --- -->
   <div class="action-bar">
     <button class="save-button" onclick="triggerCardRender()">
-      📥 Export Current Page View
+      📥 Export Combined Full Card Set
     </button>
   </div>
 
@@ -746,35 +746,77 @@
 
     // High fidelity high-res rendering engine integration
     function triggerCardRender() {
-      const activelyTargetedSideNode = currentActiveSide === 'front' ? document.getElementById('card-front') : document.getElementById('card-back');
+      const frontNode = document.getElementById('card-front');
+      const backNode = document.getElementById('card-back');
       
-      // Temporarily sanitize structure settings for accurate canvas tracking pass
-      activelyTargetedSideNode.style.display = 'block';
-      activelyTargetedSideNode.style.borderRadius = '16px';
+      // Cache original configurations for seamless restoration
+      const originalFrontDisplay = frontNode.style.display;
+      const originalBackDisplay = backNode.style.display;
+      const originalFrontRadius = frontNode.style.borderRadius;
+      const originalBackRadius = backNode.style.borderRadius;
 
-      html2canvas(activelyTargetedSideNode, {
-        scale: 3, // Multiplies output raster matrix for perfect crisp imagery inside apps
-        backgroundColor: null,
-        useCORS: true,
-        logging: false,
-        width: 350,
-        height: 200
-      }).then(generatedCanvasObj => {
-        // Return visibility rules safely back to cascading UI values
-        if (currentActiveSide === 'front') {
-          document.getElementById('card-back').style.display = 'none';
-        } else {
-          document.getElementById('card-front').style.display = 'none';
-        }
-        activelyTargetedSideNode.style.borderRadius = '0px';
+      // Force block visibility layout to calculate structural matrix correctly
+      frontNode.style.display = 'block';
+      backNode.style.display = 'block';
+      frontNode.style.borderRadius = '16px';
+      backNode.style.borderRadius = '16px';
 
-        const rawDataStream = generatedCanvasObj.toDataURL('image/png');
+      const exportScale = 3; // Ultra crisp vector rasterization scale multiplier
+      const cardW = 350;
+      const cardH = 200;
+      
+      // Formatting Layout Parameters for Presentation Display Framing
+      const outerPadding = 40;
+      const innerGap = 30;
+
+      // Calculate total resolution mapping for vertically stacked output canvas
+      const outputCanvasWidth = cardW + (outerPadding * 2);
+      const outputCanvasHeight = (cardH * 2) + (outerPadding * 2) + innerGap;
+
+      // Rasterize both elements asynchronously via high-fidelity pipeline hooks
+      Promise.all([
+        html2canvas(frontNode, { scale: exportScale, backgroundColor: null, useCORS: true, logging: false, width: cardW, height: cardH }),
+        html2canvas(backNode, { scale: exportScale, backgroundColor: null, useCORS: true, logging: false, width: cardW, height: cardH })
+      ]).then(([frontCanvas, backCanvas]) => {
+        
+        // Restore active UI rendering conditions back to document structure safely
+        frontNode.style.display = originalFrontDisplay;
+        backNode.style.display = originalBackDisplay;
+        frontNode.style.borderRadius = originalFrontRadius;
+        backNode.style.borderRadius = originalBackRadius;
+
+        // Construct master presentation compilation canvas surface context
+        const compoundCanvas = document.createElement('canvas');
+        compoundCanvas.width = outputCanvasWidth * exportScale;
+        compoundCanvas.height = outputCanvasHeight * exportScale;
+        const ctx = compoundCanvas.getContext('2d');
+
+        // Apply background style sheet block (#f0f2f5) across output matrix
+        ctx.fillStyle = '#f0f2f5';
+        ctx.fillRect(0, 0, compoundCanvas.width, compoundCanvas.height);
+
+        // Blit front face matrix down to canvas stack layer center safely
+        const targetX = outerPadding * exportScale;
+        const frontTargetY = outerPadding * exportScale;
+        ctx.drawImage(frontCanvas, targetX, frontTargetY);
+
+        // Blit mirrored back face matrix down to canvas stack layer directly underneath
+        const backTargetY = (outerPadding + cardH + innerGap) * exportScale;
+        ctx.drawImage(backCanvas, targetX, backTargetY);
+
+        // Stream binary data channel arrays downward to activate host down-link loader 
+        const rawDataStream = compoundCanvas.toDataURL('image/png');
         const triggerVirtualLink = document.createElement('a');
-        triggerVirtualLink.download = `BusinessCard_${currentActiveSide}.png`;
+        triggerVirtualLink.download = `BusinessCard_FullSet.png`;
         triggerVirtualLink.href = rawDataStream;
         triggerVirtualLink.click();
       }).catch(err => {
         console.error("Render target execution anomaly intercepted:", err);
+        // Fallback structural reset code in event of run failures
+        frontNode.style.display = originalFrontDisplay;
+        backNode.style.display = originalBackDisplay;
+        frontNode.style.borderRadius = originalFrontRadius;
+        backNode.style.borderRadius = originalBackRadius;
       });
     }
   </script>
