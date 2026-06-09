@@ -152,6 +152,12 @@
             gap: 8px;
             box-shadow: 0 4px 15px rgba(244, 169, 0, 0.3);
         }
+        
+        .save-btn:disabled {
+            background: #57606f;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
 
         /* --- BOTTOM EDITOR PANEL --- */
         .editor-section {
@@ -453,7 +459,7 @@
         </div>
 
         <button class="save-btn" id="master-save-btn" onclick="executeExport()">
-            <i class="fas fa-download"></i> Save First Page
+            <i class="fas fa-download"></i> Save Full Presentation
         </button>
     </div>
 
@@ -521,7 +527,6 @@
         const btnBack = document.getElementById('btn-back');
         const cardFront = document.getElementById('front-card');
         const cardBack = document.getElementById('back-card');
-        const saveBtn = document.getElementById('master-save-btn');
 
         if(side === 'front') {
             slider.style.transform = 'translateX(0%)';
@@ -529,14 +534,12 @@
             btnBack.classList.remove('active');
             cardFront.classList.add('active');
             cardBack.classList.remove('active');
-            saveBtn.innerHTML = '<i class="fas fa-download"></i> Save First Page';
         } else {
             slider.style.transform = 'translateX(100%)';
             btnFront.classList.remove('active');
             btnBack.classList.add('active');
             cardFront.classList.remove('active');
             cardBack.classList.add('active');
-            saveBtn.innerHTML = '<i class="fas fa-download"></i> Save Second Page';
         }
     }
 
@@ -560,37 +563,96 @@
         }
     }
 
-    // Export Handler
+    // Multi-Stage Canvas Combination Export Handler
     function executeExport() {
-        const targetElement = document.getElementById(activeSide === 'front' ? 'front-card' : 'back-card');
+        const frontCard = document.getElementById('front-card');
+        const backCard = document.getElementById('back-card');
         const saveBtn = document.getElementById('master-save-btn');
         const fallbackText = saveBtn.innerHTML;
 
         saveBtn.disabled = true;
-        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing Assets...';
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Rendering Layouts...';
 
-        // Temporary scale reset for crisp snapshot calculations
-        const cacheScale = targetElement.style.transform;
-        targetElement.style.transform = 'scale(1)';
+        // Cache layout properties before forced vector capture overrides
+        const cacheFrontTransform = frontCard.style.transform;
+        const cacheBackTransform = backCard.style.transform;
+        const cacheFrontOpacity = frontCard.style.opacity;
+        const cacheBackOpacity = backCard.style.opacity;
 
-        html2canvas(targetElement, {
-            scale: 3, 
+        // Force both cards fully visible and unscaled for absolute pixel snapshots
+        frontCard.style.transform = 'scale(1)';
+        frontCard.style.opacity = '1';
+        backCard.style.transform = 'scale(1)';
+        backCard.style.opacity = '1';
+
+        // Capture settings
+        const renderOptions = {
+            scale: 2.5, // Enhances text sharpness and output quality
             useCORS: true,
             allowTaint: true,
             backgroundColor: null
-        }).then(canvasImage => {
-            targetElement.style.transform = cacheScale; // Revert layout rendering
+        };
 
-            const triggerLink = document.createElement('a');
-            triggerLink.download = `Card_${activeSide === 'front' ? 'First_Page' : 'Second_Page'}_${Date.now()}.png`;
-            triggerLink.href = canvasImage.toDataURL('image/png');
-            triggerLink.click();
+        // Snapshot front and back targets sequentially or synchronously
+        Promise.all([
+            html2canvas(frontCard, renderOptions),
+            html2canvas(backCard, renderOptions)
+        ]).then(([frontCanvas, backCanvas]) => {
+            
+            // Instantly revert view matrix configurations
+            frontCard.style.transform = cacheFrontTransform;
+            frontCard.style.opacity = cacheFrontOpacity;
+            backCard.style.transform = cacheBackTransform;
+            backCard.style.opacity = cacheBackOpacity;
 
+            // Dimensions derived dynamically from snapshot scale maps
+            const sFactor = renderOptions.scale;
+            const cWidth = 700 * sFactor;
+            const cHeight = 400 * sFactor;
+            
+            // Presentation padding configurations
+            const paddingX = 60 * sFactor; 
+            const paddingY = 60 * sFactor; 
+            const verticalGap = 50 * sFactor; 
+
+            // Calculate entire surface dimensions
+            const presentationWidth = cWidth + (paddingX * 2);
+            const presentationHeight = (cHeight * 2) + (paddingY * 2) + verticalGap;
+
+            // Construct presentation virtual canvas context layer
+            const compositionCanvas = document.createElement('canvas');
+            compositionCanvas.width = presentationWidth;
+            compositionCanvas.height = presentationHeight;
+            const ctx = compositionCanvas.getContext('2d');
+
+            // 1. Fill Presentation Background Color (#f0f2f5)
+            ctx.fillStyle = '#f0f2f5';
+            ctx.fillRect(0, 0, presentationWidth, presentationHeight);
+
+            // 2. Composite Front Card Image
+            ctx.drawImage(frontCanvas, paddingX, paddingY);
+
+            // 3. Composite Back Card Image (Centered Vertically below gap)
+            ctx.drawImage(backCanvas, paddingX, paddingY + cHeight + verticalGap);
+
+            // 4. Trigger Master Download
+            const downloadTrigger = document.createElement('a');
+            downloadTrigger.download = `BusinessCard_Presentation_${Date.now()}.png`;
+            downloadTrigger.href = compositionCanvas.toDataURL('image/png');
+            downloadTrigger.click();
+
+            // Re-enable interactive capabilities
             saveBtn.innerHTML = fallbackText;
             saveBtn.disabled = false;
-        }).catch(error => {
-            console.error(error);
-            targetElement.style.transform = cacheScale;
+        }).catch(err => {
+            console.error('Snapshot Generation Failed:', err);
+            
+            // Complete state safety restoration
+            frontCard.style.transform = cacheFrontTransform;
+            frontCard.style.opacity = cacheFrontOpacity;
+            backCard.style.transform = cacheBackTransform;
+            backCard.style.opacity = cacheBackOpacity;
+            
             saveBtn.innerHTML = fallbackText;
             saveBtn.disabled = false;
         });
