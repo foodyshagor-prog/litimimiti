@@ -3,607 +3,697 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Business Card Customizer</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <title>NovaCard — Perfect Export (Guaranteed Match)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    
     <style>
-        :root {
-            --primary-orange: #FF6F00;
-            --dark-bg-start: #1A1A24;
-            --dark-bg-end: #0A0A0F;
-            --input-bg: #252533;
-            --text-light: #F3F3F6;
-            --text-dim: #8E8E9F;
-        }
-
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Poppins', sans-serif;
-            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
         }
 
         body {
-            background: linear-gradient(180deg, var(--dark-bg-start) 0%, var(--dark-bg-end) 100%);
-            color: var(--text-light);
+            background: radial-gradient(circle at 10% 20%, #EFF6FF, #E2E8F0);
+            font-family: 'Inter', sans-serif;
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow-x: hidden;
-        }
-
-        /* --- PREVIEW SECTION (TOP) --- */
-        .preview-container {
-            width: 100%;
-            padding: 20px 15px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: rgba(0, 0, 0, 0.2);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            backdrop-filter: blur(10px);
+            padding: 30px 20px;
         }
 
-        /* Card Canvas Setup (3.5:2 Ratio scaled for mobile screens) */
-        .card-frame {
+        .app-container {
+            max-width: 1200px;
             width: 100%;
-            max-width: 350px;
+            margin: 0 auto;
+        }
+
+        /* card showcase */
+        .card-showcase {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(2px);
+            border-radius: 48px;
+            padding: 28px 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-preview {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        /* CARD - all styles are html2canvas safe */
+        .business-card {
+            width: 360px;
             height: 200px;
-            background: #ffffff;
-            border-radius: 14px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            background: #FFFFFF;
+            border-radius: 24px;
+            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.35);
             position: relative;
             overflow: hidden;
-            color: #000;
         }
 
-        /* Geometric Background Pattern */
-        .card-bg-pattern {
+        .card-side {
+            width: 100%;
+            height: 100%;
             position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 0.06;
-            background-image: radial-gradient(#000 1px, transparent 1px), radial-gradient(#000 1px, #ffffff 1px);
-            background-size: 20px 20px;
-            background-position: 0 0, 10px 10px;
-            pointer-events: none;
-        }
-
-        /* Hide inactive cards */
-        .card-side {
             display: none;
-            width: 100%;
-            height: 100%;
-            position: absolute;
+            overflow: hidden;
         }
 
         .card-side.active {
             display: block;
         }
 
-        /* --- FRONT CARD STYLES --- */
-        .front-wave-container {
-            position: absolute;
-            bottom: -5px;
-            left: -5px;
-            width: 105%;
-            height: 140px;
-            pointer-events: none;
+        /* FRONT SIDE - clean, export-safe styles */
+        .front-card {
+            background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFE 100%);
         }
 
-        .company-name {
+        .company-name-front {
             position: absolute;
-            top: 35px;
-            right: 25px;
+            top: 28px;
+            left: 24px;
             font-size: 28px;
-            font-weight: 700;
-            color: var(--primary-orange);
-            letter-spacing: 0.5px;
-            text-align: right;
-        }
-
-        .front-contact-info {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            color: #ffffff;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: #0F766E;  /* solid color — html2canvas safe */
             z-index: 2;
-            font-size: 10px;
-            line-height: 1.3;
         }
 
-        .contact-row {
+        .contact-section {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            right: 24px;
+            z-index: 2;
+        }
+
+        .contact-item {
             display: flex;
             align-items: center;
+            gap: 10px;
             margin-bottom: 8px;
+            font-size: 9px;
+            font-weight: 500;
+            color: #1E293B;
         }
 
-        .contact-icon {
-            width: 16px;
-            height: 16px;
-            background: var(--primary-orange);
+        .contact-icon-bg {
+            width: 24px;
+            height: 24px;
+            background: #14B8A6;
             border-radius: 50%;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            margin-right: 8px;
             flex-shrink: 0;
         }
 
-        .contact-icon svg {
-            width: 9px;
-            height: 9px;
-            fill: #fff;
+        .contact-icon-bg svg {
+            width: 12px;
+            height: 12px;
+            fill: white;
         }
 
-        .contact-divider {
-            width: 90px;
-            height: 1.5px;
-            background: var(--primary-orange);
-            margin: 6px 0;
+        .divider-teal {
+            width: 50px;
+            height: 3px;
+            background: #14B8A6;
+            border-radius: 4px;
+            margin: 6px 0 8px 0;
         }
 
-        /* --- BACK CARD STYLES --- */
-        .back-header {
+        /* simple diagonal accent - no clip-path */
+        .wave-minimal {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 55px;
+            background: linear-gradient(95deg, #14B8A6 0%, #0F766E 100%);
+            opacity: 0.15;
+            pointer-events: none;
+            transform: skewY(-2deg);
+            transform-origin: bottom left;
+        }
+
+        /* BACK SIDE */
+        .back-card {
+            background: #FFFFFF;
+        }
+
+        .profile-area {
             display: flex;
             justify-content: space-between;
-            padding: 15px 20px 0 20px;
+            align-items: flex-start;
+            padding: 20px 20px 0 20px;
         }
 
-        .services-badge {
-            background: var(--primary-orange);
-            color: #fff;
-            font-size: 11px;
-            font-weight: 600;
-            padding: 3px 12px;
-            border-radius: 4px;
-            height: fit-content;
+        .name-title h3 {
+            font-size: 16px;
+            font-weight: 800;
+            color: #0F172A;
         }
 
-        .profile-title-block {
-            text-align: right;
-        }
-
-        .profile-name {
-            font-size: 13px;
-            font-weight: 600;
-            color: #111;
-        }
-
-        .profile-role-line {
+        .role-badge {
             display: flex;
             align-items: center;
-            justify-content: flex-end;
-            margin-top: -2px;
+            gap: 6px;
+            margin-top: 4px;
         }
 
-        .role-orange-line {
-            width: 45px;
-            height: 1px;
-            background: var(--primary-orange);
-            margin-right: 5px;
+        .role-line {
+            width: 28px;
+            height: 2px;
+            background: #14B8A6;
         }
 
-        .profile-role {
+        .role-text {
             font-size: 10px;
-            color: var(--primary-orange);
-            font-style: italic;
             font-weight: 600;
-        }
-
-        .services-list {
-            margin-left: 20px;
-            margin-top: 5px;
-            list-style: none;
-            font-size: 9.5px;
-            font-weight: 500;
-            color: #222;
-            max-width: 160px;
-        }
-
-        .services-list li {
-            position: relative;
-            padding-left: 12px;
-            margin-bottom: 3.5px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .services-list li::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 4px;
-            width: 5px;
-            height: 5px;
-            background: var(--primary-orange);
-        }
-
-        /* Hexagonal Image Cluster Architecture */
-        .hex-grid-container {
-            position: absolute;
-            right: 12px;
-            bottom: 25px;
-            width: 145px;
-            height: 110px;
-            z-index: 2;
-        }
-
-        .back-wave-container {
-            position: absolute;
-            bottom: -5px;
-            left: -5px;
-            width: 105%;
-            height: 45px;
-            pointer-events: none;
-        }
-
-        /* --- SWITCH TABS --- */
-        .toggle-switch {
-            display: flex;
-            background: var(--input-bg);
-            border-radius: 25px;
-            padding: 4px;
-            margin-top: 15px;
-            width: 220px;
-        }
-
-        .toggle-btn {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: var(--text-dim);
-            padding: 6px 0;
-            font-size: 12px;
-            font-weight: 600;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .toggle-btn.active {
-            background: var(--primary-orange);
-            color: #ffffff;
-        }
-
-        /* --- EDITOR CONTROL PANEL (BOTTOM) --- */
-        .editor-container {
-            flex: 1;
-            background: linear-gradient(180deg, rgba(37, 37, 51, 0.4) 0%, rgba(10, 10, 15, 0.9) 100%);
-            border-top-left-radius: 24px;
-            border-top-right-radius: 24px;
-            padding: 24px 20px;
-            overflow-y: auto;
-        }
-
-        .editor-section {
-            display: none;
-        }
-
-        .editor-section.active {
-            display: block;
-        }
-
-        .input-group {
-            margin-bottom: 16px;
-        }
-
-        label {
-            display: block;
-            font-size: 11px;
-            color: var(--text-dim);
-            margin-bottom: 6px;
+            color: #14B8A6;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
-        input[type="text"] {
-            width: 100%;
-            background: var(--input-bg);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            padding: 12px;
-            color: #ffffff;
-            font-size: 14px;
-            outline: none;
-            transition: border-color 0.3s ease;
+        .services-wrapper {
+            margin: 12px 20px 12px 20px;
         }
 
-        input[type="text"]:focus {
-            border-color: var(--primary-orange);
-        }
-
-        .image-pickers-grid {
+        .services-list {
+            list-style: none;
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px 12px;
+        }
+
+        .services-list li {
+            font-size: 8.5px;
+            font-weight: 500;
+            color: #1E293B;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .services-list li::before {
+            content: "▹";
+            color: #14B8A6;
+            font-size: 8px;
+        }
+
+        .gallery-cluster {
+            position: absolute;
+            bottom: 16px;
+            right: 20px;
+            left: 20px;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .gallery-img {
+            width: 58px;
+            height: 58px;
+            border-radius: 18px;
+            object-fit: cover;
+            box-shadow: 0 8px 14px -6px rgba(0, 0, 0, 0.15);
+            border: 2px solid white;
+            background: #E2E8F0;
+        }
+
+        .back-subtle-pattern {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 70px;
+            background: radial-gradient(circle at 10% 90%, rgba(20, 184, 166, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        /* UI controls */
+        .toggle-group {
+            display: flex;
+            justify-content: center;
             margin-top: 8px;
         }
 
-        .image-upload-btn {
-            background: var(--input-bg);
-            border: 1px dashed rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            padding: 10px;
-            text-align: center;
-            font-size: 10px;
-            color: var(--text-dim);
-            cursor: pointer;
-            position: relative;
-        }
-
-        .image-upload-btn input[type="file"] {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 0;
-            cursor: pointer;
-        }
-
-        /* Action Buttons */
-        .action-button {
-            width: 100%;
-            background: var(--primary-orange);
-            color: #ffffff;
-            border: none;
-            border-radius: 12px;
-            padding: 15px;
-            font-size: 14px;
-            font-weight: 600;
-            margin-top: 10px;
-            box-shadow: 0 4px 15px rgba(255, 111, 0, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .toggle-pill {
+            background: #F1F5F9;
+            border-radius: 60px;
+            padding: 6px;
+            display: inline-flex;
             gap: 8px;
         }
 
-        .action-button:active {
-            transform: scale(0.98);
+        .pill-btn {
+            border: none;
+            background: transparent;
+            padding: 8px 28px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .pill-btn.active {
+            background: #0F766E;
+            color: white;
+        }
+
+        .editor-panel {
+            background: #FFFFFF;
+            border-radius: 32px;
+            padding: 28px 26px;
+            box-shadow: 0 15px 40px -12px rgba(0, 0, 0, 0.15);
+        }
+
+        .form-section {
+            display: none;
+        }
+
+        .form-section.active {
+            display: block;
+        }
+
+        .input-row {
+            margin-bottom: 20px;
+        }
+
+        .input-row label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #475569;
+            margin-bottom: 6px;
+        }
+
+        .input-row input {
+            width: 100%;
+            background: #F8FAFE;
+            border: 1px solid #E2E8F0;
+            border-radius: 20px;
+            padding: 12px 16px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .input-row input:focus {
+            outline: none;
+            border-color: #14B8A6;
+        }
+
+        .services-grid-input {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .image-upload-cluster {
+            display: flex;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+
+        .upload-card {
+            background: #F1F5F9;
+            border-radius: 24px;
+            padding: 12px;
+            text-align: center;
+            flex: 1;
+            border: 1px dashed #CBD5E1;
+        }
+
+        .upload-thumb {
+            width: 70px;
+            height: 70px;
+            background: #E2E8F0;
+            border-radius: 20px;
+            margin: 0 auto 10px;
+            overflow: hidden;
+        }
+
+        .upload-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .upload-card label {
+            font-size: 11px;
+            font-weight: 500;
+            background: #FFFFFF;
+            padding: 6px 12px;
+            border-radius: 40px;
+            cursor: pointer;
+            display: inline-block;
+            border: 1px solid #CBD5E1;
+        }
+
+        .upload-card input {
+            display: none;
+        }
+
+        .btn-export {
+            width: 100%;
+            background: linear-gradient(95deg, #0F766E, #14B8A6);
+            border: none;
+            border-radius: 44px;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 28px;
+            cursor: pointer;
+        }
+
+        .toast-msg {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0F172A;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 60px;
+            font-weight: 500;
+            font-size: 13px;
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            backdrop-filter: blur(8px);
         }
     </style>
 </head>
 <body>
-
-    <div class="preview-container">
-        <div class="card-frame" id="business-card-capture">
-            <div class="card-bg-pattern"></div>
-            
-            <div class="card-side active" id="front-card-view">
-                <div class="company-name" id="preview-company">VOCA PERCY</div>
-                
-                <div class="front-contact-info">
-                    <div class="contact-row">
-                        <div class="contact-icon">
-                            <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+<div class="app-container">
+    <div class="card-showcase">
+        <div class="card-preview">
+            <div class="business-card" id="liveCard">
+                <!-- FRONT SIDE -->
+                <div class="card-side front-card active" id="frontSide">
+                    <div class="company-name-front" id="previewCompany">NOVA EDGE</div>
+                    <div class="contact-section">
+                        <div class="contact-item">
+                            <div class="contact-icon-bg"><svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg></div>
+                            <div><div id="previewPhone1">+1 234 567 890</div><div id="previewPhone2">+1 987 654 321</div></div>
                         </div>
-                        <div>
-                            <div id="preview-phone1">XXXX XXX XX</div>
-                            <div id="preview-phone2">XXXX XXX XX</div>
-                        </div>
-                    </div>
-                    <div class="contact-divider"></div>
-                    <div class="contact-row">
-                        <div class="contact-icon">
-                            <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                        </div>
-                        <div>
-                            <div id="preview-addr1">XXXXX XXXXXXXXX XXXXXX</div>
-                            <div id="preview-addr2">XXXX X XXXXX XXX</div>
+                        <div class="divider-teal"></div>
+                        <div class="contact-item">
+                            <div class="contact-icon-bg"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></div>
+                            <div><div id="previewAddr1">71 King Street, Lagos</div><div id="previewAddr2">NY 10014, Nigeria</div></div>
                         </div>
                     </div>
+                    <div class="wave-minimal"></div>
                 </div>
 
-                <svg class="front-wave-container" viewBox="0 0 360 140" preserveAspectRatio="none">
-                    <path d="M-5 45 C110 5, 170 115, 365 75 L365 145 L-5 145 Z" fill="#FF6F00" opacity="0.85"/>
-                    <path d="M-5 60 C100 25, 180 125, 365 90 L365 145 L-5 145 Z" fill="#000000"/>
-                    <path d="M260 125 C290 115, 320 122, 365 110 L365 145 L260 145 Z" fill="#ffffff" opacity="0.3"/>
-                    <path d="M280 132 C305 125, 330 132, 365 122 L365 145 L280 145 Z" fill="#FF6F00"/>
-                </svg>
-            </div>
-
-            <div class="card-side" id="back-card-view">
-                <div class="back-header">
-                    <div class="services-badge">Services:</div>
-                    <div class="profile-title-block">
-                        <div class="profile-name" id="preview-name">Victor Percy Bulus</div>
-                        <div class="profile-role-line">
-                            <div class="role-orange-line"></div>
-                            <div class="profile-role" id="preview-role">Director</div>
+                <!-- BACK SIDE -->
+                <div class="card-side back-card" id="backSide">
+                    <div class="profile-area">
+                        <div class="name-title">
+                            <h3 id="previewName">Olivia Mckenzie</h3>
+                            <div class="role-badge"><span class="role-line"></span><span class="role-text" id="previewRole">CREATIVE DIRECTOR</span></div>
                         </div>
                     </div>
+                    <div class="services-wrapper">
+                        <ul class="services-list">
+                            <li id="serviceLi1">Brand Strategy</li>
+                            <li id="serviceLi2">UI/UX Design</li>
+                            <li id="serviceLi3">Art Direction</li>
+                            <li id="serviceLi4">Content Creation</li>
+                            <li id="serviceLi5">Digital Marketing</li>
+                            <li id="serviceLi6">Consulting</li>
+                        </ul>
+                    </div>
+                    <div class="gallery-cluster">
+                        <img class="gallery-img" id="galleryImg1" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2314B8A6'/%3E%3Ctext x='50%25' y='50%25' font-size='40' text-anchor='middle' dy='.3em' fill='white'%3E🏢%3C/text%3E%3C/svg%3E">
+                        <img class="gallery-img" id="galleryImg2" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230F766E'/%3E%3Ctext x='50%25' y='50%25' font-size='40' text-anchor='middle' dy='.3em' fill='white'%3E🎨%3C/text%3E%3C/svg%3E">
+                        <img class="gallery-img" id="galleryImg3" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2320B2AA'/%3E%3Ctext x='50%25' y='50%25' font-size='40' text-anchor='middle' dy='.3em' fill='white'%3E🚀%3C/text%3E%3C/svg%3E">
+                    </div>
+                    <div class="back-subtle-pattern"></div>
                 </div>
-
-                <ul class="services-list">
-                    <li id="preview-srv1">Realtor</li>
-                    <li id="preview-srv2">Selling of Land</li>
-                    <li id="preview-srv3">House / Apartment Renting</li>
-                    <li id="preview-srv4">Supply of Filling sand</li>
-                    <li id="preview-srv5">Plastering sand</li>
-                    <li id="preview-srv6">Road filling sand.</li>
-                </ul>
-
-                <svg class="hex-grid-container" viewBox="0 0 160 120">
-                    <defs>
-                        <pattern id="hex1" width="1" height="1" viewBox="0 0 100 100" preserveAspectRatio="xMidyMid slice">
-                            <image href="https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=150&q=80" width="100" height="100"/>
-                        </pattern>
-                        <pattern id="hex2" width="1" height="1" viewBox="0 0 100 100" preserveAspectRatio="xMidyMid slice">
-                            <image href="https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=150&q=80" width="100" height="100"/>
-                        </pattern>
-                        <pattern id="hex3" width="1" height="1" viewBox="0 0 100 100" preserveAspectRatio="xMidyMid slice">
-                            <image href="https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=150&q=80" width="100" height="100"/>
-                        </pattern>
-                        <pattern id="hex4" width="1" height="1" viewBox="0 0 100 100" preserveAspectRatio="xMidyMid slice">
-                            <image href="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=150&q=80" width="100" height="100"/>
-                        </pattern>
-                        <pattern id="hex5" width="1" height="1" viewBox="0 0 100 100" preserveAspectRatio="xMidyMid slice">
-                            <image href="https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&w=150&q=80" width="100" height="100"/>
-                        </pattern>
-                    </defs>
-                    <polygon points="40,35 70,17 100,35 100,70 70,88 40,70" fill="url(#hex1)" stroke="#FF6F00" stroke-width="1.5" />
-                    <polygon points="97,35 127,17 157,35 157,70 127,88 97,70" fill="url(#hex2)" stroke="#FF6F00" stroke-width="1.5" />
-                    <polygon points="11,80 41,62 71,80 71,115 41,133 11,115" fill="url(#hex3)" stroke="#FF6F00" stroke-width="1.5" />
-                    <polygon points="68,80 98,62 128,80 128,115 98,133 68,115" fill="url(#hex4)" stroke="#FF6F00" stroke-width="1.5" />
-                    <polygon points="125,80 155,62 185,80 185,115 155,133 125,115" fill="url(#hex5)" stroke="#FF6F00" stroke-width="1.5" />
-                </svg>
-
-                <svg class="back-wave-container" viewBox="0 0 360 50" preserveAspectRatio="none">
-                    <path d="M-5 25 C120 45, 240 5, 365 25 L365 55 L-5 55 Z" fill="#FF6F00" opacity="0.85"/>
-                    <path d="M-5 32 C120 50, 240 15, 365 32 L365 55 L-5 55 Z" fill="#000000"/>
-                </svg>
             </div>
         </div>
-
-        <div class="toggle-switch">
-            <button class="toggle-btn active" onclick="switchSide('front')">Front Side</button>
-            <button class="toggle-btn" onclick="switchSide('back')">Back Side</button>
+        <div class="toggle-group">
+            <div class="toggle-pill">
+                <button class="pill-btn active" data-side="front">Front Face</button>
+                <button class="pill-btn" data-side="back">Back Face</button>
+            </div>
         </div>
     </div>
 
-    <div class="editor-container">
-        
-        <div class="editor-section active" id="editor-front">
-            <div class="input-group">
-                <label>Company Name</label>
-                <input type="text" id="input-company" value="VOCA PERCY" oninput="updateText('preview-company', this.value)">
-            </div>
-            <div class="input-group">
-                <label>Phone Line 1</label>
-                <input type="text" id="input-phone1" value="XXXX XXX XX" oninput="updateText('preview-phone1', this.value)">
-            </div>
-            <div class="input-group">
-                <label>Phone Line 2</label>
-                <input type="text" id="input-phone2" value="XXXX XXX XX" oninput="updateText('preview-phone2', this.value)">
-            </div>
-            <div class="input-group">
-                <label>Address Line 1</label>
-                <input type="text" id="input-addr1" value="XXXXX XXXXXXXXX XXXXXX" oninput="updateText('preview-addr1', this.value)">
-            </div>
-            <div class="input-group">
-                <label>Address Line 2</label>
-                <input type="text" id="input-addr2" value="XXXX X XXXXX XXX" oninput="updateText('preview-addr2', this.value)">
-            </div>
+    <div class="editor-panel">
+        <div id="frontEditor" class="form-section active">
+            <div class="input-row"><label>Company name</label><input type="text" id="compInput" value="NOVA EDGE"></div>
+            <div class="input-row"><label>Phone line 1</label><input type="text" id="phone1Input" value="+1 234 567 890"></div>
+            <div class="input-row"><label>Phone line 2</label><input type="text" id="phone2Input" value="+1 987 654 321"></div>
+            <div class="input-row"><label>Address line 1</label><input type="text" id="addr1Input" value="71 King Street, Lagos"></div>
+            <div class="input-row"><label>Address line 2</label><input type="text" id="addr2Input" value="NY 10014, Nigeria"></div>
         </div>
 
-        <div class="editor-section" id="editor-back">
-            <div class="input-group">
-                <label>Full Name</label>
-                <input type="text" id="input-name" value="Victor Percy Bulus" oninput="updateText('preview-name', this.value)">
+        <div id="backEditor" class="form-section">
+            <div class="input-row"><label>Full name</label><input type="text" id="nameInput" value="Olivia Mckenzie"></div>
+            <div class="input-row"><label>Job title</label><input type="text" id="roleInput" value="CREATIVE DIRECTOR"></div>
+            <div class="input-row"><label>Services (6)</label>
+                <div class="services-grid-input">
+                    <input type="text" id="serviceInput1" value="Brand Strategy">
+                    <input type="text" id="serviceInput2" value="UI/UX Design">
+                    <input type="text" id="serviceInput3" value="Art Direction">
+                    <input type="text" id="serviceInput4" value="Content Creation">
+                    <input type="text" id="serviceInput5" value="Digital Marketing">
+                    <input type="text" id="serviceInput6" value="Consulting">
+                </div>
             </div>
-            <div class="input-group">
-                <label>Job Designation/Role</label>
-                <input type="text" id="input-role" value="Director" oninput="updateText('preview-role', this.value)">
-            </div>
-            <div class="input-group">
-                <label>Core Business Services Offered</label>
-                <input type="text" style="margin-bottom:8px;" value="Realtor" oninput="updateText('preview-srv1', this.value)">
-                <input type="text" style="margin-bottom:8px;" value="Selling of Land" oninput="updateText('preview-srv2', this.value)">
-                <input type="text" style="margin-bottom:8px;" value="House / Apartment Renting" oninput="updateText('preview-srv3', this.value)">
-                <input type="text" style="margin-bottom:8px;" value="Supply of Filling sand" oninput="updateText('preview-srv4', this.value)">
-                <input type="text" style="margin-bottom:8px;" value="Plastering sand" oninput="updateText('preview-srv5', this.value)">
-                <input type="text" value="Road filling sand." oninput="updateText('preview-srv6', this.value)">
-            </div>
-            <div class="input-group">
-                <label>Swap Gallery Cluster Images</label>
-                <div class="image-pickers-grid">
-                    <div class="image-upload-btn">Img 1<input type="file" accept="image/*" onchange="uploadHexImage(event, 'hex1')"></div>
-                    <div class="image-upload-btn">Img 2<input type="file" accept="image/*" onchange="uploadHexImage(event, 'hex2')"></div>
-                    <div class="image-upload-btn">Img 3<input type="file" accept="image/*" onchange="uploadHexImage(event, 'hex3')"></div>
-                    <div class="image-upload-btn">Img 4<input type="file" accept="image/*" onchange="uploadHexImage(event, 'hex4')"></div>
-                    <div class="image-upload-btn">Img 5<input type="file" accept="image/*" onchange="uploadHexImage(event, 'hex5')"></div>
+            <div class="input-row"><label>Gallery images</label>
+                <div class="image-upload-cluster">
+                    <div class="upload-card"><div class="upload-thumb"><img id="thumb1" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2314B8A6'/%3E%3Ctext x='50%25' y='50%25' font-size='40' text-anchor='middle' dy='.3em' fill='white'%3E🏢%3C/text%3E%3C/svg%3E"></div><label>Image 1 <input type="file" accept="image/*" id="uploadImg1"></label></div>
+                    <div class="upload-card"><div class="upload-thumb"><img id="thumb2" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230F766E'/%3E%3Ctext x='50%25' y='50%25' font-size='40' text-anchor='middle' dy='.3em' fill='white'%3E🎨%3C/text%3E%3C/svg%3E"></div><label>Image 2 <input type="file" accept="image/*" id="uploadImg2"></label></div>
+                    <div class="upload-card"><div class="upload-thumb"><img id="thumb3" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2320B2AA'/%3E%3Ctext x='50%25' y='50%25' font-size='40' text-anchor='middle' dy='.3em' fill='white'%3E🚀%3C/text%3E%3C/svg%3E"></div><label>Image 3 <input type="file" accept="image/*" id="uploadImg3"></label></div>
                 </div>
             </div>
         </div>
-
-        <button class="action-button" onclick="exportCardToImage()">
-            <svg style="width:20px;height:20px;" viewBox="0 0 24 24"><path fill="currentColor" d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg>
-            Save Current View Image
-        </button>
+        <button class="btn-export" id="exportMasterBtn">📸 EXPORT IMAGE</button>
     </div>
+</div>
+<div id="toastMsg" class="toast-msg">✨ Processing...</div>
 
-    <script>
-        // Real-time synchronization engine
-        function updateText(targetId, currentVal) {
-            document.getElementById(targetId).innerText = currentVal;
+<script>
+    // --- LIVE PREVIEW (instant update) ---
+    const compInput = document.getElementById('compInput');
+    const phone1Input = document.getElementById('phone1Input');
+    const phone2Input = document.getElementById('phone2Input');
+    const addr1Input = document.getElementById('addr1Input');
+    const addr2Input = document.getElementById('addr2Input');
+    const previewCompany = document.getElementById('previewCompany');
+    const previewPhone1 = document.getElementById('previewPhone1');
+    const previewPhone2 = document.getElementById('previewPhone2');
+    const previewAddr1 = document.getElementById('previewAddr1');
+    const previewAddr2 = document.getElementById('previewAddr2');
+    const nameInput = document.getElementById('nameInput');
+    const roleInput = document.getElementById('roleInput');
+    const previewName = document.getElementById('previewName');
+    const previewRole = document.getElementById('previewRole');
+    const serviceInputs = [
+        document.getElementById('serviceInput1'),
+        document.getElementById('serviceInput2'),
+        document.getElementById('serviceInput3'),
+        document.getElementById('serviceInput4'),
+        document.getElementById('serviceInput5'),
+        document.getElementById('serviceInput6')
+    ];
+    const serviceLis = [
+        document.getElementById('serviceLi1'),
+        document.getElementById('serviceLi2'),
+        document.getElementById('serviceLi3'),
+        document.getElementById('serviceLi4'),
+        document.getElementById('serviceLi5'),
+        document.getElementById('serviceLi6')
+    ];
+    const galleryImgs = [
+        document.getElementById('galleryImg1'),
+        document.getElementById('galleryImg2'),
+        document.getElementById('galleryImg3')
+    ];
+    const thumbImgs = [
+        document.getElementById('thumb1'),
+        document.getElementById('thumb2'),
+        document.getElementById('thumb3')
+    ];
+    const fileInputs = [
+        document.getElementById('uploadImg1'),
+        document.getElementById('uploadImg2'),
+        document.getElementById('uploadImg3')
+    ];
+
+    function updateFront() {
+        previewCompany.innerText = compInput.value || "NOVA EDGE";
+        previewPhone1.innerText = phone1Input.value || "XXXX XXX XX";
+        previewPhone2.innerText = phone2Input.value || "XXXX XXX XX";
+        previewAddr1.innerText = addr1Input.value || "Address line 1";
+        previewAddr2.innerText = addr2Input.value || "Address line 2";
+    }
+
+    function updateBackText() {
+        previewName.innerText = nameInput.value || "Full name";
+        previewRole.innerText = roleInput.value || "ROLE";
+        for (let i = 0; i < serviceInputs.length; i++) {
+            serviceLis[i].innerText = serviceInputs[i].value || "—";
         }
+    }
 
-        // Handle structural view state shifting
-        function switchSide(side) {
-            const btns = document.querySelectorAll('.toggle-btn');
-            const frontView = document.getElementById('front-card-view');
-            const backView = document.getElementById('back-card-view');
-            const frontEditor = document.getElementById('editor-front');
-            const backEditor = document.getElementById('editor-back');
+    compInput.addEventListener('input', updateFront);
+    phone1Input.addEventListener('input', updateFront);
+    phone2Input.addEventListener('input', updateFront);
+    addr1Input.addEventListener('input', updateFront);
+    addr2Input.addEventListener('input', updateFront);
+    nameInput.addEventListener('input', updateBackText);
+    roleInput.addEventListener('input', updateBackText);
+    serviceInputs.forEach(inp => inp.addEventListener('input', updateBackText));
+    updateFront();
+    updateBackText();
 
-            btns.forEach(b => b.classList.remove('active'));
-
-            if (side === 'front') {
-                btns[0].classList.add('active');
-                frontView.classList.add('active');
-                backView.classList.remove('active');
-                frontEditor.classList.add('active');
-                backEditor.classList.remove('active');
-            } else {
-                btns[1].classList.add('active');
-                frontView.classList.remove('active');
-                backView.classList.add('active');
-                frontEditor.classList.remove('active');
-                backEditor.classList.add('active');
-            }
-        }
-
-        // Base64 file streaming processor for the complex SVG element masks
-        function uploadHexImage(event, patternId) {
-            const uploadedFile = event.target.files[0];
-            if (uploadedFile) {
-                const streamReader = new FileReader();
-                streamReader.onload = function(e) {
-                    const patternElement = document.getElementById(patternId);
-                    if (patternElement) {
-                        const imageChild = patternElement.querySelector('image');
-                        imageChild.setAttribute('href', e.target.result);
-                    }
+    // image upload
+    for (let i = 0; i < fileInputs.length; i++) {
+        fileInputs[i].addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const dataUrl = ev.target.result;
+                    galleryImgs[i].src = dataUrl;
+                    thumbImgs[i].src = dataUrl;
                 };
-                streamReader.readAsDataURL(uploadedFile);
+                reader.readAsDataURL(file);
             }
-        }
+        });
+    }
 
-        // Digital Canvas Render Export Pipeline
-        function exportCardToImage() {
-            const targetElement = document.getElementById('business-card-capture');
-            const activeMode = document.getElementById('front-card-view').classList.contains('active') ? 'Front' : 'Back';
-            
-            // Temporary CSS scale booster initialization to achieve ultra high pixel density output
-            html2canvas(targetElement, {
-                scale: 3, 
-                useCORS: true, 
-                allowTaint: true,
-                backgroundColor: null,
-                logging: false
-            }).then(canvas => {
-                const imageStream = canvas.toDataURL('image/png');
-                const simulationAnchor = document.createElement('a');
-                simulationAnchor.href = imageStream;
-                simulationAnchor.download = `Business_Card_${activeMode}_Design.png`;
-                document.body.appendChild(simulationAnchor);
-                simulationAnchor.click();
-                document.body.removeChild(simulationAnchor);
-            }).catch(err => {
-                console.error("Rendering pipeline execution failed: ", err);
-            });
+    // toggle front/back
+    const frontSide = document.getElementById('frontSide');
+    const backSide = document.getElementById('backSide');
+    const frontEditor = document.getElementById('frontEditor');
+    const backEditor = document.getElementById('backEditor');
+    const pillBtns = document.querySelectorAll('.pill-btn');
+    function setActiveSide(side) {
+        if (side === 'front') {
+            frontSide.classList.add('active');
+            backSide.classList.remove('active');
+            frontEditor.classList.add('active');
+            backEditor.classList.remove('active');
+            pillBtns[0].classList.add('active');
+            pillBtns[1].classList.remove('active');
+        } else {
+            frontSide.classList.remove('active');
+            backSide.classList.add('active');
+            frontEditor.classList.remove('active');
+            backEditor.classList.add('active');
+            pillBtns[0].classList.remove('active');
+            pillBtns[1].classList.add('active');
         }
-    </script>
+    }
+    pillBtns[0].addEventListener('click', () => setActiveSide('front'));
+    pillBtns[1].addEventListener('click', () => setActiveSide('back'));
+
+    // --- EXPORT: 100% match guarantee (no gradient text, no clip-path) ---
+    const exportBtn = document.getElementById('exportMasterBtn');
+    const toast = document.getElementById('toastMsg');
+
+    async function exportCombinedCard() {
+        toast.style.opacity = '1';
+        toast.innerText = '📸 Capturing your card...';
+
+        const originalFront = document.getElementById('frontSide');
+        const originalBack = document.getElementById('backSide');
+
+        // deep clone
+        const frontClone = originalFront.cloneNode(true);
+        const backClone = originalBack.cloneNode(true);
+        frontClone.classList.add('active');
+        backClone.classList.add('active');
+
+        const cardWidth = 360, cardHeight = 200;
+        const makeWrapper = (clone) => {
+            const w = document.createElement('div');
+            w.style.width = `${cardWidth}px`;
+            w.style.height = `${cardHeight}px`;
+            w.style.position = 'relative';
+            w.style.overflow = 'hidden';
+            w.style.borderRadius = '24px';
+            w.style.backgroundColor = '#ffffff';
+            w.style.boxShadow = '0 10px 20px rgba(0,0,0,0.2)';
+            w.appendChild(clone);
+            return w;
+        };
+
+        const frontWrapper = makeWrapper(frontClone);
+        const backWrapper = makeWrapper(backClone);
+
+        const container = document.createElement('div');
+        container.style.position = 'fixed';
+        container.style.left = '-9999px';
+        container.style.top = '-9999px';
+        container.style.backgroundColor = '#EFF6FF';
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.style.alignItems = 'center';
+        container.style.padding = '48px 48px';
+        container.style.gap = '38px';
+        container.style.borderRadius = '36px';
+        container.appendChild(frontWrapper);
+        container.appendChild(backWrapper);
+        document.body.appendChild(container);
+
+        // wait for any images
+        await new Promise(r => requestAnimationFrame(r));
+        await new Promise(r => setTimeout(r, 100));
+        const allImages = container.querySelectorAll('img');
+        await Promise.all(Array.from(allImages).map(img => {
+            if (img.complete) return Promise.resolve();
+            return new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
+        }));
+
+        try {
+            const canvas = await html2canvas(container, {
+                scale: 3.5,
+                backgroundColor: '#EFF6FF',
+                useCORS: true,
+                logging: false,
+                windowWidth: container.scrollWidth,
+                windowHeight: container.scrollHeight
+            });
+            const link = document.createElement('a');
+            link.download = 'BusinessCard_Complete.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            toast.innerText = '✅ Saved! Perfect match with preview.';
+            setTimeout(() => toast.style.opacity = '0', 2000);
+        } catch (err) {
+            console.error(err);
+            toast.innerText = '❌ Error, please retry';
+            setTimeout(() => toast.style.opacity = '0', 2000);
+        } finally {
+            document.body.removeChild(container);
+        }
+    }
+
+    exportBtn.addEventListener('click', exportCombinedCard);
+</script>
 </body>
 </html>
