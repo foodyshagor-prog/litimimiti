@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
@@ -69,6 +70,7 @@
             font-size: 14px;
             border-radius: 8px;
             transition: 0.3s;
+            cursor: pointer;
         }
 
         .tab-btn.active {
@@ -211,11 +213,14 @@
             width: 120px;
             height: 120px;
             background: #fff;
-            padding: 5px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .b-qr-box img {
-            width: 100%;
-            height: 100%;
+            width: 100% !important;
+            height: 100% !important;
         }
         .b-left-desc {
             position: absolute;
@@ -354,6 +359,7 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
+            cursor: pointer;
         }
 
         .btn-save:active {
@@ -396,9 +402,7 @@
                 <div class="card-inner" id="export-back">
                     <div class="b-white-bg"></div>
                     
-                    <div class="b-qr-box">
-                        <img id="out-b-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=www.websiteaddress.com" crossorigin="anonymous" alt="QR Code">
-                    </div>
+                    <div class="b-qr-box" id="qrcode-container"></div>
                     
                     <div class="b-left-desc">
                         <p id="out-b-desc">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
@@ -476,57 +480,74 @@
     </div>
 
     <div class="action-bar">
-        <button class="btn-save" onclick="saveActiveCard()">
-            <i class="fas fa-download"></i> Save Image
+        <button class="btn-save" onclick="saveCombinedCards()">
+            <i class="fas fa-download"></i> Save Presentation Image
         </button>
     </div>
 
     <script>
         let currentSide = 'front';
+        let qrcodeInstance = null;
 
-        // 1. Scale Card to fit the Mobile Preview Container
+        // Initialize Native QR Generator Component
+        function initQRCode() {
+            const container = document.getElementById("qrcode-container");
+            const defaultUrl = document.getElementById("in-b-website").value || "www.websiteaddress.com";
+            
+            qrcodeInstance = new QRCode(container, {
+                text: defaultUrl,
+                width: 100,
+                height: 100,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+        }
+
+        // Scale Card to fit the Mobile Preview Container
         function scaleCard() {
             const wrapper = document.getElementById('card-wrapper');
             const innerCards = document.querySelectorAll('.card-inner');
-            const scale = wrapper.clientWidth / 700; // 700 is the native card width
+            const scale = wrapper.clientWidth / 700; 
             innerCards.forEach(card => {
                 card.style.transform = `scale(${scale})`;
             });
         }
 
         window.addEventListener('resize', scaleCard);
-        window.addEventListener('load', scaleCard);
+        window.addEventListener('load', () => {
+            initQRCode();
+            scaleCard();
+        });
 
-        // 2. Tab Switching Logic
+        // Tab Switching Logic
         function switchSide(side) {
             currentSide = side;
             
-            // Toggle Buttons
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            if(event && event.target) {
+                event.target.classList.add('active');
+            }
 
-            // Toggle Card Previews
             document.querySelectorAll('.card-side').forEach(el => el.classList.remove('active'));
             document.getElementById(`view-${side}`).classList.add('active');
 
-            // Toggle Editor Forms
             document.querySelectorAll('.editor-form').forEach(el => el.classList.remove('active'));
             document.getElementById(`form-${side}`).classList.add('active');
         }
 
-        // 3. Two-Way Data Binding Helper
+        // Two-Way Data Binding Helper
         function bindData(inputId, outputId) {
             const inputEl = document.getElementById(inputId);
             const outputEl = document.getElementById(outputId);
             
             inputEl.addEventListener('input', (e) => {
-                outputEl.innerText = e.target.value;
+                if(outputEl) outputEl.innerText = e.target.value;
                 
-                // Special case for Website -> Update QR Code
-                if(inputId === 'in-b-website') {
-                    const qrImg = document.getElementById('out-b-qr');
-                    const url = encodeURIComponent(e.target.value || ' ');
-                    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${url}`;
+                // Native Client-Side Update Routine
+                if(inputId === 'in-b-website' && qrcodeInstance) {
+                    qrcodeInstance.clear();
+                    qrcodeInstance.makeCode(e.target.value || ' ');
                 }
             });
         }
@@ -546,38 +567,96 @@
         bindData('in-b-website', 'out-b-website');
         bindData('in-b-desc', 'out-b-desc');
 
-        // 4. Save Image Logic utilizing HTML2Canvas
-        function saveActiveCard() {
+        // Save Image Logic: Combines Front and Back Vertically onto a styled presentation layout
+        function saveCombinedCards() {
             const btn = document.querySelector('.btn-save');
             const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Compiling Layers...';
             
-            // Get currently visible card inner container
-            const activeCard = document.getElementById(`export-${currentSide}`);
+            const frontCard = document.getElementById('export-front');
+            const backCard = document.getElementById('export-back');
             
-            // Temporarily reset scaling so html2canvas renders the exact 700x400 high-res format
-            activeCard.style.transform = 'scale(1)';
+            // Keep visibility flags intact while snapshot captures element sizes
+            const originalFrontStyle = document.getElementById('view-front').style.display;
+            const originalBackStyle = document.getElementById('view-back').style.display;
+            
+            // Unhide containers temporary to allow full layout processing by HTML2Canvas
+            document.getElementById('view-front').style.display = 'block';
+            document.getElementById('view-back').style.display = 'block';
+            
+            frontCard.style.transform = 'scale(1)';
+            backCard.style.transform = 'scale(1)';
 
-            html2canvas(activeCard, {
-                scale: 2, // 2x scale for better image quality
-                useCORS: true, // Necessary to capture external images like the QR code API
+            const opts = {
+                scale: 2, 
+                useCORS: true,
+                logging: false,
                 backgroundColor: null
-            }).then(canvas => {
-                // Restore UI scale
-                scaleCard();
-                
-                // Trigger Download
-                let link = document.createElement('a');
-                link.download = `business-card-${currentSide}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                
-                btn.innerHTML = originalText;
-            }).catch(err => {
-                scaleCard(); // restore scale if fails
-                alert('Error generating image. Ensure internet is connected for QR load.');
-                btn.innerHTML = originalText;
-            });
+            };
+
+            // Process capturing steps
+            html2canvas(frontCard, opts).then(frontCanvas => {
+                html2canvas(backCard, opts).then(backCanvas => {
+                    
+                    // Revert display modes back to UI state
+                    document.getElementById('view-front').style.display = originalFrontStyle;
+                    document.getElementById('view-back').style.display = originalBackStyle;
+                    scaleCard();
+
+                    // Layout Dimensions
+                    const cardWidth = 700;
+                    const cardHeight = 400;
+                    const padding = 60; 
+                    const innerGap = 40; 
+
+                    const finalWidth = cardWidth + (padding * 2);
+                    const finalHeight = (cardHeight * 2) + (padding * 2) + innerGap;
+
+                    // Build presentation canvas
+                    let mergedCanvas = document.createElement('canvas');
+                    mergedCanvas.width = finalWidth * 2; 
+                    mergedCanvas.height = finalHeight * 2;
+                    let ctx = mergedCanvas.getContext('2d');
+
+                    ctx.scale(2, 2);
+
+                    // Background Style (#f0f2f5)
+                    ctx.fillStyle = '#f0f2f5'; 
+                    ctx.fillRect(0, 0, finalWidth, finalHeight);
+
+                    // Add drop shadow under cards
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
+                    ctx.shadowBlur = 25;
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = 12;
+
+                    // Render Front Card
+                    ctx.drawImage(frontCanvas, 0, 0, frontCanvas.width, frontCanvas.height, padding, padding, cardWidth, cardHeight);
+
+                    // Render Back Card
+                    const backYPosition = padding + cardHeight + innerGap;
+                    ctx.drawImage(backCanvas, 0, 0, backCanvas.width, backCanvas.height, padding, backYPosition, cardWidth, cardHeight);
+
+                    // Clear shadows and export
+                    ctx.shadowColor = 'transparent';
+                    
+                    let link = document.createElement('a');
+                    link.download = `business-card-presentation.png`;
+                    link.href = mergedCanvas.toDataURL('image/png');
+                    link.click();
+                    
+                    btn.innerHTML = originalText;
+                }).catch(err => handleRenderError(err, originalText, originalFrontStyle, originalBackStyle));
+            }).catch(err => handleRenderError(err, originalText, originalFrontStyle, originalBackStyle));
+        }
+
+        function handleRenderError(err, originalText, fStyle, bStyle) {
+            document.getElementById('view-front').style.display = fStyle;
+            document.getElementById('view-back').style.display = bStyle;
+            scaleCard();
+            console.error(err);
+            alert('Error generating presentation output image file.');
+            document.querySelector('.btn-save').innerHTML = originalText;
         }
     </script>
 </body>
