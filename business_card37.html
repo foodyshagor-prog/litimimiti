@@ -464,7 +464,7 @@
     </div>
 </div>
 
-<canvas id="exportCanvas" width="1400" height="800"></canvas>
+<canvas id="exportCanvas"></canvas>
 
 <script>
     let currentSide = 'front';
@@ -506,7 +506,7 @@
         document.getElementById('val-back-instagram').innerText = instagram;
     }
 
-    // High fidelity export routine utilizing native high-density system primitives
+    // Modern high-fidelity stacked dual-side display exporter
     function exportCardImage() {
         const canvas = document.getElementById('exportCanvas');
         const ctx = canvas.getContext('2d');
@@ -521,114 +521,147 @@
         const address = document.getElementById('input-address').value;
         const instagram = document.getElementById('input-instagram').value;
 
-        // Clear Background Frame
+        // Geometry specs for presentation canvas format configuration
+        const cardW = 1400;
+        const cardH = 800;
+        const outerPadding = 120;
+        const verticalGap = 100;
+
+        // Resize presentation canvas container dynamically
+        canvas.width = cardW + (outerPadding * 2);
+        canvas.height = (cardH * 2) + (outerPadding * 2) + verticalGap;
+
+        // 1. Draw Global Studio Presentation Framework Background (#f0f2f5)
+        ctx.fillStyle = "#f0f2f5";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Calculate distinct rendering offset milestones
+        const frontY = outerPadding;
+        const backY = outerPadding + cardH + verticalGap;
+        const startX = outerPadding;
+
+        // ==========================================
+        // 2. RENDER TOP SEGMENT FRAME: FRONT DESIGN
+        // ==========================================
+        ctx.save();
+        ctx.translate(startX, frontY);
+        
+        // Render Card Base Mask Frame
         ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, 1400, 800);
+        ctx.fillRect(0, 0, cardW, cardH);
 
-        if (currentSide === 'front') {
-            // Render Gold Section Polygon
-            ctx.fillStyle = "#c49a45";
+        // Render Gold Section Polygon Accent
+        ctx.fillStyle = "#c49a45";
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(540, 0);
+        ctx.lineTo(700, 300);
+        ctx.bezierCurveTo(640, 440, 540, 460, 460, 500);
+        ctx.lineTo(180, 800);
+        ctx.lineTo(0, 800);
+        ctx.closePath();
+        ctx.fill();
+
+        // Render Accent Border Wave Stroke
+        ctx.fillStyle = "#0f2427";
+        ctx.beginPath();
+        ctx.moveTo(540, 0);
+        ctx.lineTo(620, 0);
+        ctx.lineTo(780, 300);
+        ctx.bezierCurveTo(700, 472, 560, 492, 472, 552);
+        ctx.lineTo(180, 800);
+        ctx.lineTo(100, 800);
+        ctx.lineTo(408, 488);
+        ctx.bezierCurveTo(500, 408, 600, 392, 660, 280);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(0, 800);
+        ctx.lineTo(100, 800);
+        ctx.lineTo(0, 700);
+        ctx.closePath();
+        ctx.fill();
+
+        // Draw Front Logo Subassembly Matrix
+        drawLogoAsset(ctx, 220, 260, 1.3, logoText, taglineText, true);
+
+        // Identity Strings right alignment setup
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#0f172a";
+        ctx.font = "bold 60px -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.fillText(name, 1300, 140);
+        
+        ctx.fillStyle = "#64748b";
+        ctx.font = "500 30px -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.fillText(title, 1300, 195);
+
+        // Profile Channels Right-Hand Decorative Mini-Panel Strip
+        ctx.fillStyle = "#0f2427";
+        ctx.beginPath();
+        ctx.roundRect(1316, 300, 44, 280, 22);
+        ctx.fill();
+
+        ctx.fillStyle = "#c49a45";
+        for(let i=0; i<5; i++) {
             ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(540, 0);
-            ctx.lineTo(700, 300);
-            ctx.bezierCurveTo(640, 440, 540, 460, 460, 500);
-            ctx.lineTo(180, 800);
-            ctx.lineTo(0, 800);
-            ctx.closePath();
+            ctx.arc(1338, 335 + (i * 52), 5, 0, Math.PI * 2);
             ctx.fill();
-
-            // Render Accent Border Wave Stroke
-            ctx.fillStyle = "#0f2427";
-            ctx.beginPath();
-            ctx.moveTo(540, 0);
-            ctx.lineTo(620, 0);
-            ctx.lineTo(780, 300);
-            ctx.bezierCurveTo(700, 472, 560, 492, 472, 552);
-            ctx.lineTo(180, 800);
-            ctx.lineTo(100, 800);
-            ctx.lineTo(408, 488);
-            ctx.bezierCurveTo(500, 408, 600, 392, 660, 280);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.moveTo(0, 800);
-            ctx.lineTo(100, 800);
-            ctx.lineTo(0, 700);
-            ctx.closePath();
-            ctx.fill();
-
-            // Render Core Logo Asset Matrix
-            drawLogoAsset(ctx, 220, 260, 1.3, logoText, taglineText, true);
-
-            // Text Right-aligned Configuration Details
-            ctx.textAlign = "right";
-            
-            // Name
-            ctx.fillStyle = "#0f172a";
-            ctx.font = "bold 60px -apple-system, BlinkMacSystemFont, sans-serif";
-            ctx.fillText(name, 1300, 140);
-            
-            // Title
-            ctx.fillStyle = "#64748b";
-            ctx.font = "500 30px -apple-system, BlinkMacSystemFont, sans-serif";
-            ctx.fillText(title, 1300, 195);
-
-            // Icon Strip Container Panel
-            ctx.fillStyle = "#0f2427";
-            ctx.beginPath();
-            ctx.roundRect(1316, 300, 44, 280, 22);
-            ctx.fill();
-
-            // Draw micro inline vector glyph designators
-            ctx.fillStyle = "#c49a45";
-            for(let i=0; i<5; i++) {
-                ctx.beginPath();
-                ctx.arc(1338, 335 + (i * 52), 5, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            // Contact Values Text Layout
-            ctx.fillStyle = "#334155";
-            ctx.font = "600 28px -apple-system, BlinkMacSystemFont, sans-serif";
-            ctx.fillText(phone, 1280, 345);
-            ctx.fillText(web, 1280, 397);
-            ctx.fillText(email, 1280, 449);
-
-            // Multi-line layout system safe address renderer
-            ctx.font = "500 22px -apple-system, BlinkMacSystemFont, sans-serif";
-            const lines = address.split('\n');
-            let currentY = 501;
-            lines.forEach(line => {
-                ctx.fillText(line, 1280, currentY);
-                currentY += 30;
-            });
-
-            ctx.font = "600 28px -apple-system, BlinkMacSystemFont, sans-serif";
-            ctx.fillText(instagram, 1280, 565);
-
-        } else {
-            // Render Back Page Layout Sequence
-            drawLogoAsset(ctx, 700, 360, 2.0, logoText, taglineText, false);
-
-            // Footer Ribbon Bar Layout Base
-            ctx.fillStyle = "#0f2427";
-            ctx.fillRect(0, 660, 1400, 64);
-
-            ctx.fillStyle = "#ffffff";
-            ctx.font = "400 28px -apple-system, BlinkMacSystemFont, sans-serif";
-            ctx.textAlign = "left";
-            ctx.fillText(instagram, 80, 702);
-
-            ctx.textAlign = "right";
-            ctx.fillText(web, 1320, 702);
         }
 
-        // Generate download stream pipeline
+        // Output Profile Communication Metrics Strings
+        ctx.fillStyle = "#334155";
+        ctx.font = "600 28px -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.fillText(phone, 1280, 345);
+        ctx.fillText(web, 1280, 397);
+        ctx.fillText(email, 1280, 449);
+
+        ctx.font = "500 22px -apple-system, BlinkMacSystemFont, sans-serif";
+        const lines = address.split('\n');
+        let currentY = 501;
+        lines.forEach(line => {
+            ctx.fillText(line, 1280, currentY);
+            currentY += 30;
+        });
+
+        ctx.font = "600 28px -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.fillText(instagram, 1280, 565);
+        ctx.restore();
+
+
+        // ==========================================
+        // 3. RENDER BOTTOM SEGMENT FRAME: BACK DESIGN
+        // ==========================================
+        ctx.save();
+        ctx.translate(startX, backY);
+        
+        // Clean white landscape context base
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, cardW, cardH);
+
+        // Core Back Logo Component Structure System layout execution
+        drawLogoAsset(ctx, 700, 360, 2.0, logoText, taglineText, false);
+
+        // Dark Structural Base Footer Ribbon Bar Anchor Strip
+        ctx.fillStyle = "#0f2427";
+        ctx.fillRect(0, 660, 1400, 64);
+
+        // Draw bottom meta layout variables
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "400 28px -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.textAlign = "left";
+        ctx.fillText(instagram, 80, 702);
+
+        ctx.textAlign = "right";
+        ctx.fillText(web, 1320, 702);
+        ctx.restore();
+
+        // ==========================================
+        // 4. GENERATE DATA STREAM PIPELINE DOWNLOAD
+        // ==========================================
         const dataUrl = canvas.toDataURL('image/png');
         const link = document.createElement('a');
-        link.download = `BusinessCard_${currentSide}.png`;
+        link.download = `BusinessCard_FullPresentation.png`;
         link.href = dataUrl;
         link.click();
     }
