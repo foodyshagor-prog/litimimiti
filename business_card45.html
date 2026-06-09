@@ -87,7 +87,7 @@
             box-shadow: 0 4px 10px rgba(0, 114, 255, 0.3);
         }
 
-        /* --- BUSINESS CARD STYLING (SAME TO SAME) --- */
+        /* --- BUSINESS CARD STYLING --- */
         .card-wrapper {
             width: 350px;
             height: 200px;
@@ -575,7 +575,9 @@
             
             // Switch active toggle buttons
             document.querySelectorAll('.switch-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            if(event && event.target) {
+                event.target.classList.add('active');
+            }
 
             // Toggle card visibility
             document.getElementById('card-front').classList.remove('active');
@@ -592,7 +594,6 @@
             const inputValue = document.getElementById(`input-${field}`).value;
             
             if (field === 'name') {
-                // Formatting the last word as bold matching the sample image look
                 const words = inputValue.trim().split(' ');
                 if (words.length > 1) {
                     const lastWord = words.pop();
@@ -606,26 +607,69 @@
         }
 
         function exportCardImage() {
-            const targetElement = document.getElementById(`card-${activeSide}`);
-            
-            // High quality output options optimization for photo editing apps
-            html2canvas(targetElement, {
+            // 1. Create a staging container stylized to show a presentation layout grid
+            const stagingContainer = document.createElement('div');
+            stagingContainer.style.position = 'absolute';
+            stagingContainer.style.left = '-9999px';
+            stagingContainer.style.top = '0';
+            stagingContainer.style.backgroundColor = '#f0f2f5'; // Light gray presentation background
+            stagingContainer.style.padding = '40px';             // Outer luxury display margins
+            stagingContainer.style.display = 'flex';
+            stagingContainer.style.flexDirection = 'column';     // Vertical stack alignment
+            stagingContainer.style.alignItems = 'center';        // Centered layouts
+            stagingContainer.style.gap = '30px';                  // Balanced vertical gap between cards
+
+            // 2. Clone core layouts
+            const frontElement = document.getElementById('card-front');
+            const backElement = document.getElementById('card-back');
+
+            const frontClone = frontElement.cloneNode(true);
+            const backClone = backElement.cloneNode(true);
+
+            // 3. Force display override flags on cloned variables
+            frontClone.classList.add('active');
+            backClone.classList.add('active');
+
+            // 4. Wrap elements inside original dimensional parents to guarantee layout scale match (350x200px)
+            const wrapperFront = document.createElement('div');
+            wrapperFront.className = 'card-wrapper';
+            wrapperFront.style.marginBottom = '0';
+            wrapperFront.appendChild(frontClone);
+
+            const wrapperBack = document.createElement('div');
+            wrapperBack.className = 'card-wrapper';
+            wrapperBack.style.marginBottom = '0';
+            wrapperBack.appendChild(backClone);
+
+            // 5. Append to container pipeline
+            stagingContainer.appendChild(wrapperFront);
+            stagingContainer.appendChild(wrapperBack);
+            document.body.appendChild(stagingContainer);
+
+            // 6. Execute Canvas Compilation Hook
+            html2canvas(stagingContainer, {
                 scale: 4, 
                 useCORS: true,
-                backgroundColor: null,
+                backgroundColor: '#f0f2f5',
                 logging: false
             }).then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
                 
-                // Creates automated mobile runtime download anchor link anchor hook
+                // Create clean runtime virtual download link
                 const downloadLink = document.createElement('a');
                 downloadLink.href = imgData;
-                downloadLink.download = `${activeSide}_business_card.png`;
+                downloadLink.download = `premium_combined_business_card.png`;
                 document.body.appendChild(downloadLink);
                 downloadLink.click();
                 document.body.removeChild(downloadLink);
+                
+                // Final clean-up performance sweep
+                document.body.removeChild(stagingContainer);
             }).catch(err => {
                 console.error("Error generating business card layout graphic output:", err);
+                if (document.body.contains(stagingContainer)) {
+                    document.body.removeChild(stagingContainer);
+                }
             });
         }
     </script>
